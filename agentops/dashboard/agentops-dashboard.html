@@ -29,6 +29,9 @@ th{color:var(--muted);font-size:11px;text-transform:uppercase;cursor:pointer;use
 .bar-chart{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:8px}
 .bar-col{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-width:6px;position:relative;transition:height .3s}
 .bar-col:hover::after{content:attr(data-v);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text)}
+.no-data{color:var(--muted);font-size:13px;padding:16px;text-align:center;font-style:italic}
+.freshness{display:inline-block;font-size:10px;padding:2px 6px;border-radius:10px;margin-left:6px;font-weight:500}
+.fresh-live{background:#3fb95033;color:var(--green)}.fresh-recent{background:#d2992233;color:var(--yellow)}.fresh-stale{background:#f8514933;color:var(--red)}
 h1{font-size:22px;margin-bottom:var(--gap)}
 @media(max-width:768px){body{grid-template-columns:1fr}nav{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border)}.row{grid-template-columns:1fr}}
 </style></head><body>
@@ -52,7 +55,7 @@ let D={session:[],audit:[],history:[],commits:[],range:'24h'};
 const skills=['Save Points','Context Health','Standing Orders','Small Bets','Safety'];
 const skillKeys=['savepoints','context','orders','smallbets','safety'];
 
-async function load(f){try{const r=await fetch('data/'+f);const t=await r.text();return t.trim().split('\n').filter(Boolean).map(l=>JSON.parse(l))}catch{return[]}}
+async function load(f){try{const r=await fetch('data/'+f);if(!r.ok)return[];const t=await r.text();return t.trim().split('\n').filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean)}catch{return[]}}
 async function refresh(){[D.session,D.audit,D.history,D.commits]=await Promise.all(['session-log.json','audit-results.json','health-history.json','commit-history.json'].map(load));render()}
 function colorFor(v){return v>=80?'var(--green)':v>=60?'var(--yellow)':v>=40?'var(--orange)':'var(--red)'}
 function ring(score,size=110){const r=45,c=2*Math.PI*r,o=c*(1-score/100);
@@ -60,6 +63,8 @@ return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><cir
 function barChart(vals,h=120){if(!vals.length)return '<div class="bar-chart"><span style="color:var(--muted);font-size:12px">No data</span></div>';
 const mx=Math.max(...vals,1);return `<div class="bar-chart" style="height:${h}px">${vals.map(v=>`<div class="bar-col" style="height:${(v/mx)*100}%" data-v="${v}"></div>`).join('')}</div>`}
 function scoreBar(name,score){return `<div><div style="display:flex;justify-content:space-between;font-size:13px"><span>${name}</span><span style="color:${colorFor(score)}">${score}</span></div><div class="bar-track"><div class="bar-fill" style="width:${score}%;background:${colorFor(score)}"></div></div></div>`}
+function freshBadge(data,label){if(!data||!data.length)return `<span class="freshness fresh-stale">no data</span>`;const latest=data[data.length-1];const ts=latest.ts||latest.timestamp||latest.date;if(!ts)return `<span class="freshness fresh-stale">no timestamp</span>`;const age=Date.now()-new Date(ts).getTime();if(age<36e5)return `<span class="freshness fresh-live">live</span>`;if(age<864e5)return `<span class="freshness fresh-recent">${Math.round(age/36e5)}h ago</span>`;return `<span class="freshness fresh-stale">${Math.round(age/864e5)}d ago</span>`}
+function noData(msg){return `<div class="no-data">${msg||'No data available'}</div>`}
 
 function pgOverview(){
   const health=D.history.length?D.history[D.history.length-1].score??72:72;
@@ -70,14 +75,14 @@ function pgOverview(){
   const lastScan=D.audit.length?new Date(D.audit[D.audit.length-1].ts||Date.now()).toLocaleTimeString():'N/A';
   const sk=skillKeys.map((_,i)=>D.history.length&&D.history[D.history.length-1][skillKeys[i]]||[85,54,78,66,90][i]);
   const events=D.session.slice(-10).reverse();
-  return `<h1>Overview</h1>
+  return `<h1>Overview ${freshBadge(D.session)}</h1>
 <div class="toggle">${['24h','7d','30d'].map(r=>`<button class="${D.range===r?'active':''}" onclick="D.range='${r}';render()">${r}</button>`).join('')}</div>
 <div style="display:flex;gap:var(--gap);align-items:start;flex-wrap:wrap">
 <div class="card" style="text-align:center"><h4>Health Score</h4>${ring(health)}</div>
 <div class="cards" style="flex:1">${[['Commits Today',commits],['Context Usage',ctx+'%'],['Blast Radius',blast+' files'],['Violations',violations],['Last Scan',lastScan]].map(([l,v])=>`<div class="card"><h4>${l}</h4><div class="val">${v}</div></div>`).join('')}</div></div>
 <div class="row">
 <div class="panel"><h3>Skills Health</h3>${skills.map((s,i)=>scoreBar(s,sk[i])).join('')}</div>
-<div class="panel"><h3>Recent Events</h3>${events.length?events.map(e=>`<div class="log-item"><span>${e.msg||e.type||'event'}</span><span class="ts">${e.ts?new Date(e.ts).toLocaleTimeString():'--'}</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px">No events yet</div>'}</div></div>`}
+<div class="panel"><h3>Recent Events</h3>${events.length?events.map(e=>`<div class="log-item"><span>${e.msg||e.type||'event'}</span><span class="ts">${e.ts?new Date(e.ts).toLocaleTimeString():'--'}</span></div>`).join(''):noData('No events yet')}</div></div>`}
 
 function pgSkill1(){const c=D.commits.slice(-15);
 return `<h1>Save Points</h1>
@@ -96,7 +101,7 @@ return `<h1>Context Health</h1>
 <div class="card"><h4>Degradation Signals</h4><div class="val">${D.session.filter(e=>e.type==='degradation').length||0}</div></div>
 <div class="card"><h4>Scaffold Freshness</h4><div class="val">${D.session.find(e=>e.type==='scaffold')?.age||'OK'}</div></div></div></div>
 <div class="panel" style="margin-top:var(--gap)"><h3>Context Events</h3>
-${D.session.filter(e=>e.type==='context'||e.type==='degradation').slice(-10).reverse().map(e=>`<div class="log-item"><span>${e.msg||e.type}</span><span class="ts">${e.ts?new Date(e.ts).toLocaleTimeString():'--'}</span></div>`).join('')||'<div style="color:var(--muted);font-size:13px">No events</div>'}</div>`}
+${D.session.filter(e=>e.type==='context'||e.type==='degradation').slice(-10).reverse().map(e=>`<div class="log-item"><span>${e.msg||e.type}</span><span class="ts">${e.ts?new Date(e.ts).toLocaleTimeString():'--'}</span></div>`).join('')||noData('No events recorded')}</div>`}
 
 function pgSkill3(){const v=D.audit.filter(a=>a.category==='orders'||a.check?.includes('order'));
 return `<h1>Standing Orders</h1>
@@ -113,24 +118,31 @@ return `<h1>Small Bets</h1>
 <div class="card"><h4>Max Files Changed</h4><div class="val">${sizes.length?Math.max(...sizes):0}</div></div>
 <div class="card"><h4>Tasks Tracked</h4><div class="val">${D.session.filter(e=>e.type==='task').length||0}</div></div></div>
 <div class="row"><div class="panel"><h3>Commit Size Distribution</h3>${barChart(sizes.slice(-30))}</div>
-<div class="panel"><h3>Risk Scores</h3>${D.session.filter(e=>e.risk!=null).slice(-8).map(e=>scoreBar(e.msg||'task',100-e.risk)).join('')||'<div style="color:var(--muted);font-size:13px">No risk data</div>'}</div></div>`}
+<div class="panel"><h3>Risk Scores</h3>${D.session.filter(e=>e.risk!=null).slice(-8).map(e=>scoreBar(e.msg||'task',100-e.risk)).join('')||noData('No risk data')}</div></div>`}
 
 function pgSkill5(){return `<h1>Safety</h1>
 <div class="cards"><div class="card"><h4>Secrets Blocked</h4><div class="val">${D.audit.filter(a=>a.check?.includes('secret')).length||0}</div></div>
 <div class="card"><h4>Error Handling</h4><div class="val">${D.session.find(e=>e.type==='errorcov')?.coverage||'--'}</div></div>
 <div class="card"><h4>Warnings</h4><div class="val">${D.audit.filter(a=>a.severity==='medium'||a.severity==='low').length}</div></div></div>
 <div class="panel" style="margin-top:var(--gap)"><h3>Safety Events</h3>
-${D.audit.filter(a=>a.check?.includes('secret')||a.check?.includes('safety')||a.category==='safety').slice(-10).map(a=>`<div class="log-item"><span class="sev-${a.severity||'low'}">[${a.severity||'info'}]</span>&nbsp;${a.detail||a.check||'--'}</div>`).join('')||'<div style="color:var(--muted);font-size:13px">No safety events</div>'}</div>`}
+${D.audit.filter(a=>a.check?.includes('secret')||a.check?.includes('safety')||a.category==='safety').slice(-10).map(a=>`<div class="log-item"><span class="sev-${a.severity||'low'}">[${a.severity||'info'}]</span>&nbsp;${a.detail||a.check||'--'}</div>`).join('')||noData('No safety events')}</div>`}
 
+let auditSort={col:'severity',dir:1};
 function pgAudit(){
-  let sorted=[...D.audit];let sortCol='severity',sortDir=1;
+  let sorted=[...D.audit];
   const sevOrder={critical:0,high:1,medium:2,low:3};
   const counts={critical:0,high:0,medium:0,low:0};sorted.forEach(a=>counts[a.severity]=(counts[a.severity]||0)+1);
-  sorted.sort((a,b)=>(sevOrder[a.severity]??9)-(sevOrder[b.severity]??9));
-  return `<h1>Audit Report</h1>
-<div class="cards">${Object.entries(counts).map(([k,v])=>`<div class="card"><h4 class="sev-${k}">${k}</h4><div class="val">${v}</div></div>`).join('')}</div>
-<div class="panel" style="margin-top:var(--gap)"><table id="audit-tbl"><tr><th onclick="sortAudit('check')">Check</th><th onclick="sortAudit('severity')">Severity</th><th onclick="sortAudit('detail')">Detail</th></tr>
-${sorted.map(a=>`<tr><td>${a.check||a.name||'--'}</td><td class="sev-${a.severity||'low'}">${a.severity||'low'}</td><td>${a.detail||a.msg||'--'}</td></tr>`).join('')}</table></div>`}
+  sorted.sort((a,b)=>{
+    let va,vb;
+    if(auditSort.col==='severity'){va=sevOrder[a.severity]??9;vb=sevOrder[b.severity]??9}
+    else{va=(a[auditSort.col]||a.msg||'').toString().toLowerCase();vb=(b[auditSort.col]||b.msg||'').toString().toLowerCase()}
+    if(va<vb)return -1*auditSort.dir;if(va>vb)return 1*auditSort.dir;return 0
+  });
+  const arrow=c=>auditSort.col===c?(auditSort.dir===1?' ▲':' ▼'):'';
+  return `<h1>Audit Report ${freshBadge(D.audit)}</h1>
+${!sorted.length?noData('No audit results available — run /agentops audit to generate'):`<div class="cards">${Object.entries(counts).map(([k,v])=>`<div class="card"><h4 class="sev-${k}">${k}</h4><div class="val">${v}</div></div>`).join('')}</div>
+<div class="panel" style="margin-top:var(--gap)"><table id="audit-tbl"><tr><th onclick="sortAudit('check')">Check${arrow('check')}</th><th onclick="sortAudit('severity')">Severity${arrow('severity')}</th><th onclick="sortAudit('detail')">Detail${arrow('detail')}</th></tr>
+${sorted.map(a=>`<tr><td>${a.check||a.name||'--'}</td><td class="sev-${a.severity||'low'}">${a.severity||'low'}</td><td>${a.detail||a.msg||'--'}</td></tr>`).join('')}</table></div>`}`}
 
 function pgTrends(){const scores=D.history.map(h=>h.score||0);
   const weekly=[];for(let i=0;i<D.audit.length;i+=7)weekly.push(D.audit.slice(i,i+7).length);
@@ -145,6 +157,6 @@ const pages={overview:pgOverview,'skill-1':pgSkill1,'skill-2':pgSkill2,'skill-3'
 function render(){const h=(location.hash||'#overview').slice(1);app.innerHTML=(pages[h]||pgOverview)();
 document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.getAttribute('href')==='#'+h)})}
 window.addEventListener('hashchange',render);
-window.sortAudit=function(col){/* re-sort handled inline for simplicity */render()};
+window.sortAudit=function(col){if(auditSort.col===col)auditSort.dir*=-1;else{auditSort.col=col;auditSort.dir=1}render()};
 refresh();setInterval(refresh,30000);
 </script></body></html>
