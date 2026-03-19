@@ -1,0 +1,31 @@
+# Session Context
+
+## Current State
+<!-- Snapshot of where the project stands right now. -->
+
+- **Branch:** _e.g., main_
+- **Last Commit:** _e.g., abc1234 — Add input validation_
+- **Build Status:** _e.g., passing / failing_
+
+## Active Goals
+<!-- What are you currently trying to accomplish? -->
+
+1. _Example: Complete the data export feature_
+2. _Example: Fix failing test suite_
+
+## Key Decisions Made
+<!-- Important choices made during this work that others (or your future self) should know about. -->
+
+- _Example: Chose streaming over batch processing for large datasets_
+- _Example: Deferred pagination to a follow-up task_
+
+## Do Not Change
+<!-- Protected areas of the codebase. List files, modules, or configurations that should not be modified without discussion. -->
+
+- _Example: config/production.yml — shared across all environments_
+- _Example: core/auth/ — recently audited, changes require review_
+
+## Last Session Summary
+<!-- Brief recap of the most recent work session. What was done, what was left unfinished, and any notes for picking up where you left off. -->
+
+_Summarize what happened last time and what to focus on next._

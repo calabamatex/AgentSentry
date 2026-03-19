@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Management Guide</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232735;
+    --border: #2e3347;
+    --text: #e2e4ed;
+    --text-dim: #8b90a5;
+    --accent: #7c6bf0;
+    --accent-glow: rgba(124,107,240,.15);
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,.12);
+    --orange: #f59e0b;
+    --orange-dim: rgba(245,158,11,.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,.12);
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .hero {
+    padding: 48px 24px 36px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(124,107,240,.06) 0%, transparent 100%);
+  }
+  .hero h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px; }
+  .hero p { color: var(--text-dim); font-size: .95rem; max-width: 600px; margin: 0 auto; }
+  .hero .tagline { color: var(--accent); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap {
+    max-width: 480px; margin: 20px auto 0; display:flex; align-items:center; gap:12px;
+  }
+  .progress-track { flex:1; height:8px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+  .progress-fill { height:100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius:99px; transition: width .5s ease; }
+  .progress-label { font-size:.8rem; color:var(--text-dim); min-width:42px; text-align:right; font-variant-numeric: tabular-nums; }
+
+  /* NAV TABS */
+  .nav { display:flex; gap:6px; padding:16px 24px 0; max-width:900px; margin:0 auto; flex-wrap:wrap; }
+  .nav-btn {
+    padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-size: .82rem; cursor: pointer; transition: all .2s; font-weight: 500;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--text); }
+  .nav-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav-btn .dot { width:8px; height:8px; border-radius:50%; background: var(--border); flex-shrink:0; }
+  .nav-btn.done .dot { background: var(--green); }
+  .nav-btn.partial .dot { background: var(--orange); }
+
+  /* MAIN CONTENT */
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 24px 80px; }
+
+  /* SKILL PANELS */
+  .skill-panel { display: none; }
+  .skill-panel.active { display: block; }
+
+  .skill-header {
+    padding: 28px; background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); margin-bottom: 20px;
+  }
+  .skill-header .skill-num { font-size: .75rem; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+  .skill-header h2 { font-size: 1.45rem; font-weight: 700; margin-bottom: 8px; }
+  .skill-header .subtitle { color: var(--text-dim); font-size: .9rem; }
+
+  /* EXPANDABLE SECTIONS */
+  .section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 10px; overflow: hidden;
+  }
+  .section-head {
+    padding: 16px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px;
+    user-select: none; transition: background .15s;
+  }
+  .section-head:hover { background: var(--surface2); }
+  .section-head .arrow {
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); transition: transform .25s; flex-shrink: 0; font-size: .75rem;
+  }
+  .section.open .section-head .arrow { transform: rotate(90deg); }
+  .section-head h3 { font-size: .92rem; font-weight: 600; flex: 1; }
+  .section-head .badge {
+    font-size: .7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600;
+  }
+  .badge-setup { background: var(--blue-dim); color: var(--blue); }
+  .badge-template { background: var(--accent-glow); color: var(--accent); }
+  .badge-workflow { background: var(--green-dim); color: var(--green); }
+  .badge-reference { background: var(--orange-dim); color: var(--orange); }
+
+  .section-body { display: none; padding: 0 20px 20px; }
+  .section.open .section-body { display: block; }
+  .section-body p { margin-bottom: 12px; color: var(--text); font-size: .88rem; }
+  .section-body ul, .section-body ol { margin-bottom: 12px; padding-left: 20px; }
+  .section-body li { margin-bottom: 6px; font-size: .88rem; color: var(--text); }
+  .section-body strong { color: #fff; }
+  .section-body em { color: var(--accent); font-style: normal; }
+
+  /* CODE BLOCKS */
+  .code-wrap { position: relative; margin: 12px 0; }
+  pre {
+    background: #13151e; border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; overflow-x: auto; font-size: .82rem; line-height: 1.6;
+    color: #c9d1d9; font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+  }
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: .7rem;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-dim); cursor: pointer; transition: all .2s;
+  }
+  .copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+
+  /* TABLES */
+  .table-wrap { overflow-x: auto; margin: 12px 0; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+  th { background: var(--surface2); padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  code { background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-size: .82rem; font-family: 'SF Mono', Consolas, monospace; }
+
+  /* PROMPT CARDS */
+  .prompt-card {
+    background: var(--accent-glow); border: 1px solid rgba(124,107,240,.25); border-radius: 8px;
+    padding: 14px 16px; margin: 12px 0; position: relative; cursor: pointer;
+  }
+  .prompt-card::before { content: 'PROMPT — click to copy'; display:block; font-size:.65rem; color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .prompt-card p { font-size: .86rem; font-style: italic; color: var(--text); margin: 0; }
+  .prompt-card.copied-card { border-color: var(--green); }
+  .prompt-card.copied-card::before { content: 'COPIED!'; color: var(--green); }
+
+  /* CHECKLIST */
+  .checklist { margin: 14px 0; }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; cursor: pointer; user-select: none;
+  }
+  .check-item input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 5px;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+    transition: all .2s;
+  }
+  .check-item input:checked ~ .check-box { background: var(--green); border-color: var(--green); }
+  .check-item input:checked ~ .check-box::after { content: '\2713'; color: #fff; font-size: .75rem; font-weight: 700; }
+  .check-item input:checked ~ .check-label { text-decoration: line-through; color: var(--text-dim); }
+  .check-label { font-size: .88rem; }
+
+  /* ITERATION TIMELINE */
+  .timeline { margin: 14px 0; padding-left: 20px; border-left: 2px solid var(--border); }
+  .tl-item { padding: 0 0 20px 16px; position: relative; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -26px; top: 4px; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--surface2); border: 2px solid var(--accent);
+  }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item h4 { font-size: .85rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .tl-item p { font-size: .84rem; color: var(--text-dim); }
+
+  /* WORKFLOW DIAGRAM */
+  .workflow-wrap {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; margin: 20px 0;
+  }
+  .workflow-wrap h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; text-align: center; }
+  .wf-steps { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .wf-step {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 20px; font-size: .82rem; text-align: center; max-width: 340px; width: 100%;
+  }
+  .wf-step.highlight { border-color: var(--accent); background: var(--accent-glow); }
+  .wf-arrow { color: var(--text-dim); font-size: .9rem; }
+  .wf-branch { display: flex; gap: 12px; align-items: center; width: 100%; max-width: 500px; justify-content: center; }
+  .wf-branch .wf-step { flex: 1; }
+  .wf-branch-label { font-size: .72rem; color: var(--text-dim); font-weight: 600; }
+
+  /* ALERT BOXES */
+  .alert {
+    padding: 14px 16px; border-radius: 8px; margin: 12px 0; font-size: .85rem;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .alert-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .alert-warn { background: var(--orange-dim); border: 1px solid rgba(245,158,11,.2); }
+  .alert-danger { background: var(--red-dim); border: 1px solid rgba(248,113,113,.2); }
+  .alert-tip { background: var(--green-dim); border: 1px solid rgba(52,211,153,.2); }
+
+  /* RESPONSIVE */
+  @media (max-width:600px) {
+    .hero h1 { font-size:1.5rem; }
+    .nav { padding: 12px 16px 0; }
+    .container { padding: 16px 16px 80px; }
+    .wf-branch { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="tagline">From Vibe Coding to Agent Management</div>
+  <h1>The 5 Skills You Need</h1>
+  <p>An interactive guide to managing AI coding agents. Not about writing code — about managing the thing that writes code for you.</p>
+  <div class="progress-bar-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 26</div>
+  </div>
+</div>
+
+<div class="nav" id="navTabs"></div>
+
+<div class="container" id="content"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────
+const skills = [
+  {
+    id: 'skill1',
+    num: 'Skill 1',
+    title: 'Save Points',
+    subtitle: 'Version control with Git — your unlimited undo button that no agent can erase.',
+    sections: [
+      {
+        title: 'Why This Matters',
+        badge: 'reference',
+        content: `
+<p>Your agent can read files, rewrite them, delete them, and run commands that alter your entire project. Without save points, a single bad agent run can destroy hours of working software with no way back.</p>
+<div class="alert alert-danger"><span class="alert-icon">&#9888;</span><div>A senior developer lost a production database when their agent made a "minor change" with no versioning. The data was recoverable — but the hours of panic were not.</div></div>
+<p>Git takes a permanent snapshot of every file in your project. You can jump back to any snapshot at any time. Think of it as save points in a video game — the agent can never overwrite them.</p>
+`
+      },
+      {
+        title: 'Setup (One Time, ~15 Min)',
+        badge: 'setup',
+        content: `
+<p><strong>Step 1 — Check if Git is installed.</strong> Open a terminal and type:</p>
+<div class="code-wrap"><pre>git --version</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+<p>If you see a version number, you're set. If not, download from <strong>git-scm.com</strong>.</p>
+
+<p><strong>Step 2 — Initialize your project.</strong> Navigate to your project folder and run:</p>
+<div class="code-wrap"><pre>git init</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>Step 3 — Create a .gitignore.</strong> Ask your agent:</p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Create a .gitignore file appropriate for this project's tech stack. Include node_modules, .env files, and any build output directories.</p></div>
+
+<p><strong>Step 4 — First save point.</strong></p>
+<div class="code-wrap"><pre>git add .
+git commit -m "Initial working version"</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+`
+      },
+      {
+        title: 'The 6 Commands You Need',
+        badge: 'reference',
+        content: `
+<div class="table-wrap"><table>
+<tr><th>Command</th><th>What It Does</th><th>When To Use</th></tr>
+<tr><td><code>git add .</code></td><td>Stages all changes for the next save</td><td>Before every commit</td></tr>
+<tr><td><code>git commit -m "msg"</code></td><td>Creates the save point with a label</td><td>Every time something works</td></tr>
+<tr><td><code>git log --oneline</code></td><td>Shows your save point history</td><td>Finding a previous version</td></tr>
+<tr><td><code>git diff</code></td><td>Shows what changed since last save</td><td>Before committing — review agent's work</td></tr>
+<tr><td><code>git checkout .</code></td><td>Reverts all uncommitted changes</td><td>When the agent just broke something</td></tr>
+<tr><td><code>git checkout -b name</code></td><td>Creates a parallel branch for experiments</td><td>Before risky changes</td></tr>
+</table></div>
+`
+      },
+      {
+        title: 'The Save-Test-Commit Workflow',
+        badge: 'workflow',
+        content: `
+<p>Use this rhythm <strong>every time</strong> you work with an agent:</p>
+<div class="checklist">
+  <label class="check-item"><input type="checkbox" data-skill="1"><span class="check-box"></span><span class="check-label"><strong>Verify</strong> your project works — load it, click around, confirm</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="1"><span class="check-box"></span><span class="check-label"><strong>Commit</strong> — <code>git add .</code> then <code>git commit -m "working: description"</code></span></label>
+  <label class="check-item"><input type="checkbox" data-skill="1"><span class="check-box"></span><span class="check-label"><strong>Give the agent one focused task</strong> (see Skill 4)</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="1"><span class="check-box"></span><span class="check-label"><strong>Review</strong> — run <code>git diff</code> to see every file the agent touched</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="1"><span class="check-box"></span><span class="check-label"><strong>Test</strong> — does the app still work? Does the new thing work?</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="1"><span class="check-box"></span><span class="check-label"><strong>If yes → commit.</strong> If no → <code>git checkout .</code> to revert and try again</span></label>
+</div>
+`
+      },
+      {
+        title: 'Branching for Risky Experiments',
+        badge: 'reference',
+        content: `
+<p>When you're about to try something that might break things, create a branch:</p>
+<div class="code-wrap"><pre>git checkout -b experiment-new-feature</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>If it works</strong> — merge it back:</p>
+<div class="code-wrap"><pre>git checkout main
+git merge experiment-new-feature</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>If it fails</strong> — just abandon it:</p>
+<div class="code-wrap"><pre>git checkout main
+git branch -d experiment-new-feature</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+<p>Your main project was never touched.</p>
+`
+      },
+      {
+        title: 'Recovery Cheat Sheet',
+        badge: 'reference',
+        content: `
+<div class="table-wrap"><table>
+<tr><th>Situation</th><th>Command</th></tr>
+<tr><td>Agent just broke something, haven't committed</td><td><code>git checkout .</code></td></tr>
+<tr><td>Need a specific old version</td><td><code>git log --oneline</code> → find hash → <code>git checkout &lt;hash&gt; -- .</code></td></tr>
+<tr><td>Everything is a mess, go nuclear</td><td><code>git reset --hard HEAD</code></td></tr>
+<tr><td>See what agent changed (before commit)</td><td><code>git diff</code></td></tr>
+<tr><td>See what agent changed (after commit)</td><td><code>git diff HEAD~1</code></td></tr>
+</table></div>
+<div class="alert alert-warn"><span class="alert-icon">&#9888;</span><div><code>git reset --hard HEAD</code> erases all uncommitted work permanently. Only use when you truly want to discard everything since the last commit.</div></div>
+`
+      },
+      {
+        title: 'Week-by-Week Iteration Plan',
+        badge: 'workflow',
+        content: `
+<div class="timeline">
+  <div class="tl-item"><h4>Week 1</h4><p>Just commit after every working change. Build the muscle memory of <code>git add . && git commit -m "message"</code>.</p></div>
+  <div class="tl-item"><h4>Week 2</h4><p>Start using <code>git diff</code> before committing. You'll notice patterns — files you didn't expect the agent to touch.</p></div>
+  <div class="tl-item"><h4>Week 3</h4><p>Start branching before medium or large tasks. This gives you a safety net for anything non-trivial.</p></div>
+  <div class="tl-item"><h4>Week 4+</h4><p>Ask your agent to commit for you with descriptive messages. Claude Code and Cursor can run git commands directly.</p></div>
+</div>
+`
+      }
+    ]
+  },
+  {
+    id: 'skill2',
+    num: 'Skill 2',
+    title: 'Start Fresh',
+    subtitle: 'Recognize context degradation and restart without losing progress.',
+    sections: [
+      {
+        title: 'Recognizing Context Degradation',
+        badge: 'reference',
+        content: `
+<p>Your agent's context window is like a whiteboard with limited space. As the conversation grows, early instructions get compressed or dropped. Here are the <strong>warning signs</strong>:</p>
+<div class="checklist">
+  <label class="check-item"><input type="checkbox" data-skill="2"><span class="check-box"></span><span class="check-label">Agent repeats a mistake you corrected 10+ messages ago</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="2"><span class="check-box"></span><span class="check-label">It "forgets" architectural decisions and re-proposes rejected alternatives</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="2"><span class="check-box"></span><span class="check-label">It rewrites files it already completed successfully</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="2"><span class="check-box"></span><span class="check-label">Responses get shorter, less detailed, or more generic</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="2"><span class="check-box"></span><span class="check-label">It contradicts its own earlier work without acknowledging the change</span></label>
+</div>
+<div class="alert alert-tip"><span class="alert-icon">&#128161;</span><div>When you see <strong>2 or more</strong> of these signs, the context is degraded. Stop, save your scaffold docs, and start a fresh session.</div></div>
+`
+      },
+      {
+        title: 'Simple Fix: The Handoff Message',
+        badge: 'template',
+        content: `
+<p>Don't just open a new chat and wing it. Write a <strong>handoff message</strong> — a summary that gives the new session everything it needs. This takes 5 minutes and saves hours.</p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>I'm continuing a project. Here's where we are:
+
+PROJECT: [one-line description]
+TECH STACK: [languages, frameworks, database]
+WHAT'S DONE: [list completed features]
+WHAT'S NEXT: [the specific task to work on now]
+KEY DECISIONS ALREADY MADE:
+- [decision 1 and why]
+- [decision 2 and why]
+KNOWN ISSUES:
+- [issue 1]
+DO NOT CHANGE: [list files/features that are working and must not be touched]</p></div>
+`
+      },
+      {
+        title: 'Advanced Fix: Scaffold Documents',
+        badge: 'template',
+        content: `
+<p>For projects spanning multiple sessions, create these four files in your project root. The agent reads them at startup and updates them as it works.</p>
+
+<p><strong>PLANNING.md</strong> — The architectural blueprint</p>
+<div class="code-wrap"><pre># Project Plan
+
+## Overview
+[2-3 sentences: what this product does and who it's for]
+
+## Tech Stack
+- Frontend: [e.g., React, Next.js]
+- Backend: [e.g., Node.js, Supabase]
+- Database: [e.g., PostgreSQL via Supabase]
+- Auth: [e.g., Supabase Auth with Google SSO]
+- Payments: [e.g., Stripe Checkout]
+
+## Architecture Decisions
+- [Decision]: [Why we chose this]
+
+## Data Model
+- Users: [key fields]
+- Orders: [key fields and relationships]
+
+## Pages / Routes
+- /home — landing page
+- /dashboard — authenticated user view</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>TASKS.md</strong> — The burndown list</p>
+<div class="code-wrap"><pre># Task List
+
+## Completed
+- [x] Set up project scaffolding
+- [x] Build user authentication
+
+## In Progress
+- [ ] Add shopping cart functionality
+  - [x] Cart state management
+  - [ ] Cart UI component
+
+## Upcoming
+- [ ] Checkout flow with Stripe
+- [ ] Order confirmation emails
+
+## Known Bugs
+- [ ] Product images don't load on mobile Safari</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>CONTEXT.md</strong> — The "where we left off" briefing</p>
+<div class="code-wrap"><pre># Current Context
+
+## Last Session Summary
+[2-3 sentences about what happened in the last session]
+
+## Current State
+The app is functional with [these features].
+[Feature X] is partially built — backend done, UI not connected.
+
+## Active Decisions / Open Questions
+- Should we use server-side or client-side pagination?
+
+## Files Recently Modified
+- src/components/Cart.jsx — new file, in progress
+- src/lib/cartStore.js — complete</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>WORKFLOW.md</strong> — The step-by-step session log</p>
+<div class="code-wrap"><pre># Workflow Log
+
+## Session 4 — [Date]
+
+### Task: Add shopping cart
+Step 1: Created cart state management ✅
+Step 2: Built Cart UI component — IN PROGRESS
+Step 3: Connect "Add to Cart" buttons ✅
+Step 4: Cart persistence — NOT STARTED</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+`
+      },
+      {
+        title: 'How to Use Scaffold Docs in Practice',
+        badge: 'workflow',
+        content: `
+<p><strong>Starting a session:</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Read PLANNING.md, TASKS.md, CONTEXT.md, and WORKFLOW.md before doing anything. These files describe the current state of the project. Update CONTEXT.md with today's session date and begin working on the next incomplete task in TASKS.md.</p></div>
+
+<p><strong>During a session</strong> (every 3-4 completed sub-tasks):</p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Update TASKS.md and WORKFLOW.md with current progress before continuing.</p></div>
+
+<p><strong>Ending a session:</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Update all scaffold documents to reflect where we stopped. Write a summary in CONTEXT.md so the next session can pick up cleanly.</p></div>
+`
+      },
+      {
+        title: 'Week-by-Week Iteration Plan',
+        badge: 'workflow',
+        content: `
+<div class="timeline">
+  <div class="tl-item"><h4>Week 1</h4><p>Use the handoff message template when starting new sessions. Copy-paste it, fill in the blanks.</p></div>
+  <div class="tl-item"><h4>Week 2</h4><p>Create PLANNING.md and TASKS.md. These two alone solve 80% of the "starting from zero" problem.</p></div>
+  <div class="tl-item"><h4>Week 3</h4><p>Add CONTEXT.md. Start asking the agent to update it at the end of sessions.</p></div>
+  <div class="tl-item"><h4>Week 4+</h4><p>Add WORKFLOW.md for complex features. Train yourself to recognize context degradation early.</p></div>
+</div>
+`
+      }
+    ]
+  },
+  {
+    id: 'skill3',
+    num: 'Skill 3',
+    title: 'Standing Orders',
+    subtitle: 'A rules file that persists across every session — your employee handbook for the agent.',
+    sections: [
+      {
+        title: 'What Is a Rules File?',
+        badge: 'reference',
+        content: `
+<p>A rules file is a plain text document in your project folder that the agent reads <strong>at the start of every session</strong>. It tells the agent: here's what this product is, how we do things, and the mistakes you need to stop making.</p>
+<div class="table-wrap"><table>
+<tr><th>Tool</th><th>File Name</th></tr>
+<tr><td>Claude Code</td><td><code>CLAUDE.md</code></td></tr>
+<tr><td>Cursor</td><td><code>.cursorrules</code></td></tr>
+<tr><td>Universal Standard</td><td><code>AGENTS.md</code></td></tr>
+</table></div>
+<div class="alert alert-tip"><span class="alert-icon">&#128161;</span><div>Keep your rules file under 200 lines (ideally under 100). It competes for the same context window as your conversation. A massive rules file eats the agent's ability to focus.</div></div>
+`
+      },
+      {
+        title: 'Starter Template (Copy This)',
+        badge: 'template',
+        content: `
+<div class="code-wrap"><pre># Project Rules
+
+## Identity
+This is [Product Name], a [one-line description].
+Built with [tech stack]. Database hosted on [platform].
+
+## Code Style
+- Use [language conventions, e.g., "TypeScript strict mode"]
+- File naming: [e.g., "kebab-case for files, PascalCase for components"]
+- Always add comments explaining WHY, not WHAT
+
+## Architecture Rules
+- All API calls go through [specific directory/pattern]
+- Never modify the database schema without updating PLANNING.md
+- Every new page/route must include error handling and loading states
+
+## UI / Design Rules
+- Always use dark mode as the default theme
+- Use existing design system components in /src/components/ui/
+- Never install a new UI library without asking first
+- Mobile-responsive by default — test at 375px width
+
+## Security Rules (Non-Negotiable)
+- NEVER log customer emails, passwords, or payment info
+- NEVER hardcode API keys — use environment variables
+- All user data queries must use row-level security
+- Authentication checks on every protected route
+
+## Error Handling
+- Every API call must have try/catch with user-friendly messages
+- Never show a blank screen on failure
+- Log errors to console, never expose stack traces to users
+
+## Things You Keep Getting Wrong
+- [Add lines here as the agent repeats mistakes]
+
+## Scale Expectations
+This app serves ~[X] users, expected to grow to ~[Y] in [timeframe].
+
+## Before You Start Any Task
+1. Read TASKS.md to understand what's been done
+2. Read CONTEXT.md to understand current state
+3. Confirm your plan before writing code
+4. Make small, testable changes</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+`
+      },
+      {
+        title: 'Building the "Mistakes" Section',
+        badge: 'workflow',
+        content: `
+<p>This is the most valuable section and it grows organically over time:</p>
+<div class="checklist">
+  <label class="check-item"><input type="checkbox" data-skill="3"><span class="check-box"></span><span class="check-label"><strong>Agent makes a mistake</strong> (e.g., installs a package you didn't want)</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="3"><span class="check-box"></span><span class="check-label"><strong>You correct it</strong> in the conversation</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="3"><span class="check-box"></span><span class="check-label"><strong>You add a rule</strong> to prevent it: "Never install new npm packages without confirming with me first"</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="3"><span class="check-box"></span><span class="check-label"><strong>Next session</strong> — the agent reads the rule and doesn't repeat the mistake</span></label>
+</div>
+<div class="alert alert-tip"><span class="alert-icon">&#128161;</span><div>Keep a running note on your phone of things that annoy you during sessions. Batch-add them to the rules file at end of day.</div></div>
+`
+      },
+      {
+        title: 'Monthly Hygiene Review',
+        badge: 'workflow',
+        content: `
+<p>Read through the entire rules file once a month. For each line, ask:</p>
+<ul>
+<li>Is the agent still making this mistake? If not, the rule may be removable.</li>
+<li>Is this rule clear enough? Could the agent misinterpret it?</li>
+<li>Does this rule conflict with another rule?</li>
+</ul>
+<div class="table-wrap"><table>
+<tr><th>Stage</th><th>Target Length</th></tr>
+<tr><td>First week</td><td>15–30 lines</td></tr>
+<tr><td>First month</td><td>50–80 lines</td></tr>
+<tr><td>Mature project</td><td>80–150 lines (hard cap at 200)</td></tr>
+</table></div>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Read our rules file and flag any contradictions, redundancies, or rules that are unclear. Suggest improvements but don't change anything without my approval.</p></div>
+`
+      },
+      {
+        title: 'Week-by-Week Iteration Plan',
+        badge: 'workflow',
+        content: `
+<div class="timeline">
+  <div class="tl-item"><h4>Week 1</h4><p>Create the rules file with just Identity, Code Style, and Security. Even 15 lines is better than nothing.</p></div>
+  <div class="tl-item"><h4>Week 2</h4><p>Start the "Things You Keep Getting Wrong" section. Add 1–2 entries after each session.</p></div>
+  <div class="tl-item"><h4>Week 3</h4><p>Add Architecture and UI/Design sections based on patterns you've noticed.</p></div>
+  <div class="tl-item"><h4>Week 4+</h4><p>First monthly review. Cut anything fixed. Tighten language on persistent violations.</p></div>
+</div>
+`
+      }
+    ]
+  },
+  {
+    id: 'skill4',
+    num: 'Skill 4',
+    title: 'Small Bets',
+    subtitle: 'Control the blast radius — how much of your project a single change can affect.',
+    sections: [
+      {
+        title: 'The Task Sizing Framework',
+        badge: 'reference',
+        content: `
+<p>Before giving your agent <em>any</em> task, run it through these three questions:</p>
+<p><strong>Q1: How many files will this touch?</strong></p>
+<ul>
+<li><strong>1–3 files</strong> → Small. Just do it.</li>
+<li><strong>4–8 files</strong> → Medium. Plan first, execute in stages.</li>
+<li><strong>9+ files</strong> → Large. Decompose into multiple medium tasks.</li>
+</ul>
+<p><strong>Q2: Does this change the database?</strong></p>
+<ul>
+<li><strong>No</strong> → Lower risk</li>
+<li><strong>Adding</strong> new tables/columns → Medium risk. Commit before and after.</li>
+<li><strong>Modifying</strong> existing tables/columns → High risk. Branch first.</li>
+</ul>
+<p><strong>Q3: Could this break existing features?</strong></p>
+<ul>
+<li><strong>No</strong>, it's additive (new page, component) → Lower risk</li>
+<li><strong>Maybe</strong>, it modifies shared code (auth, nav, utils) → Medium risk</li>
+<li><strong>Yes</strong>, it refactors core systems → High risk. Decompose.</li>
+</ul>
+`
+      },
+      {
+        title: 'Decomposition Example: Customer Reviews',
+        badge: 'reference',
+        content: `
+<p><strong>Bad approach</strong> — one giant task:</p>
+<div class="alert alert-danger"><span class="alert-icon">&#10060;</span><div>"Add a customer reviews feature to the product."</div></div>
+<p>The agent tries to build database tables, API routes, UI components, validation, star ratings, and moderation all at once. One broken piece cascades into everything else.</p>
+
+<p><strong>Good approach</strong> — decomposed into small bets:</p>
+<div class="code-wrap"><pre>Task 1: Create reviews database table
+  → Test: table exists, RLS works → Commit
+
+Task 2: Build API route for submitting a review
+  → Test: submit via API, verify in database → Commit
+
+Task 3: Build review submission form UI
+  → Test: submit through UI, appears in database → Commit
+
+Task 4: Build review display component
+  → Test: reviews show correctly, average rating accurate → Commit
+
+Task 5: Add review editing and deletion
+  → Test: edit/delete own, can't touch others' → Commit</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+<p>Each task is small enough that if it fails, you revert one commit and lose 15 minutes — not 3 hours.</p>
+`
+      },
+      {
+        title: 'The Commit-Test-Continue Flow',
+        badge: 'workflow',
+        content: `
+<div class="workflow-wrap">
+<h3>Task Execution Loop</h3>
+<div class="wf-steps">
+  <div class="wf-step highlight">Give agent one focused task</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Agent works on task</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Review with <code>git diff</code></div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-branch">
+    <div class="wf-step" style="border-color:var(--green)">Looks right → Test it</div>
+    <div class="wf-step" style="border-color:var(--red)">Looks wrong → <code>git checkout .</code></div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-branch">
+    <div class="wf-step" style="border-color:var(--green)">Works → Commit → Next task</div>
+    <div class="wf-step" style="border-color:var(--orange)">Broken but small → Fix → Re-test</div>
+  </div>
+</div>
+</div>
+`
+      },
+      {
+        title: 'Prompts for Decomposition',
+        badge: 'template',
+        content: `
+<p><strong>For planning:</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>I want to add [feature]. Before writing any code, break this down into the smallest possible independent tasks. Each task should touch as few files as possible and be testable on its own. Present the plan and wait for my approval before starting.</p></div>
+
+<p><strong>For execution:</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Work on Task 1 only. Do not start Task 2 until I confirm Task 1 is working. After completing Task 1, tell me what to test.</p></div>
+
+<p><strong>For mid-build review:</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Before continuing, show me which files you've modified and summarize the changes. I want to review before you move on.</p></div>
+`
+      },
+      {
+        title: 'Week-by-Week Iteration Plan',
+        badge: 'workflow',
+        content: `
+<div class="timeline">
+  <div class="tl-item"><h4>Week 1</h4><p>Practice asking "how big is this?" before every task. If it feels big, tell the agent to plan it out first.</p></div>
+  <div class="tl-item"><h4>Week 2</h4><p>Use the commit-test-continue rhythm. One task → test → commit → next task.</p></div>
+  <div class="tl-item"><h4>Week 3</h4><p>Decompose a medium feature into 3–5 sub-tasks before the agent starts.</p></div>
+  <div class="tl-item"><h4>Week 4+</h4><p>You'll develop intuition for "too big." Tasks that felt large in week 1 will feel medium as your safety net improves.</p></div>
+</div>
+`
+      }
+    ]
+  },
+  {
+    id: 'skill5',
+    num: 'Skill 5',
+    title: 'Ask What They Won\'t',
+    subtitle: 'The questions your agent will never raise — error handling, security, scale, and real-world chaos.',
+    sections: [
+      {
+        title: 'Error Handling: No More Blank Screens',
+        badge: 'reference',
+        content: `
+<p>Your agent builds for the "happy path" — everything works, the network is fast, the user does what's expected. Real users will break every assumption.</p>
+
+<p><strong>Add this to your rules file:</strong></p>
+<div class="code-wrap"><pre>## Error Handling Requirements
+Every function that calls an API, reads from the database,
+or processes user input MUST include:
+1. A try/catch block (or equivalent)
+2. A user-facing message that is helpful and non-technical
+3. A console log of the actual error for debugging
+4. A fallback state so the UI never goes blank
+
+Good: "We couldn't load your orders. Please try again."
+Bad: "Error: 500 Internal Server Error" or blank screen.</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>Retrofit existing projects:</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Review every file that makes an API call or database query. For each one, verify there's proper error handling with a user-friendly message. If any are missing, add them. Show me a summary of what you found and fixed.</p></div>
+
+<div class="alert alert-tip"><span class="alert-icon">&#128161;</span><div><strong>Quick test:</strong> Turn off your Wi-Fi and use your app. Everything that breaks without an explanation needs error handling.</div></div>
+`
+      },
+      {
+        title: 'Data Security Checklist',
+        badge: 'setup',
+        content: `
+<p><strong>1. Row-Level Security (RLS)</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>For every database table that contains user-specific data, implement row-level security so that each user can only read, update, and delete their own rows. Show me the policies you created.</p></div>
+
+<p><strong>2. Environment Variables for Secrets</strong></p>
+<p>Your project should have a <code>.env</code> file that stores keys. This file must be in <code>.gitignore</code>.</p>
+<div class="code-wrap"><pre># .env (NEVER commit this file)
+STRIPE_SECRET_KEY=sk_live_abc123...
+DATABASE_URL=postgresql://...
+SUPABASE_SERVICE_KEY=eyJ...</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+
+<p><strong>3. Audit for Hardcoded Secrets</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Audit the entire codebase for hardcoded secrets, API keys, or credentials. Replace any you find with environment variable references. Verify that .env is in .gitignore.</p></div>
+
+<div class="alert alert-danger"><span class="alert-icon">&#9888;</span><div><strong>NEVER paste secret keys into an AI chat.</strong> They're long hash strings labeled "secret key." If you paste them, you risk database leaks. Use environment variables instead.</div></div>
+
+<p><strong>4. Rules File Security Additions</strong></p>
+<div class="code-wrap"><pre>## Security (Non-Negotiable)
+- NEVER hardcode API keys, secrets, or credentials
+- NEVER log PII (emails, names, addresses)
+- NEVER log payment information
+- NEVER store passwords in plain text
+- All user data queries must use row-level security
+- Auth checks on EVERY protected API route, not just frontend</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+`
+      },
+      {
+        title: 'Scale Expectations',
+        badge: 'reference',
+        content: `
+<p>Tell the agent your expected scale <strong>before</strong> it builds anything. "10 users" and "10,000 users" produce very different architecture.</p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>This app currently has [X] users and I expect it to grow to [Y] within [timeframe]. What architectural decisions should we make now to avoid painful migrations later? Explain tradeoffs in plain language.</p></div>
+
+<div class="table-wrap"><table>
+<tr><th>Scale</th><th>Typical Recommendations</th></tr>
+<tr><td>1–100 users</td><td>Simple setup. Don't over-engineer.</td></tr>
+<tr><td>100–1,000</td><td>Database indexing, connection pooling, basic caching</td></tr>
+<tr><td>1K–10K</td><td>Query optimization, CDN for static assets, rate limiting</td></tr>
+<tr><td>10K+</td><td>Load balancing, read replicas, job queues</td></tr>
+</table></div>
+
+<p><strong>Scale audit prompt:</strong></p>
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Review the current architecture assuming we'll have [X] concurrent users within [timeframe]. Identify the top 3 things most likely to break at that scale and propose solutions. Don't implement — just present the analysis.</p></div>
+`
+      },
+      {
+        title: 'The "Hostile User" Stress Test',
+        badge: 'workflow',
+        content: `
+<div class="prompt-card" onclick="copyPrompt(this)"><p>Pretend you're a user who doesn't read instructions, has slow internet, and occasionally does weird things like double-clicking submit buttons, pasting emojis into number fields, and hitting the back button during checkout. Review the app and identify every place where this user would have a bad experience. Then fix them.</p></div>
+
+<p><strong>Specific things to check:</strong></p>
+<div class="checklist">
+  <label class="check-item"><input type="checkbox" data-skill="5"><span class="check-box"></span><span class="check-label"><strong>Double-click buttons</strong> — does it submit twice? Charge twice?</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="5"><span class="check-box"></span><span class="check-label"><strong>Empty form submissions</strong> — crash or validation message?</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="5"><span class="check-box"></span><span class="check-label"><strong>Extremely long inputs</strong> — does a 10K-character name break the layout?</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="5"><span class="check-box"></span><span class="check-label"><strong>Slow network</strong> — do loading states exist, or does the UI freeze?</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="5"><span class="check-box"></span><span class="check-label"><strong>Browser back button</strong> — does state break during multi-step flows?</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="5"><span class="check-box"></span><span class="check-label"><strong>Expired sessions</strong> — what happens when login times out mid-action?</span></label>
+</div>
+`
+      },
+      {
+        title: 'When to Bring in a Professional',
+        badge: 'reference',
+        content: `
+<p>Even with all five skills, bring in a real engineer when:</p>
+<ul>
+<li>Handling payments beyond basic checkouts</li>
+<li>Dealing with medical data, children's data, or legal compliance</li>
+<li>App is getting slow under real load and you don't know why</li>
+<li>Codebase is so messy the agent is struggling and you don't know why</li>
+</ul>
+<div class="alert alert-tip"><span class="alert-icon">&#128161;</span><div>This isn't failure. If a non-engineer can build a product, get customers, and <em>then</em> bring in an engineer to harden it — you've proved the idea works before spending serious money on engineering. That's the right sequence.</div></div>
+`
+      },
+      {
+        title: 'Week-by-Week Iteration Plan',
+        badge: 'workflow',
+        content: `
+<div class="timeline">
+  <div class="tl-item"><h4>Week 1</h4><p>Add error handling and security rules to your rules file. Just get them in there.</p></div>
+  <div class="tl-item"><h4>Week 2</h4><p>Run the secret key audit and RLS setup. One-time tasks that dramatically reduce risk.</p></div>
+  <div class="tl-item"><h4>Week 3</h4><p>Run the "hostile user" stress test on your most important flow (signup or checkout).</p></div>
+  <div class="tl-item"><h4>Week 4+</h4><p>Before every release: error handling check, security check, scale check, stress test. Make it a habit.</p></div>
+</div>
+`
+      }
+    ]
+  },
+  {
+    id: 'workflow',
+    num: 'Putting It Together',
+    title: 'Session Workflow',
+    subtitle: 'The complete session flow that ties all five skills into one repeatable rhythm.',
+    sections: [
+      {
+        title: 'Full Session Workflow',
+        badge: 'workflow',
+        content: `
+<div class="workflow-wrap">
+<h3>Start of Session</h3>
+<div class="wf-steps">
+  <div class="wf-step">Agent reads rules file automatically</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step highlight">You tell agent to read scaffold docs (PLANNING, TASKS, CONTEXT, WORKFLOW)</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Agent confirms understanding and current state</div>
+</div>
+</div>
+
+<div class="workflow-wrap">
+<h3>Task Loop (repeat for each task)</h3>
+<div class="wf-steps">
+  <div class="wf-step highlight">Assign one focused task</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Agent confirms plan before starting</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Agent works on task</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Review changes with <code>git diff</code></div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Test the result</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-branch">
+    <div class="wf-step" style="border-color:var(--green)">Working → Commit</div>
+    <div class="wf-step" style="border-color:var(--red)">Broken → Revert → Rethink</div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Agent updates TASKS.md and WORKFLOW.md</div>
+</div>
+</div>
+
+<div class="workflow-wrap">
+<h3>Context Check (every 30–45 min or 20+ messages)</h3>
+<div class="wf-steps">
+  <div class="wf-step">Is the agent still following instructions?</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-branch">
+    <div class="wf-step" style="border-color:var(--green)">Fine → Continue</div>
+    <div class="wf-step" style="border-color:var(--orange)">Degraded → Update scaffold docs → Start fresh</div>
+  </div>
+</div>
+</div>
+
+<div class="workflow-wrap">
+<h3>End of Session</h3>
+<div class="wf-steps">
+  <div class="wf-step">Agent updates all scaffold docs</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">Final commit with descriptive message</div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step highlight">Ready to pick up next time</div>
+</div>
+</div>
+`
+      },
+      {
+        title: 'Quick-Start: Your First Week',
+        badge: 'setup',
+        content: `
+<p>If this feels like a lot, here's the absolute minimum:</p>
+<div class="checklist">
+  <label class="check-item"><input type="checkbox" data-skill="6"><span class="check-box"></span><span class="check-label"><strong>Day 1:</strong> Initialize git in your project. Make your first commit.</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="6"><span class="check-box"></span><span class="check-label"><strong>Day 2:</strong> Create a basic rules file (Identity + Security sections).</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="6"><span class="check-box"></span><span class="check-label"><strong>Day 3:</strong> Practice the commit-test-continue rhythm with one small task.</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="6"><span class="check-box"></span><span class="check-label"><strong>Day 4:</strong> Create TASKS.md and start tracking what's done vs. what's next.</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="6"><span class="check-box"></span><span class="check-label"><strong>Day 5:</strong> Run the secret key audit on your project.</span></label>
+  <label class="check-item"><input type="checkbox" data-skill="6"><span class="check-box"></span><span class="check-label"><strong>Days 6–7:</strong> Decompose a medium feature into 3–5 sub-tasks. Execute one at a time.</span></label>
+</div>
+<div class="alert alert-tip"><span class="alert-icon">&#128161;</span><div>By end of week: you'll have version control, a rules file, a task list, and the habit of small bets. That alone puts you ahead of most people managing agents.</div></div>
+`
+      }
+    ]
+  }
+];
+
+// ─── RENDER ──────────────────────────────────────────────────
+const navEl = document.getElementById('navTabs');
+const contentEl = document.getElementById('content');
+let activeTab = 'skill1';
+
+function render() {
+  // Nav
+  navEl.innerHTML = skills.map(s => {
+    const done = getSkillProgress(s.id);
+    const cls = done === 1 ? 'done' : done > 0 ? 'partial' : '';
+    return `<button class="nav-btn ${cls} ${s.id === activeTab ? 'active' : ''}" onclick="switchTab('${s.id}')">
+      <span class="dot"></span>${s.num}: ${s.title}
+    </button>`;
+  }).join('');
+
+  // Panels
+  contentEl.innerHTML = skills.map(s => `
+    <div class="skill-panel ${s.id === activeTab ? 'active' : ''}" id="panel-${s.id}">
+      <div class="skill-header">
+        <div class="skill-num">${s.num}</div>
+        <h2>${s.title}</h2>
+        <div class="subtitle">${s.subtitle}</div>
+      </div>
+      ${s.sections.map((sec, i) => `
+        <div class="section ${i === 0 ? 'open' : ''}" id="${s.id}-sec-${i}">
+          <div class="section-head" onclick="toggleSection('${s.id}-sec-${i}')">
+            <span class="arrow">&#9654;</span>
+            <h3>${sec.title}</h3>
+            <span class="badge badge-${sec.badge}">${sec.badge}</span>
+          </div>
+          <div class="section-body">${sec.content}</div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  updateProgress();
+}
+
+function switchTab(id) {
+  activeTab = id;
+  render();
+  window.scrollTo({ top: document.querySelector('.nav').offsetTop - 10, behavior: 'smooth' });
+}
+
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function copyCode(btn) {
+  const code = btn.previousElementSibling.textContent;
+  navigator.clipboard.writeText(code);
+  btn.textContent = 'Copied!';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+}
+
+function copyPrompt(card) {
+  const text = card.querySelector('p').textContent;
+  navigator.clipboard.writeText(text);
+  card.classList.add('copied-card');
+  setTimeout(() => card.classList.remove('copied-card'), 2000);
+}
+
+// ─── PROGRESS ────────────────────────────────────────────────
+function getAllCheckboxes() { return document.querySelectorAll('.check-item input[type="checkbox"]'); }
+
+function getSkillProgress(skillId) {
+  const num = skillId.replace('skill','').replace('workflow','6');
+  const boxes = document.querySelectorAll(`.check-item input[data-skill="${num}"]`);
+  if (!boxes.length) return 0;
+  const checked = [...boxes].filter(b => b.checked).length;
+  return checked / boxes.length;
+}
+
+function updateProgress() {
+  const all = getAllCheckboxes();
+  const checked = [...all].filter(b => b.checked).length;
+  const pct = all.length ? Math.round((checked / all.length) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${checked} / ${all.length}`;
+}
+
+// Delegate checkbox events
+document.addEventListener('change', e => {
+  if (e.target.matches('.check-item input')) {
+    // Save state
+    const allBoxes = getAllCheckboxes();
+    const state = [...allBoxes].map(b => b.checked);
+    try { sessionStorage.setItem('agentGuideProgress', JSON.stringify(state)); } catch(e) {}
+    updateProgress();
+    // Update nav dots
+    const navBtns = document.querySelectorAll('.nav-btn');
+    skills.forEach((s, i) => {
+      const done = getSkillProgress(s.id);
+      navBtns[i].classList.toggle('done', done === 1);
+      navBtns[i].classList.toggle('partial', done > 0 && done < 1);
+    });
+  }
+});
+
+// Restore state
+function restoreProgress() {
+  try {
+    const state = JSON.parse(sessionStorage.getItem('agentGuideProgress'));
+    if (state) {
+      const allBoxes = getAllCheckboxes();
+      state.forEach((checked, i) => { if (allBoxes[i]) allBoxes[i].checked = checked; });
+    }
+  } catch(e) {}
+  updateProgress();
+}
+
+render();
+restoreProgress();
+</script>
+</body>
+</html>

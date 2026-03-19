@@ -1,0 +1,31 @@
+# Task Tracking
+
+## In Progress
+<!-- Tasks currently being worked on. -->
+
+- [ ] _Example: Implement user input validation_
+- [ ] _Example: Refactor database connection handling_
+
+## Up Next
+<!-- Tasks queued to start soon. -->
+
+- [ ] _Example: Add error handling for edge cases_
+- [ ] _Example: Write integration tests for auth module_
+
+## Completed
+<!-- Tasks that are done. Move items here when finished. -->
+
+- [x] _Example: Set up project scaffolding_
+- [x] _Example: Configure CI pipeline_
+
+## Blocked
+<!-- Tasks that cannot proceed and the reason why. -->
+
+- [ ] _Example: Deploy to staging — waiting on environment credentials_
+- [ ] _Example: Integrate with external API — documentation incomplete_
+
+## Known Bugs
+<!-- Tracked defects that need to be fixed. Include steps to reproduce when possible. -->
+
+- [ ] _Example: Form submits twice on rapid click — needs debounce logic_
+- [ ] _Example: Timeout error when payload exceeds 5MB_

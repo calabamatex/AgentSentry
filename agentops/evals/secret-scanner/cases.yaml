@@ -1,0 +1,40 @@
+# =============================================================================
+# [AgentOps] Golden Dataset — Secret Scanner Eval Cases
+# =============================================================================
+# Each case feeds content to agentops/scripts/secret-scanner.sh via the
+# Claude Code hook JSON contract and asserts the expected outcome.
+#
+# Format:
+#   name        — human-readable test label
+#   input       — inline content or fixture path to supply as tool_input.content
+#   expected:
+#     blocked   — true if scanner should exit 2 (block), false if exit 0 (allow)
+#     pattern   — the violation label the scanner is expected to report (or "none")
+# =============================================================================
+
+- name: "Detect hardcoded Stripe API key"
+  input: |
+    const stripe = require('stripe');
+    const client = stripe('sk_test_FAKEFAKEFAKE00000000000000');
+    module.exports = client;
+  expected:
+    blocked: true
+    pattern: "Stripe Secret Key (sk_live_*/sk_test_*)"
+
+- name: "Allow environment variable reference"
+  input: |
+    import os
+    api_key = os.environ.get("STRIPE_SECRET_KEY")
+    if not api_key:
+        raise RuntimeError("STRIPE_SECRET_KEY not set")
+  expected:
+    blocked: false
+    pattern: "none"
+
+- name: "Detect JWT token in config"
+  input: |
+    authorization:
+      default_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+  expected:
+    blocked: true
+    pattern: "JWT Token (eyJ...)"

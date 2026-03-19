@@ -1,0 +1,33 @@
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+
+# Secrets and certificates
+*.key
+*.pem
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# WASM build output (root only, not fixtures)
+/*.wasm
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+
+# RuFlo runtime data
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/sessions/

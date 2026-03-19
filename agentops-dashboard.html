@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentOps Dashboard</title>
+<style>
+:root {
+  --bg: #0a0c10;
+  --surface: #13161e;
+  --surface2: #1a1e2a;
+  --surface3: #222839;
+  --border: #2a3045;
+  --text: #e2e5f0;
+  --text-dim: #7a829e;
+  --accent: #7c6bf0;
+  --accent-dim: rgba(124,107,240,.12);
+  --green: #34d399;
+  --green-dim: rgba(52,211,153,.1);
+  --yellow: #fbbf24;
+  --yellow-dim: rgba(251,191,36,.1);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,.1);
+  --blue: #60a5fa;
+  --blue-dim: rgba(96,165,250,.1);
+  --orange: #fb923c;
+  --orange-dim: rgba(251,146,60,.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height:1.5; min-height:100vh; }
+
+/* LAYOUT */
+.app { display:flex; min-height:100vh; }
+.sidebar { width:240px; background:var(--surface); border-right:1px solid var(--border); padding:20px 0; flex-shrink:0; position:fixed; top:0; left:0; bottom:0; overflow-y:auto; }
+.main { flex:1; margin-left:240px; padding:24px 32px 60px; }
+
+/* SIDEBAR */
+.sidebar-brand { padding:0 20px 20px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.sidebar-brand h1 { font-size:1.05rem; font-weight:700; display:flex; align-items:center; gap:8px; }
+.sidebar-brand h1 .logo { width:28px; height:28px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:.8rem; color:#fff; font-weight:800; }
+.sidebar-brand .version { font-size:.7rem; color:var(--text-dim); margin-top:2px; }
+.nav-section { padding:0 12px; margin-bottom:16px; }
+.nav-section-title { font-size:.65rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; font-weight:700; padding:0 8px; margin-bottom:6px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:.84rem; color:var(--text-dim); transition:all .15s; font-weight:500; }
+.nav-item:hover { background:var(--surface2); color:var(--text); }
+.nav-item.active { background:var(--accent-dim); color:var(--accent); }
+.nav-item .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.nav-item .badge { margin-left:auto; font-size:.65rem; padding:1px 6px; border-radius:99px; font-weight:700; }
+.badge-green { background:var(--green-dim); color:var(--green); }
+.badge-yellow { background:var(--yellow-dim); color:var(--yellow); }
+.badge-red { background:var(--red-dim); color:var(--red); }
+
+.sidebar-footer { position:absolute; bottom:0; left:0; right:0; padding:12px 20px; border-top:1px solid var(--border); background:var(--surface); }
+.sidebar-footer .last-scan { font-size:.7rem; color:var(--text-dim); }
+.btn-scan { width:100%; padding:8px; border:none; background:var(--accent); color:#fff; border-radius:var(--radius-sm); font-size:.78rem; font-weight:600; cursor:pointer; margin-top:8px; transition:opacity .15s; }
+.btn-scan:hover { opacity:.85; }
+
+/* HEADER */
+.page-header { margin-bottom:24px; display:flex; align-items:flex-end; justify-content:space-between; }
+.page-header h2 { font-size:1.4rem; font-weight:700; }
+.page-header .subtitle { color:var(--text-dim); font-size:.85rem; }
+.time-range { display:flex; gap:4px; }
+.time-btn { padding:5px 12px; border-radius:99px; border:1px solid var(--border); background:transparent; color:var(--text-dim); font-size:.72rem; cursor:pointer; font-weight:600; transition:all .15s; }
+.time-btn:hover { border-color:var(--accent); color:var(--text); }
+.time-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* SCORE RING */
+.score-ring-wrap { display:flex; align-items:center; justify-content:center; flex-direction:column; }
+.score-ring { position:relative; width:140px; height:140px; }
+.score-ring svg { transform:rotate(-90deg); }
+.score-ring .bg { stroke:var(--surface3); }
+.score-ring .fill { transition: stroke-dashoffset .8s ease; }
+.score-ring .score-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+.score-ring .score-num { font-size:2rem; font-weight:800; line-height:1; }
+.score-ring .score-label { font-size:.65rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; }
+
+/* CARDS GRID */
+.grid { display:grid; gap:16px; }
+.grid-5 { grid-template-columns: repeat(5, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-1-2 { grid-template-columns: 1fr 2fr; }
+.grid-2-1 { grid-template-columns: 2fr 1fr; }
+
+@media (max-width:1200px) { .grid-5 { grid-template-columns: repeat(3,1fr); } }
+@media (max-width:900px) {
+  .sidebar { display:none; }
+  .main { margin-left:0; padding:16px; }
+  .grid-5,.grid-3,.grid-2,.grid-1-2,.grid-2-1 { grid-template-columns:1fr; }
+}
+
+/* CARD */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.card-title { font-size:.78rem; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; }
+.card-status { width:10px; height:10px; border-radius:50%; }
+.status-green { background:var(--green); box-shadow:0 0 8px rgba(52,211,153,.4); }
+.status-yellow { background:var(--yellow); box-shadow:0 0 8px rgba(251,191,36,.4); }
+.status-red { background:var(--red); box-shadow:0 0 8px rgba(248,113,113,.4); }
+.card-value { font-size:1.6rem; font-weight:800; line-height:1.2; }
+.card-detail { font-size:.78rem; color:var(--text-dim); margin-top:4px; }
+.card-detail span { font-weight:600; }
+
+/* SKILL ROW */
+.skill-row { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); }
+.skill-row:last-child { border-bottom:none; }
+.skill-icon { width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.skill-info { flex:1; }
+.skill-name { font-size:.88rem; font-weight:600; }
+.skill-desc { font-size:.75rem; color:var(--text-dim); }
+.skill-score { text-align:right; }
+.skill-score .num { font-size:1.2rem; font-weight:800; }
+.skill-score .max { font-size:.75rem; color:var(--text-dim); }
+.skill-bar { width:120px; height:6px; background:var(--surface3); border-radius:99px; overflow:hidden; }
+.skill-bar-fill { height:100%; border-radius:99px; transition:width .5s ease; }
+
+/* MINI CHART (sparkline) */
+.sparkline { display:flex; align-items:flex-end; gap:2px; height:40px; }
+.spark-bar { flex:1; border-radius:2px 2px 0 0; min-width:4px; transition:height .3s ease; }
+
+/* EVENT LOG */
+.event-log { max-height:320px; overflow-y:auto; }
+.event-item { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid rgba(42,48,69,.5); font-size:.8rem; }
+.event-item:last-child { border-bottom:none; }
+.event-time { color:var(--text-dim); font-size:.7rem; min-width:50px; font-variant-numeric:tabular-nums; }
+.event-icon { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.65rem; flex-shrink:0; }
+.event-msg { flex:1; color:var(--text); }
+.event-msg .src { color:var(--text-dim); font-size:.7rem; }
+
+/* TREND CHART */
+.trend-chart { position:relative; height:160px; display:flex; align-items:flex-end; gap:1px; padding-top:20px; }
+.trend-bar-group { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.trend-bar { width:100%; border-radius:3px 3px 0 0; transition:height .4s ease; min-height:2px; }
+.trend-label { font-size:.6rem; color:var(--text-dim); margin-top:4px; writing-mode:horizontal-tb; }
+.trend-legend { display:flex; gap:16px; margin-top:12px; justify-content:center; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:.7rem; color:var(--text-dim); }
+.legend-dot { width:8px; height:8px; border-radius:2px; }
+
+/* TABLE */
+.audit-table { width:100%; font-size:.8rem; border-collapse:collapse; }
+.audit-table th { text-align:left; padding:8px 10px; color:var(--text-dim); font-weight:600; font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--border); }
+.audit-table td { padding:8px 10px; border-bottom:1px solid rgba(42,48,69,.4); }
+.audit-table tr:last-child td { border-bottom:none; }
+.sev { padding:2px 8px; border-radius:99px; font-size:.65rem; font-weight:700; }
+.sev-critical { background:var(--red-dim); color:var(--red); }
+.sev-warning { background:var(--yellow-dim); color:var(--yellow); }
+.sev-advisory { background:var(--blue-dim); color:var(--blue); }
+.sev-pass { background:var(--green-dim); color:var(--green); }
+
+/* PAGES */
+.page { display:none; }
+.page.active { display:block; }
+
+/* PROGRESS BAR (horizontal) */
+.h-bar { height:8px; background:var(--surface3); border-radius:99px; overflow:hidden; margin:8px 0; }
+.h-bar-fill { height:100%; border-radius:99px; }
+
+/* TOOLTIP */
+[data-tip] { position:relative; cursor:help; }
+[data-tip]:hover::after { content:attr(data-tip); position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#1e2235; color:var(--text); font-size:.7rem; padding:4px 8px; border-radius:4px; white-space:nowrap; z-index:10; border:1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1><span class="logo">A</span> AgentOps</h1>
+    <div class="version">v2.0 — RuFlo Integration</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">Overview</div>
+    <div class="nav-item active" onclick="showPage('overview')">
+      <span class="dot" style="background:var(--accent)"></span> Dashboard
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">5 Skills</div>
+    <div class="nav-item" onclick="showPage('skill1')">
+      <span class="dot" style="background:var(--green)"></span> Save Points
+      <span class="badge badge-green" id="nav-s1-badge">98</span>
+    </div>
+    <div class="nav-item" onclick="showPage('skill2')">
+      <span class="dot" style="background:var(--green)"></span> Context Health
+      <span class="badge badge-green" id="nav-s2-badge">85</span>
+    </div>
+    <div class="nav-item" onclick="showPage('skill3')">
+      <span class="dot" style="background:var(--yellow)"></span> Standing Orders
+      <span class="badge badge-yellow" id="nav-s3-badge">72</span>
+    </div>
+    <div class="nav-item" onclick="showPage('skill4')">
+      <span class="dot" style="background:var(--green)"></span> Small Bets
+      <span class="badge badge-green" id="nav-s4-badge">90</span>
+    </div>
+    <div class="nav-item" onclick="showPage('skill5')">
+      <span class="dot" style="background:var(--yellow)"></span> Safety Checks
+      <span class="badge badge-yellow" id="nav-s5-badge">78</span>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">Reports</div>
+    <div class="nav-item" onclick="showPage('audit')">
+      <span class="dot" style="background:var(--blue)"></span> Audit Report
+    </div>
+    <div class="nav-item" onclick="showPage('trends')">
+      <span class="dot" style="background:var(--blue)"></span> Trends
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">RuFlo</div>
+    <div class="nav-item" onclick="showPage('ruflo')">
+      <span class="dot" style="background:var(--orange)"></span> Swarm Agents
+      <span class="badge" style="background:var(--orange-dim);color:var(--orange)">60+</span>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="last-scan">Last scan: <span id="lastScan">2 min ago</span></div>
+    <button class="btn-scan" onclick="runScan()">Run /agentops check</button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ============ OVERVIEW PAGE ============ -->
+<div class="page active" id="page-overview">
+  <div class="page-header">
+    <div>
+      <h2>Dashboard</h2>
+      <div class="subtitle">AgentOps health overview for RuFlo</div>
+    </div>
+    <div class="time-range">
+      <button class="time-btn active" onclick="setRange(this,'24h')">24h</button>
+      <button class="time-btn" onclick="setRange(this,'7d')">7d</button>
+      <button class="time-btn" onclick="setRange(this,'30d')">30d</button>
+    </div>
+  </div>
+
+  <!-- Top KPI Cards -->
+  <div class="grid grid-5" style="margin-bottom:20px">
+    <div class="card" style="text-align:center">
+      <div class="score-ring-wrap">
+        <div class="score-ring">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle class="bg" cx="70" cy="70" r="58" fill="none" stroke-width="10"/>
+            <circle class="fill" cx="70" cy="70" r="58" fill="none" stroke="var(--green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="36.4"/>
+          </svg>
+          <div class="score-text">
+            <div class="score-num" style="color:var(--green)">85</div>
+            <div class="score-label">Overall</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Commits Today</span><span class="card-status status-green"></span></div>
+      <div class="card-value">14</div>
+      <div class="card-detail">Avg interval: <span>22 min</span></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Context Usage</span><span class="card-status status-yellow"></span></div>
+      <div class="card-value">47%</div>
+      <div class="card-detail">~18 messages this session</div>
+      <div class="h-bar"><div class="h-bar-fill" style="width:47%;background:var(--yellow)"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Blast Radius</span><span class="card-status status-green"></span></div>
+      <div class="card-value">3</div>
+      <div class="card-detail">Files modified this task</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Violations</span><span class="card-status status-green"></span></div>
+      <div class="card-value">0</div>
+      <div class="card-detail">Rules violations this session</div>
+    </div>
+  </div>
+
+  <!-- Skills Health + Event Log -->
+  <div class="grid grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Skills Health</span></div>
+      <div id="skillRows"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Events</span></div>
+      <div class="event-log" id="eventLog"></div>
+    </div>
+  </div>
+
+  <!-- Trend Charts -->
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Commit Frequency (7 days)</span></div>
+      <div class="trend-chart" id="commitChart"></div>
+      <div class="trend-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> Commits</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> Auto-saves</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Health Score (7 days)</span></div>
+      <div class="trend-chart" id="healthChart"></div>
+      <div class="trend-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> Save Points</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span> Context</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--yellow)"></span> Security</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SKILL DETAIL PAGES ============ -->
+<div class="page" id="page-skill1">
+  <div class="page-header"><div><h2>Skill 1: Save Points</h2><div class="subtitle">Version control discipline and git hygiene</div></div></div>
+  <div class="grid grid-3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Last Commit</span><span class="card-status status-green"></span></div>
+      <div class="card-value">12m ago</div>
+      <div class="card-detail">3 uncommitted files</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Branch</span></div>
+      <div class="card-value" style="font-size:1.1rem">feature/agent-routing</div>
+      <div class="card-detail">Not on main <span style="color:var(--green)">&#10003;</span></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Auto-Saves Today</span></div>
+      <div class="card-value">3</div>
+      <div class="card-detail">Pre-swarm: 1 | Session-end: 2</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Commit Timeline (Today)</span></div>
+    <div class="trend-chart" id="commitTimeline"></div>
+  </div>
+</div>
+
+<div class="page" id="page-skill2">
+  <div class="page-header"><div><h2>Skill 2: Context Health</h2><div class="subtitle">Context window usage and degradation monitoring</div></div></div>
+  <div class="grid grid-3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Context Usage</span><span class="card-status status-yellow"></span></div>
+      <div class="card-value">47%</div>
+      <div class="h-bar"><div class="h-bar-fill" style="width:47%;background:var(--yellow)"></div></div>
+      <div class="card-detail">~94K / 200K tokens estimated</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Messages</span></div>
+      <div class="card-value">18</div>
+      <div class="card-detail">Warning at 20, critical at 30</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Degradation Signals</span><span class="card-status status-green"></span></div>
+      <div class="card-value">0</div>
+      <div class="card-detail">Violations: 0 | Rewrites: 0 | Drift: 0</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Scaffold Documents</span></div>
+    <table class="audit-table">
+      <tr><th>Document</th><th>Status</th><th>Last Updated</th><th>Freshness</th></tr>
+      <tr><td>PLANNING.md</td><td><span class="sev sev-pass">EXISTS</span></td><td>Mar 18, 2026</td><td><span class="sev sev-pass">FRESH</span></td></tr>
+      <tr><td>TASKS.md</td><td><span class="sev sev-pass">EXISTS</span></td><td>Mar 19, 2026</td><td><span class="sev sev-pass">FRESH</span></td></tr>
+      <tr><td>CONTEXT.md</td><td><span class="sev sev-warning">STALE</span></td><td>Mar 14, 2026</td><td><span class="sev sev-warning">5 DAYS</span></td></tr>
+      <tr><td>WORKFLOW.md</td><td><span class="sev sev-pass">EXISTS</span></td><td>Mar 19, 2026</td><td><span class="sev sev-pass">FRESH</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="page" id="page-skill3">
+  <div class="page-header"><div><h2>Skill 3: Standing Orders</h2><div class="subtitle">Rules file health and compliance monitoring</div></div></div>
+  <div class="grid grid-3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">CLAUDE.md</span><span class="card-status status-yellow"></span></div>
+      <div class="card-value">142 lines</div>
+      <div class="card-detail">Limit: 300 | <span style="color:var(--green)">Under limit</span></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">AGENTS.md</span><span class="card-status status-green"></span></div>
+      <div class="card-value">87 lines</div>
+      <div class="card-detail">Limit: 150 | <span style="color:var(--green)">Under limit</span></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Violations Today</span><span class="card-status status-green"></span></div>
+      <div class="card-value">0</div>
+      <div class="card-detail">Last violation: 3 days ago</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Section Coverage</span></div>
+    <table class="audit-table">
+      <tr><th>Required Section</th><th>CLAUDE.md</th><th>AGENTS.md</th></tr>
+      <tr><td>Security Rules</td><td><span class="sev sev-pass">PRESENT</span></td><td><span class="sev sev-pass">PRESENT</span></td></tr>
+      <tr><td>Error Handling</td><td><span class="sev sev-pass">PRESENT</span></td><td><span class="sev sev-pass">PRESENT</span></td></tr>
+      <tr><td>Swarm Safety</td><td><span class="sev sev-pass">PRESENT</span></td><td><span class="sev sev-advisory">MISSING</span></td></tr>
+      <tr><td>Scale Expectations</td><td><span class="sev sev-warning">MISSING</span></td><td><span class="sev sev-advisory">N/A</span></td></tr>
+      <tr><td>AgentOps Rules</td><td><span class="sev sev-warning">MISSING</span></td><td><span class="sev sev-warning">MISSING</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="page" id="page-skill4">
+  <div class="page-header"><div><h2>Skill 4: Small Bets</h2><div class="subtitle">Task sizing and blast radius control</div></div></div>
+  <div class="grid grid-3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Current Task Risk</span><span class="card-status status-green"></span></div>
+      <div class="card-value" style="color:var(--green)">LOW</div>
+      <div class="card-detail">Risk score: 3 / 20</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Blast Radius</span></div>
+      <div class="card-value">3 files</div>
+      <div class="card-detail">Threshold: 5 warning, 8 critical</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Median Commit Size</span></div>
+      <div class="card-value">4.2 files</div>
+      <div class="card-detail">Target: &lt;8 files <span style="color:var(--green)">&#10003;</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Recent Task Sizes (last 20 commits)</span></div>
+    <div class="trend-chart" id="taskSizeChart"></div>
+    <div class="trend-legend">
+      <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> Small (1-3)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--yellow)"></span> Medium (4-8)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--red)"></span> Large (9+)</div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-skill5">
+  <div class="page-header"><div><h2>Skill 5: Safety Checks</h2><div class="subtitle">Security, error handling, and proactive safety</div></div></div>
+  <div class="grid grid-3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Secrets Blocked</span><span class="card-status status-green"></span></div>
+      <div class="card-value">2</div>
+      <div class="card-detail">Lifetime blocks by pre-commit hook</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Error Handling</span><span class="card-status status-yellow"></span></div>
+      <div class="card-value">78%</div>
+      <div class="card-detail">API calls with proper try/catch</div>
+      <div class="h-bar"><div class="h-bar-fill" style="width:78%;background:var(--yellow)"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">PII Warnings</span><span class="card-status status-green"></span></div>
+      <div class="card-value">0</div>
+      <div class="card-detail">No PII detected in logs or memory</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Security Audit Results</span></div>
+    <table class="audit-table">
+      <tr><th>Check</th><th>Status</th><th>Details</th></tr>
+      <tr><td>Hardcoded secrets</td><td><span class="sev sev-pass">PASS</span></td><td>0 found in source</td></tr>
+      <tr><td>.env in .gitignore</td><td><span class="sev sev-pass">PASS</span></td><td>.env, .env.local covered</td></tr>
+      <tr><td>MCP auth configured</td><td><span class="sev sev-pass">PASS</span></td><td>Authenticated channels</td></tr>
+      <tr><td>AIDefence active</td><td><span class="sev sev-pass">PASS</span></td><td>Prompt injection blocking ON</td></tr>
+      <tr><td>RLS enabled</td><td><span class="sev sev-warning">WARN</span></td><td>2 tables missing RLS policies</td></tr>
+      <tr><td>LLM timeout configured</td><td><span class="sev sev-warning">WARN</span></td><td>Cohere provider missing timeout</td></tr>
+      <tr><td>Input validation</td><td><span class="sev sev-pass">PASS</span></td><td>All endpoints validated</td></tr>
+      <tr><td>npm audit</td><td><span class="sev sev-advisory">INFO</span></td><td>3 low-severity advisories</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ AUDIT PAGE ============ -->
+<div class="page" id="page-audit">
+  <div class="page-header"><div><h2>Full Audit Report</h2><div class="subtitle">Last run: March 19, 2026 at 14:32</div></div></div>
+  <div class="grid grid-5" style="margin-bottom:20px">
+    <div class="card" style="text-align:center"><div class="card-value" style="color:var(--red)">0</div><div class="card-detail">Critical</div></div>
+    <div class="card" style="text-align:center"><div class="card-value" style="color:var(--yellow)">4</div><div class="card-detail">Warnings</div></div>
+    <div class="card" style="text-align:center"><div class="card-value" style="color:var(--blue)">3</div><div class="card-detail">Advisory</div></div>
+    <div class="card" style="text-align:center"><div class="card-value" style="color:var(--green)">19</div><div class="card-detail">Passed</div></div>
+    <div class="card" style="text-align:center"><div class="card-value">26</div><div class="card-detail">Total checks</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">All Findings</span></div>
+    <table class="audit-table" id="auditTable"></table>
+  </div>
+</div>
+
+<!-- ============ TRENDS PAGE ============ -->
+<div class="page" id="page-trends">
+  <div class="page-header"><div><h2>Historical Trends</h2><div class="subtitle">Health metrics over time</div></div></div>
+  <div class="grid grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Overall Health Score (30 days)</span></div>
+      <div class="trend-chart" id="trendHealth30"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Violations per Week</span></div>
+      <div class="trend-chart" id="trendViolations"></div>
+      <div class="trend-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--red)"></span> Rules violations</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span> Blast radius breaches</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--yellow)"></span> Context restarts</div>
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Commit Frequency Trend</span></div>
+      <div class="trend-chart" id="trendCommits"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Most Violated Rules</span></div>
+      <table class="audit-table">
+        <tr><th>Rule</th><th>Violations</th><th>Trend</th></tr>
+        <tr><td>Missing error handling on MCP calls</td><td>7</td><td style="color:var(--green)">&#8595; Improving</td></tr>
+        <tr><td>Commits too infrequent</td><td>5</td><td style="color:var(--green)">&#8595; Improving</td></tr>
+        <tr><td>CONTEXT.md stale</td><td>4</td><td style="color:var(--yellow)">&#8596; Stable</td></tr>
+        <tr><td>Large blast radius (8+ files)</td><td>3</td><td style="color:var(--green)">&#8595; Improving</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RUFLO AGENTS PAGE ============ -->
+<div class="page" id="page-ruflo">
+  <div class="page-header"><div><h2>RuFlo Swarm Agents</h2><div class="subtitle">Real-time state of the agent orchestration platform</div></div></div>
+
+  <div class="grid grid-5" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Active Agents</span><span class="card-status status-green"></span></div>
+      <div class="card-value">12</div>
+      <div class="card-detail">of 60+ available</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Queen Status</span></div>
+      <div class="card-value" style="font-size:1rem;color:var(--green)">Tactical</div>
+      <div class="card-detail">Hierarchical topology</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Consensus</span><span class="card-status status-green"></span></div>
+      <div class="card-value" style="font-size:1rem">Raft</div>
+      <div class="card-detail">0 failures this session</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Drift Events</span><span class="card-status status-green"></span></div>
+      <div class="card-value">0</div>
+      <div class="card-detail">Threshold: 2 before alert</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Memory Usage</span></div>
+      <div class="card-value">34%</div>
+      <div class="card-detail">RuVector: 12K embeddings</div>
+      <div class="h-bar"><div class="h-bar-fill" style="width:34%;background:var(--blue)"></div></div>
+    </div>
+  </div>
+
+  <!-- Active Agents Table -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Active Agent Roster</span></div>
+    <table class="audit-table">
+      <tr><th>Agent</th><th>Type</th><th>Status</th><th>Files Modified</th><th>Task</th><th>Drift</th></tr>
+      <tr><td>queen-tactical-01</td><td>Queen</td><td><span class="sev sev-pass">ACTIVE</span></td><td>0</td><td>Coordinating routing refactor</td><td><span class="sev sev-pass">CLEAR</span></td></tr>
+      <tr><td>coder-ts-01</td><td>Worker</td><td><span class="sev sev-pass">ACTIVE</span></td><td>3</td><td>MoE router optimization</td><td><span class="sev sev-pass">CLEAR</span></td></tr>
+      <tr><td>coder-ts-02</td><td>Worker</td><td><span class="sev sev-pass">ACTIVE</span></td><td>2</td><td>HNSW index tuning</td><td><span class="sev sev-pass">CLEAR</span></td></tr>
+      <tr><td>tester-01</td><td>Worker</td><td><span class="sev sev-pass">ACTIVE</span></td><td>1</td><td>Integration test suite</td><td><span class="sev sev-pass">CLEAR</span></td></tr>
+      <tr><td>reviewer-01</td><td>Worker</td><td><span class="sev sev-advisory">IDLE</span></td><td>0</td><td>Waiting for coder output</td><td><span class="sev sev-pass">CLEAR</span></td></tr>
+      <tr><td>security-01</td><td>Worker</td><td><span class="sev sev-pass">ACTIVE</span></td><td>0</td><td>CVE scan on dependencies</td><td><span class="sev sev-pass">CLEAR</span></td></tr>
+      <tr><td>architect-01</td><td>Worker</td><td><span class="sev sev-advisory">IDLE</span></td><td>0</td><td>—</td><td><span class="sev sev-pass">CLEAR</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Swarm Topology + Memory -->
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Swarm Topology</span></div>
+      <div style="text-align:center;padding:20px;font-family:monospace;font-size:.78rem;line-height:1.8;color:var(--text-dim)">
+<pre style="display:inline-block;text-align:left;color:var(--text)">
+         ┌──────────────────┐
+         │  queen-tactical  │
+         │    (coordinator) │
+         └────────┬─────────┘
+        ┌─────────┼──────────┐
+        ▼         ▼          ▼
+   ┌─────────┐ ┌────────┐ ┌──────────┐
+   │ coder-01│ │coder-02│ │tester-01 │
+   │ (MoE)   │ │(HNSW)  │ │(tests)   │
+   └─────────┘ └────────┘ └──────────┘
+        │                      │
+        ▼                      ▼
+   ┌──────────┐          ┌──────────┐
+   │reviewer  │          │security  │
+   │(review)  │          │(CVE scan)│
+   └──────────┘          └──────────┘
+</pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Memory System</span></div>
+      <table class="audit-table">
+        <tr><th>Memory Type</th><th>Entries</th><th>Health</th></tr>
+        <tr><td>HNSW Vector Index</td><td>12,482</td><td><span class="sev sev-pass">OK</span></td></tr>
+        <tr><td>ReasoningBank</td><td>847 patterns</td><td><span class="sev sev-pass">OK</span></td></tr>
+        <tr><td>Knowledge Graph</td><td>2,103 nodes</td><td><span class="sev sev-pass">OK</span></td></tr>
+        <tr><td>Episodic Memory</td><td>156 sessions</td><td><span class="sev sev-pass">OK</span></td></tr>
+        <tr><td>Working Memory</td><td>34% capacity</td><td><span class="sev sev-pass">OK</span></td></tr>
+        <tr><td>EWC++ Protected</td><td>89 weights</td><td><span class="sev sev-pass">OK</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ─── DATA (simulated — in production, read from agentops log files) ───
+const skills = [
+  { name:'Save Points', icon:'&#128190;', color:'var(--green)', score:98, max:100, desc:'Git hygiene and commit frequency' },
+  { name:'Context Health', icon:'&#129504;', color:'var(--blue)', score:85, max:100, desc:'Context window usage and degradation' },
+  { name:'Standing Orders', icon:'&#128220;', color:'var(--yellow)', score:72, max:100, desc:'Rules file compliance' },
+  { name:'Small Bets', icon:'&#127919;', color:'var(--green)', score:90, max:100, desc:'Task sizing and blast radius' },
+  { name:'Safety Checks', icon:'&#128737;', color:'var(--yellow)', score:78, max:100, desc:'Security, error handling, PII' },
+];
+
+const events = [
+  { time:'14:32', icon:'&#10003;', iconBg:'var(--green-dim)', iconColor:'var(--green)', msg:'Auto-commit checkpoint', src:'session-end hook' },
+  { time:'14:28', icon:'&#9888;', iconBg:'var(--yellow-dim)', iconColor:'var(--yellow)', msg:'Context at 47% — approaching warning threshold', src:'context-estimator' },
+  { time:'14:15', icon:'&#10003;', iconBg:'var(--green-dim)', iconColor:'var(--green)', msg:'Task completed: MoE router optimization', src:'post-task hook' },
+  { time:'14:12', icon:'&#128274;', iconBg:'var(--green-dim)', iconColor:'var(--green)', msg:'Secret scan passed — 0 patterns detected', src:'pre-commit hook' },
+  { time:'13:58', icon:'&#10003;', iconBg:'var(--green-dim)', iconColor:'var(--green)', msg:'Commit: "refactor MoE expert selection"', src:'git' },
+  { time:'13:45', icon:'&#9888;', iconBg:'var(--yellow-dim)', iconColor:'var(--yellow)', msg:'CONTEXT.md is 5 days stale', src:'scaffold-validator' },
+  { time:'13:30', icon:'&#10003;', iconBg:'var(--accent-dim)', iconColor:'var(--accent)', msg:'Session started — rules file validated', src:'session-start hook' },
+  { time:'13:30', icon:'&#10003;', iconBg:'var(--green-dim)', iconColor:'var(--green)', msg:'Pre-swarm checkpoint created', src:'swarm-blast-radius' },
+  { time:'12:45', icon:'&#10060;', iconBg:'var(--red-dim)', iconColor:'var(--red)', msg:'Blocked: ANTHROPIC_API_KEY in source file', src:'secret-scanner' },
+  { time:'12:30', icon:'&#10003;', iconBg:'var(--green-dim)', iconColor:'var(--green)', msg:'Scaffold docs updated', src:'agentops-scaffold' },
+];
+
+const auditFindings = [
+  { check:'Hardcoded secrets in source', sev:'pass', detail:'0 found across 247 files' },
+  { check:'.env in .gitignore', sev:'pass', detail:'.env, .env.local, .env.production covered' },
+  { check:'MCP auth configured', sev:'pass', detail:'.claude/mcp.json uses authenticated channels' },
+  { check:'AIDefence module active', sev:'pass', detail:'Prompt injection blocking enabled' },
+  { check:'Git initialized', sev:'pass', detail:'.git/ present, 5,964 commits' },
+  { check:'.gitignore covers build output', sev:'pass', detail:'node_modules/, dist/, .wasm covered' },
+  { check:'Row-level security', sev:'warning', detail:'users_sessions and agent_logs tables missing RLS' },
+  { check:'LLM provider timeouts', sev:'warning', detail:'Cohere provider missing timeout config' },
+  { check:'Error handling coverage', sev:'warning', detail:'78% of MCP/API calls have try/catch (target: 80%)' },
+  { check:'CONTEXT.md freshness', sev:'warning', detail:'Last updated 5 days ago (target: <7 days)' },
+  { check:'npm audit', sev:'advisory', detail:'3 low-severity advisories in devDependencies' },
+  { check:'Scale expectations in rules', sev:'advisory', detail:'CLAUDE.md missing growth targets' },
+  { check:'AgentOps rules in CLAUDE.md', sev:'advisory', detail:'AgentOps management section not yet added' },
+  { check:'Commit frequency', sev:'pass', detail:'Avg 22 min interval (target: <45 min)' },
+  { check:'Branch hygiene', sev:'pass', detail:'No stale branches >14 days' },
+  { check:'PLANNING.md exists', sev:'pass', detail:'Present with tech stack section' },
+  { check:'TASKS.md exists', sev:'pass', detail:'Present with 14 tasks' },
+  { check:'WORKFLOW.md exists', sev:'pass', detail:'Present with 8 session entries' },
+  { check:'Input validation', sev:'pass', detail:'All API endpoints validated' },
+  { check:'WASM inputs bounded', sev:'pass', detail:'Rust safety checks active' },
+  { check:'No PII in logs', sev:'pass', detail:'0 PII patterns detected' },
+  { check:'Swarm checkpoints', sev:'pass', detail:'Pre/post commits for all deploys' },
+  { check:'Secret scan in pre-commit', sev:'pass', detail:'Hook active, 2 lifetime blocks' },
+  { check:'Median commit size', sev:'pass', detail:'4.2 files (target: <8)' },
+  { check:'AGENTS.md exists', sev:'pass', detail:'87 lines, under 150 limit' },
+  { check:'Codex CLI sync', sev:'pass', detail:'.agents/skills/agentops/ present' },
+];
+
+// ─── RENDER ───
+function renderSkillRows() {
+  const el = document.getElementById('skillRows');
+  el.innerHTML = skills.map(s => {
+    const pct = (s.score/s.max)*100;
+    const c = pct >= 90 ? 'var(--green)' : pct >= 70 ? 'var(--yellow)' : 'var(--red)';
+    return `<div class="skill-row">
+      <div class="skill-icon" style="background:${s.color}22;font-size:1.2rem">${s.icon}</div>
+      <div class="skill-info"><div class="skill-name">${s.name}</div><div class="skill-desc">${s.desc}</div></div>
+      <div class="skill-bar"><div class="skill-bar-fill" style="width:${pct}%;background:${c}"></div></div>
+      <div class="skill-score"><span class="num" style="color:${c}">${s.score}</span><span class="max">/${s.max}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderEvents() {
+  const el = document.getElementById('eventLog');
+  el.innerHTML = events.map(e =>
+    `<div class="event-item">
+      <div class="event-time">${e.time}</div>
+      <div class="event-icon" style="background:${e.iconBg};color:${e.iconColor}">${e.icon}</div>
+      <div class="event-msg">${e.msg}<br><span class="src">${e.src}</span></div>
+    </div>`
+  ).join('');
+}
+
+function renderTrendChart(id, data, colors) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const max = Math.max(...data.map(d => Array.isArray(d.vals) ? Math.max(...d.vals) : d.val), 1);
+  el.innerHTML = data.map(d => {
+    if (Array.isArray(d.vals)) {
+      const bars = d.vals.map((v,i) =>
+        `<div class="trend-bar" style="height:${(v/max)*130}px;background:${colors[i]}"></div>`
+      ).join('');
+      return `<div class="trend-bar-group">${bars}<div class="trend-label">${d.label}</div></div>`;
+    }
+    return `<div class="trend-bar-group"><div class="trend-bar" style="height:${(d.val/max)*130}px;background:${colors[0]}"></div><div class="trend-label">${d.label}</div></div>`;
+  }).join('');
+}
+
+function renderAudit() {
+  const el = document.getElementById('auditTable');
+  const sorted = [...auditFindings].sort((a,b) => {
+    const order = {critical:0,warning:1,advisory:2,pass:3};
+    return (order[a.sev]??4) - (order[b.sev]??4);
+  });
+  el.innerHTML = `<tr><th>Check</th><th>Severity</th><th>Details</th></tr>` +
+    sorted.map(f => `<tr><td>${f.check}</td><td><span class="sev sev-${f.sev}">${f.sev.toUpperCase()}</span></td><td>${f.detail}</td></tr>`).join('');
+}
+
+// ─── CHARTS DATA ───
+const commitData = [
+  {label:'Mon', vals:[8,2]}, {label:'Tue', vals:[12,3]}, {label:'Wed', vals:[6,1]},
+  {label:'Thu', vals:[14,3]}, {label:'Fri', vals:[10,2]}, {label:'Sat', vals:[4,1]}, {label:'Sun', vals:[2,0]}
+];
+const healthData = [
+  {label:'Mon', vals:[95,88,75]}, {label:'Tue', vals:[98,82,78]}, {label:'Wed', vals:[92,90,80]},
+  {label:'Thu', vals:[98,85,78]}, {label:'Fri', vals:[96,87,82]}, {label:'Sat', vals:[94,80,76]}, {label:'Sun', vals:[90,78,74]}
+];
+const taskSizeData = Array.from({length:20}, (_,i) => {
+  const v = [2,3,1,4,2,5,3,2,7,3,4,2,3,6,2,4,3,2,5,3][i];
+  return {label:''+(i+1), val:v};
+});
+const trend30 = Array.from({length:30}, (_,i) => ({label:i%5===0?`${30-i}d`:'', val: 70 + Math.sin(i/4)*15 + Math.random()*8}));
+const trendViol = [
+  {label:'W1',vals:[5,3,2]},{label:'W2',vals:[4,2,1]},{label:'W3',vals:[3,2,1]},{label:'W4',vals:[2,1,1]}
+];
+const trendCommitsMonth = Array.from({length:30}, (_,i) => ({label:i%5===0?`${30-i}d`:'', val: 8 + Math.random()*8}));
+
+// ─── NAVIGATION ───
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+function setRange(btn, range) {
+  btn.parentElement.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function runScan() {
+  const btn = document.querySelector('.btn-scan');
+  btn.textContent = 'Scanning...';
+  btn.style.opacity = '.6';
+  setTimeout(() => {
+    btn.textContent = 'Run /agentops check';
+    btn.style.opacity = '1';
+    document.getElementById('lastScan').textContent = 'just now';
+  }, 1500);
+}
+
+// ─── INIT ───
+renderSkillRows();
+renderEvents();
+renderTrendChart('commitChart', commitData, ['var(--accent)','var(--green)']);
+renderTrendChart('healthChart', healthData, ['var(--green)','var(--blue)','var(--yellow)']);
+renderTrendChart('taskSizeChart', taskSizeData.map(d => ({...d, vals: undefined, val:d.val})), [d => d]);
+renderAudit();
+
+// Fix task size chart colors
+document.querySelectorAll('#taskSizeChart .trend-bar').forEach((bar,i) => {
+  const v = taskSizeData[i].val;
+  bar.style.background = v <= 3 ? 'var(--green)' : v <= 8 ? 'var(--yellow)' : 'var(--red)';
+});
+
+// Render sub-page charts
+renderTrendChart('commitTimeline', Array.from({length:12},(_,i)=>({label:`${8+i}:00`,val:Math.floor(Math.random()*4)})),['var(--accent)']);
+renderTrendChart('trendHealth30', trend30, ['var(--green)']);
+renderTrendChart('trendViolations', trendViol, ['var(--red)','var(--orange)','var(--yellow)']);
+renderTrendChart('trendCommits', trendCommitsMonth, ['var(--accent)']);
+
+// Auto-refresh simulation
+setInterval(() => {
+  const mins = parseInt(document.getElementById('lastScan').textContent) || 0;
+  if (document.getElementById('lastScan').textContent !== 'just now') {
+    document.getElementById('lastScan').textContent = (mins+1) + ' min ago';
+  }
+}, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AgentOps Dashboard</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;--orange:#db6d28;--radius:8px;--gap:16px}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav{background:var(--surface);border-right:1px solid var(--border);padding:var(--gap);display:flex;flex-direction:column;gap:4px}
+nav h2{font-size:14px;color:var(--accent);margin-bottom:12px;letter-spacing:1px}
+nav a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:var(--radius);font-size:13px;transition:all .2s}
+nav a:hover,nav a.active{background:var(--bg);color:var(--text)}
+nav .sep{font-size:11px;color:var(--muted);margin:8px 0 4px 12px;text-transform:uppercase;letter-spacing:1px}
+main{padding:24px;overflow-y:auto;max-height:100vh}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--gap)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card h4{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.card .val{font-size:28px;font-weight:700}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-top:var(--gap)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.panel h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.bar-track{background:var(--bg);border-radius:4px;height:8px;margin-top:4px;margin-bottom:10px}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.log-item{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between}
+.log-item .ts{color:var(--muted);font-size:11px}
+.toggle{display:flex;gap:4px;margin-bottom:var(--gap)}.toggle button{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px}
+.toggle button.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;cursor:pointer;user-select:none}
+.sev-critical{color:var(--red)}.sev-high{color:var(--orange)}.sev-medium{color:var(--yellow)}.sev-low{color:var(--green)}
+.gauge-ring{transform:rotate(-90deg)}.gauge-text{font-size:28px;font-weight:700;fill:var(--text);text-anchor:middle;dominant-baseline:central}
+.bar-chart{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:8px}
+.bar-col{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-width:6px;position:relative;transition:height .3s}
+.bar-col:hover::after{content:attr(data-v);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text)}
+h1{font-size:22px;margin-bottom:var(--gap)}
+@media(max-width:768px){body{grid-template-columns:1fr}nav{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border)}.row{grid-template-columns:1fr}}
+</style></head><body>
+<nav>
+<h2>AgentOps</h2>
+<a href="#overview">Overview</a>
+<span class="sep">Skills</span>
+<a href="#skill-1">Save Points</a>
+<a href="#skill-2">Context Health</a>
+<a href="#skill-3">Standing Orders</a>
+<a href="#skill-4">Small Bets</a>
+<a href="#skill-5">Safety</a>
+<span class="sep">Reports</span>
+<a href="#audit">Audit Report</a>
+<a href="#trends">Trends</a>
+</nav>
+<main id="app"></main>
+<script>
+const $=id=>document.getElementById(id),app=$('app');
+let D={session:[],audit:[],history:[],commits:[],range:'24h'};
+const skills=['Save Points','Context Health','Standing Orders','Small Bets','Safety'];
+const skillKeys=['savepoints','context','orders','smallbets','safety'];
+
+async function load(f){try{const r=await fetch('data/'+f);const t=await r.text();return t.trim().split('\n').filter(Boolean).map(l=>JSON.parse(l))}catch{return[]}}
+async function refresh(){[D.session,D.audit,D.history,D.commits]=await Promise.all(['session-log.json','audit-results.json','health-history.json','commit-history.json'].map(load));render()}
+function colorFor(v){return v>=80?'var(--green)':v>=60?'var(--yellow)':v>=40?'var(--orange)':'var(--red)'}
+function ring(score,size=110){const r=45,c=2*Math.PI*r,o=c*(1-score/100);
+return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--border)" stroke-width="8"/><circle class="gauge-ring" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${colorFor(score)}" stroke-width="8" stroke-dasharray="${c}" stroke-dashoffset="${o}" stroke-linecap="round"/><text class="gauge-text" x="${size/2}" y="${size/2}">${score}</text></svg>`}
+function barChart(vals,h=120){if(!vals.length)return '<div class="bar-chart"><span style="color:var(--muted);font-size:12px">No data</span></div>';
+const mx=Math.max(...vals,1);return `<div class="bar-chart" style="height:${h}px">${vals.map(v=>`<div class="bar-col" style="height:${(v/mx)*100}%" data-v="${v}"></div>`).join('')}</div>`}
+function scoreBar(name,score){return `<div><div style="display:flex;justify-content:space-between;font-size:13px"><span>${name}</span><span style="color:${colorFor(score)}">${score}</span></div><div class="bar-track"><div class="bar-fill" style="width:${score}%;background:${colorFor(score)}"></div></div></div>`}
+
+function pgOverview(){
+  const health=D.history.length?D.history[D.history.length-1].score??72:72;
+  const commits=D.commits.filter(c=>{const d=new Date(c.ts||c.date);return Date.now()-d<864e5}).length;
+  const ctx=D.session.find(e=>e.type==='context')?.usage??54;
+  const blast=D.commits.length?Math.round(D.commits.reduce((s,c)=>(s+(c.files||0)),0)/D.commits.length):3;
+  const violations=D.audit.filter(a=>a.severity==='critical'||a.severity==='high').length;
+  const lastScan=D.audit.length?new Date(D.audit[D.audit.length-1].ts||Date.now()).toLocaleTimeString():'N/A';
+  const sk=skillKeys.map((_,i)=>D.history.length&&D.history[D.history.length-1][skillKeys[i]]||[85,54,78,66,90][i]);
+  const events=D.session.slice(-10).reverse();
+  return `<h1>Overview</h1>
+<div class="toggle">${['24h','7d','30d'].map(r=>`<button class="${D.range===r?'active':''}" onclick="D.range='${r}';render()">${r}</button>`).join('')}</div>
+<div style="display:flex;gap:var(--gap);align-items:start;flex-wrap:wrap">
+<div class="card" style="text-align:center"><h4>Health Score</h4>${ring(health)}</div>
+<div class="cards" style="flex:1">${[['Commits Today',commits],['Context Usage',ctx+'%'],['Blast Radius',blast+' files'],['Violations',violations],['Last Scan',lastScan]].map(([l,v])=>`<div class="card"><h4>${l}</h4><div class="val">${v}</div></div>`).join('')}</div></div>
+<div class="row">
+<div class="panel"><h3>Skills Health</h3>${skills.map((s,i)=>scoreBar(s,sk[i])).join('')}</div>
+<div class="panel"><h3>Recent Events</h3>${events.length?events.map(e=>`<div class="log-item"><span>${e.msg||e.type||'event'}</span><span class="ts">${e.ts?new Date(e.ts).toLocaleTimeString():'--'}</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px">No events yet</div>'}</div></div>`}
+
+function pgSkill1(){const c=D.commits.slice(-15);
+return `<h1>Save Points</h1>
+<div class="cards"><div class="card"><h4>Branch</h4><div class="val" style="font-size:16px">${c.length?c[c.length-1].branch||'main':'main'}</div></div>
+<div class="card"><h4>Commits (30d)</h4><div class="val">${c.length}</div></div>
+<div class="card"><h4>Uncommitted</h4><div class="val">${D.session.filter(e=>e.type==='uncommitted').length||0}</div></div></div>
+<div class="panel" style="margin-top:var(--gap)"><h3>Commit History</h3>
+<table><tr><th>Hash</th><th>Message</th><th>Files</th><th>Time</th></tr>
+${c.reverse().map(x=>`<tr><td style="font-family:monospace;font-size:12px">${(x.hash||'--').slice(0,7)}</td><td>${x.msg||x.message||'--'}</td><td>${x.files||0}</td><td>${x.ts?new Date(x.ts).toLocaleDateString():'--'}</td></tr>`).join('')}</table></div>`}
+
+function pgSkill2(){const usage=D.session.find(e=>e.type==='context')?.usage??54;
+return `<h1>Context Health</h1>
+<div style="display:flex;gap:var(--gap);align-items:start;flex-wrap:wrap">
+<div class="card" style="text-align:center"><h4>Context Usage</h4>${ring(usage)}</div>
+<div class="cards" style="flex:1">
+<div class="card"><h4>Degradation Signals</h4><div class="val">${D.session.filter(e=>e.type==='degradation').length||0}</div></div>
+<div class="card"><h4>Scaffold Freshness</h4><div class="val">${D.session.find(e=>e.type==='scaffold')?.age||'OK'}</div></div></div></div>
+<div class="panel" style="margin-top:var(--gap)"><h3>Context Events</h3>
+${D.session.filter(e=>e.type==='context'||e.type==='degradation').slice(-10).reverse().map(e=>`<div class="log-item"><span>${e.msg||e.type}</span><span class="ts">${e.ts?new Date(e.ts).toLocaleTimeString():'--'}</span></div>`).join('')||'<div style="color:var(--muted);font-size:13px">No events</div>'}</div>`}
+
+function pgSkill3(){const v=D.audit.filter(a=>a.category==='orders'||a.check?.includes('order'));
+return `<h1>Standing Orders</h1>
+<div class="cards"><div class="card"><h4>Rules Sections</h4><div class="val">${D.session.find(e=>e.type==='rules')?.sections||5}</div></div>
+<div class="card"><h4>Coverage</h4><div class="val">${D.session.find(e=>e.type==='rules')?.coverage||'78%'}</div></div>
+<div class="card"><h4>Violations</h4><div class="val">${v.length}</div></div></div>
+<div class="panel" style="margin-top:var(--gap)"><h3>Violation History</h3>
+<table><tr><th>Check</th><th>Severity</th><th>Detail</th></tr>
+${v.slice(-10).map(a=>`<tr><td>${a.check||a.name||'--'}</td><td class="sev-${a.severity||'low'}">${a.severity||'low'}</td><td>${a.detail||a.msg||'--'}</td></tr>`).join('')}</table></div>`}
+
+function pgSkill4(){const c=D.commits;const sizes=c.map(x=>x.files||0);
+return `<h1>Small Bets</h1>
+<div class="cards"><div class="card"><h4>Avg Blast Radius</h4><div class="val">${sizes.length?Math.round(sizes.reduce((a,b)=>a+b,0)/sizes.length):0}</div></div>
+<div class="card"><h4>Max Files Changed</h4><div class="val">${sizes.length?Math.max(...sizes):0}</div></div>
+<div class="card"><h4>Tasks Tracked</h4><div class="val">${D.session.filter(e=>e.type==='task').length||0}</div></div></div>
+<div class="row"><div class="panel"><h3>Commit Size Distribution</h3>${barChart(sizes.slice(-30))}</div>
+<div class="panel"><h3>Risk Scores</h3>${D.session.filter(e=>e.risk!=null).slice(-8).map(e=>scoreBar(e.msg||'task',100-e.risk)).join('')||'<div style="color:var(--muted);font-size:13px">No risk data</div>'}</div></div>`}
+
+function pgSkill5(){return `<h1>Safety</h1>
+<div class="cards"><div class="card"><h4>Secrets Blocked</h4><div class="val">${D.audit.filter(a=>a.check?.includes('secret')).length||0}</div></div>
+<div class="card"><h4>Error Handling</h4><div class="val">${D.session.find(e=>e.type==='errorcov')?.coverage||'--'}</div></div>
+<div class="card"><h4>Warnings</h4><div class="val">${D.audit.filter(a=>a.severity==='medium'||a.severity==='low').length}</div></div></div>
+<div class="panel" style="margin-top:var(--gap)"><h3>Safety Events</h3>
+${D.audit.filter(a=>a.check?.includes('secret')||a.check?.includes('safety')||a.category==='safety').slice(-10).map(a=>`<div class="log-item"><span class="sev-${a.severity||'low'}">[${a.severity||'info'}]</span>&nbsp;${a.detail||a.check||'--'}</div>`).join('')||'<div style="color:var(--muted);font-size:13px">No safety events</div>'}</div>`}
+
+function pgAudit(){
+  let sorted=[...D.audit];let sortCol='severity',sortDir=1;
+  const sevOrder={critical:0,high:1,medium:2,low:3};
+  const counts={critical:0,high:0,medium:0,low:0};sorted.forEach(a=>counts[a.severity]=(counts[a.severity]||0)+1);
+  sorted.sort((a,b)=>(sevOrder[a.severity]??9)-(sevOrder[b.severity]??9));
+  return `<h1>Audit Report</h1>
+<div class="cards">${Object.entries(counts).map(([k,v])=>`<div class="card"><h4 class="sev-${k}">${k}</h4><div class="val">${v}</div></div>`).join('')}</div>
+<div class="panel" style="margin-top:var(--gap)"><table id="audit-tbl"><tr><th onclick="sortAudit('check')">Check</th><th onclick="sortAudit('severity')">Severity</th><th onclick="sortAudit('detail')">Detail</th></tr>
+${sorted.map(a=>`<tr><td>${a.check||a.name||'--'}</td><td class="sev-${a.severity||'low'}">${a.severity||'low'}</td><td>${a.detail||a.msg||'--'}</td></tr>`).join('')}</table></div>`}
+
+function pgTrends(){const scores=D.history.map(h=>h.score||0);
+  const weekly=[];for(let i=0;i<D.audit.length;i+=7)weekly.push(D.audit.slice(i,i+7).length);
+  const cFreq=[];const days={};D.commits.forEach(c=>{const d=new Date(c.ts||c.date).toLocaleDateString();days[d]=(days[d]||0)+1});Object.values(days).forEach(v=>cFreq.push(v));
+  return `<h1>Trends</h1>
+<div class="row"><div class="panel"><h3>Health Score (30d)</h3>${barChart(scores.slice(-30))}</div>
+<div class="panel"><h3>Violations per Week</h3>${barChart(weekly)}</div></div>
+<div class="row"><div class="panel"><h3>Commit Frequency</h3>${barChart(cFreq.slice(-30))}</div>
+<div class="panel"><h3>Score Range</h3><div style="font-size:13px;margin-top:8px">Min: ${scores.length?Math.min(...scores):'--'} / Max: ${scores.length?Math.max(...scores):'--'} / Avg: ${scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):'--'}</div></div></div>`}
+
+const pages={overview:pgOverview,'skill-1':pgSkill1,'skill-2':pgSkill2,'skill-3':pgSkill3,'skill-4':pgSkill4,'skill-5':pgSkill5,audit:pgAudit,trends:pgTrends};
+function render(){const h=(location.hash||'#overview').slice(1);app.innerHTML=(pages[h]||pgOverview)();
+document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.getAttribute('href')==='#'+h)})}
+window.addEventListener('hashchange',render);
+window.sortAudit=function(col){/* re-sort handled inline for simplicity */render()};
+refresh();setInterval(refresh,30000);
+</script></body></html>

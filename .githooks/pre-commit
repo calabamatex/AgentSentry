@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# [AgentOps] Pre-commit hook
+# Scans staged files for secrets, PII in logs, and unsafe patterns.
+# Exit 1 = block commit. Exit 0 = allow.
+
+set -euo pipefail
+
+PREFIX="[AgentOps]"
+VIOLATIONS=()
+
+# Binary extensions to skip entirely
+BINARY_EXTENSIONS="png|jpg|jpeg|gif|ico|wasm"
+
+# Get list of staged files (Added, Copied, Modified)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || echo "")
+
+if [[ -z "$STAGED_FILES" ]]; then
+    exit 0
+fi
+
+# Helper: check if file is binary by extension
+is_binary() {
+    local file="$1"
+    if echo "$file" | grep -qiE "\.(${BINARY_EXTENSIONS})$"; then
+        return 0
+    fi
+    return 1
+}
+
+# ─── Check 1: Secret patterns in staged file content ───────────────────────
+
+SECRET_PATTERNS=(
+    'AKIA[0-9A-Z]{16}'
+    'sk_(live|test)_[0-9a-zA-Z]{24,}'
+    'ghp_[0-9a-zA-Z]{36}'
+    'glpat-[0-9a-zA-Z\-]{20,}'
+    'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'
+    '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'
+)
+
+# Hardcoded provider key variable names
+PROVIDER_KEY_VARS=(
+    'ANTHROPIC_API_KEY'
+    'OPENAI_API_KEY'
+    'GOOGLE_API_KEY'
+    'AWS_SECRET_ACCESS_KEY'
+    'STRIPE_SECRET_KEY'
+    'COHERE_API_KEY'
+    'GEMINI_API_KEY'
+    'AZURE_API_KEY'
+    'HUGGINGFACE_API_KEY'
+    'REPLICATE_API_TOKEN'
+)
+
+for file in $STAGED_FILES; do
+    # Skip binary files
+    if is_binary "$file"; then
+        continue
+    fi
+
+    # Get staged content
+    CONTENT=$(git show ":$file" 2>/dev/null) || continue
+
+    # 1a: Known secret token patterns
+    for pattern in "${SECRET_PATTERNS[@]}"; do
+        if echo "$CONTENT" | grep -qE "$pattern" 2>/dev/null; then
+            VIOLATIONS+=("Secret pattern in $file: matches $pattern")
+            break
+        fi
+    done
+
+    # 1b: Hardcoded provider key assignments (KEY = "value" or KEY: "value")
+    PROVIDER_PATTERN=$(IFS='|'; echo "${PROVIDER_KEY_VARS[*]}")
+    if echo "$CONTENT" | grep -qE "(${PROVIDER_PATTERN})\s*[=:]\s*['\"][a-zA-Z0-9_\-/+=]{10,}['\"]" 2>/dev/null; then
+        VIOLATIONS+=("Hardcoded provider API key assignment in $file")
+    fi
+
+    # 1c: Generic secret/token/password assignments with literal values
+    if echo "$CONTENT" | grep -qiE "(secret|token|password|passwd|api_key|api_secret|secret_key|access_token|auth_token|private_key)\s*[=:]\s*['\"][a-zA-Z0-9_\-/+=]{8,}['\"]" 2>/dev/null; then
+        VIOLATIONS+=("Hardcoded secret/token/password in $file")
+    fi
+done
+
+# ─── Check 2: .env files being committed ────────────────────────────────────
+
+for file in $STAGED_FILES; do
+    basename=$(basename "$file")
+    case "$basename" in
+        .env|.env.local|.env.production|.env.staging|.env.development)
+            VIOLATIONS+=("Environment file being committed: $file -- add to .gitignore")
+            ;;
+        .env.*)
+            # Allow .env.example and .env.template; block everything else
+            if [[ "$basename" != ".env.example" ]] && [[ "$basename" != ".env.template" ]]; then
+                VIOLATIONS+=("Environment file being committed: $file -- add to .gitignore")
+            fi
+            ;;
+    esac
+done
+
+# ─── Check 3: Credentials in config files (JSON/YAML) ──────────────────────
+
+for file in $STAGED_FILES; do
+    if is_binary "$file"; then
+        continue
+    fi
+
+    case "$file" in
+        *.json|*.yaml|*.yml|*.toml)
+            CONTENT=$(git show ":$file" 2>/dev/null) || continue
+            if echo "$CONTENT" | grep -qiE "(\"|\')?(token|secret|api_key|apiKey|api_secret|apiSecret|private_key|privateKey|password|passwd|credential)(\"|\')?\s*[=:]\s*(\"|\')[a-zA-Z0-9_\-/+=]{10,}(\"|\')" 2>/dev/null; then
+                VIOLATIONS+=("Possible credentials in config file: $file")
+            fi
+            ;;
+    esac
+done
+
+# ─── Check 4: PII in logging statements (.ts/.tsx/.js/.jsx/.py) ────────────
+
+PII_FIELDS="email|password|passwd|ssn|socialSecurity|social_security|creditCard|credit_card|cardNumber|card_number|dateOfBirth|date_of_birth"
+
+for file in $STAGED_FILES; do
+    case "$file" in
+        *.ts|*.tsx|*.js|*.jsx)
+            CONTENT=$(git show ":$file" 2>/dev/null) || continue
+            if echo "$CONTENT" | grep -qiE "console\.(log|warn|error|info|debug)\(.*\b(${PII_FIELDS})\b" 2>/dev/null; then
+                VIOLATIONS+=("PII in logging statement in $file")
+            fi
+            ;;
+        *.py)
+            CONTENT=$(git show ":$file" 2>/dev/null) || continue
+            if echo "$CONTENT" | grep -qiE "(logging\.(info|debug|warning|error|critical)|print)\(.*\b(${PII_FIELDS})\b" 2>/dev/null; then
+                VIOLATIONS+=("PII in logging statement in $file")
+            fi
+            ;;
+    esac
+done
+
+# ─── Check 5: Build artifacts (.wasm unless in test fixtures) ───────────────
+
+for file in $STAGED_FILES; do
+    if [[ "$file" == *.wasm ]]; then
+        if [[ "$file" != *fixture* ]] && [[ "$file" != *test* ]] && [[ "$file" != *__tests__* ]]; then
+            VIOLATIONS+=("WASM build artifact being committed: $file -- add to .gitignore")
+        fi
+    fi
+done
+
+# ─── Report ─────────────────────────────────────────────────────────────────
+
+if [[ ${#VIOLATIONS[@]} -gt 0 ]]; then
+    echo ""
+    echo "$PREFIX PRE-COMMIT CHECK FAILED"
+    echo ""
+    echo "Violations found (${#VIOLATIONS[@]}):"
+    for v in "${VIOLATIONS[@]}"; do
+        echo "  - $v"
+    done
+    echo ""
+    echo "Fix these issues and try again."
+    echo "To bypass (NOT recommended): git commit --no-verify"
+    exit 1
+fi
+
+exit 0

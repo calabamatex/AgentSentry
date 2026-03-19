@@ -1,0 +1,29 @@
+# Workflow Log
+
+<!-- Each work session gets an entry below. Newest entries go at the top. -->
+
+---
+
+## Session: YYYY-MM-DD
+
+**Branch:** _e.g., feature/add-export_
+
+### What Was Done
+- _Summarize the work completed during this session._
+- _Example: Implemented CSV export for user data_
+- _Example: Fixed off-by-one error in pagination logic_
+
+### Files Modified
+- _path/to/file.ext — brief description of change_
+- _path/to/other.ext — brief description of change_
+
+### Issues Encountered
+- _Example: Test runner hangs when run in parallel — switched to sequential for now_
+
+### What To Do Next
+- _Example: Add unit tests for the export function_
+- _Example: Review error handling in the upload path_
+
+---
+
+<!-- Copy the session block above to log each new session. -->

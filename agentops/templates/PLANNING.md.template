@@ -1,0 +1,40 @@
+# Project Planning
+
+## Project Overview
+<!-- Brief description of the project, its purpose, and target users. -->
+
+_Describe what this project does and why it exists._
+
+## Tech Stack
+<!-- List the primary languages, frameworks, libraries, and tools used. -->
+
+- **Language:**
+- **Framework:**
+- **Database:**
+- **Build Tool:**
+- **Testing:**
+- **Other:**
+
+## Architecture
+<!-- Describe the high-level structure of the project. Include key components, how they interact, and any relevant diagrams or references. -->
+
+_Describe the major components and how data flows between them._
+
+## Design Decisions
+<!-- Record important technical decisions and the reasoning behind them. This helps future contributors understand why things are the way they are. -->
+
+| Decision | Rationale | Date |
+|----------|-----------|------|
+| _Example: Use X over Y_ | _Reason for choosing X_ | _YYYY-MM-DD_ |
+
+## Constraints
+<!-- Document any known limitations, requirements, or boundaries that shape the project. -->
+
+- _Example: Must support offline use_
+- _Example: Response time must be under 200ms_
+
+## Open Questions
+<!-- Track unresolved decisions or areas that need further investigation. -->
+
+- [ ] _Example: Which authentication strategy should we use?_
+- [ ] _Example: How should we handle data migration?_

@@ -1,0 +1,38 @@
+{
+  "save_points": {
+    "auto_commit_after_minutes": 30,
+    "auto_branch_on_risk_score": 8,
+    "max_uncommitted_files_warning": 5
+  },
+  "context_health": {
+    "message_count_warning": 20,
+    "message_count_critical": 30,
+    "context_percent_warning": 60,
+    "context_percent_critical": 80
+  },
+  "rules_file": {
+    "max_lines": 300,
+    "required_sections": ["security", "error handling"]
+  },
+  "task_sizing": {
+    "medium_risk_threshold": 4,
+    "high_risk_threshold": 8,
+    "critical_risk_threshold": 13,
+    "max_files_per_task_warning": 5,
+    "max_files_per_task_critical": 8
+  },
+  "security": {
+    "block_on_secret_detection": true,
+    "scan_git_history": false,
+    "check_common_provider_keys": true
+  },
+  "budget": {
+    "session_budget": 10,
+    "monthly_budget": 500,
+    "warn_threshold": 0.80
+  },
+  "notifications": {
+    "verbose": false,
+    "prefix_all_messages": "[AgentOps]"
+  }
+}

@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# AgentOps post-commit hook (§8.2)
+# Runs after every commit — must never block, so we trap errors and exit 0.
+
+PREFIX="[AgentOps]"
+TMPBASE="${TMPDIR:-/tmp}/agentops"
+DASHBOARD_DIR="agentops/dashboard/data"
+SESSION_LOG="${DASHBOARD_DIR}/session-log.json"
+
+# Ensure we never block the developer workflow
+trap 'exit 0' ERR
+
+# ---------------------------------------------------------------------------
+# Gather commit metadata
+# ---------------------------------------------------------------------------
+COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null || echo "unknown")
+COMMIT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+COMMIT_DATE_SHORT=$(date +"%Y-%m-%d %H:%M")
+
+echo "${PREFIX} Post-commit processing for ${COMMIT_HASH}..."
+
+# ---------------------------------------------------------------------------
+# 1. Update WORKFLOW.md with commit summary
+# ---------------------------------------------------------------------------
+if [ -f "WORKFLOW.md" ]; then
+  echo "- ${COMMIT_DATE_SHORT} | ${COMMIT_HASH} | ${COMMIT_MSG}" >> WORKFLOW.md
+  echo "${PREFIX} Updated WORKFLOW.md with commit summary."
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Reset blast radius counter
+# ---------------------------------------------------------------------------
+BLAST_RADIUS_FILE="${TMPBASE}/blast-radius-files"
+if [ -f "${BLAST_RADIUS_FILE}" ]; then
+  : > "${BLAST_RADIUS_FILE}"
+  echo "${PREFIX} Blast radius counter reset."
+fi
+
+# ---------------------------------------------------------------------------
+# 3. Log commit metadata to session-log.json (NDJSON)
+# ---------------------------------------------------------------------------
+mkdir -p "${DASHBOARD_DIR}"
+printf '{"timestamp":"%s","type":"commit","message":"%s: %s","severity":"info"}\n' \
+  "${COMMIT_DATE}" "${COMMIT_HASH}" "${COMMIT_MSG}" >> "${SESSION_LOG}"
+echo "${PREFIX} Logged commit metadata to ${SESSION_LOG}."
+
+# ---------------------------------------------------------------------------
+# 4. Reset session modification counter
+# ---------------------------------------------------------------------------
+rm -f "${TMPBASE}"/git-hygiene-session-* 2>/dev/null || true
+echo "${PREFIX} Session modification counter reset."
+
+echo "${PREFIX} Post-commit complete."
+exit 0
