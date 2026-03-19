@@ -24,7 +24,7 @@ AGENTOPS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCRIPTS_DIR="$AGENTOPS_ROOT/scripts"
 CONFIG_FILE="$AGENTOPS_ROOT/agentops.config.json"
 PREFIX="[AgentOps]"
-VERSION="0.2.0"
+VERSION="0.3.0"
 
 # Find repo root
 if git rev-parse --is-inside-work-tree &>/dev/null; then
@@ -409,6 +409,101 @@ cmd_doctor() {
 }
 
 # ---------------------------------------------------------------------------
+# Subcommand: cost
+# ---------------------------------------------------------------------------
+cmd_cost() {
+    local cost_state="${TMPDIR:-/tmp}/agentops/cost-state"
+    local cost_log="$AGENTOPS_ROOT/dashboard/data/cost-log.json"
+
+    echo "$PREFIX Cost Summary (v$VERSION)"
+    echo "═══════════════════════════════════════════════"
+
+    if [[ -f "$cost_state" ]]; then
+        local session_total session_calls last_model last_update
+        if command -v jq &>/dev/null; then
+            session_total=$(jq -r '.session_total // "0"' "$cost_state" 2>/dev/null)
+            session_calls=$(jq -r '.session_calls // "0"' "$cost_state" 2>/dev/null)
+            last_model=$(jq -r '.last_model // "unknown"' "$cost_state" 2>/dev/null)
+            last_update=$(jq -r '.last_update // "unknown"' "$cost_state" 2>/dev/null)
+        else
+            session_total=$(grep -o '"session_total":"[^"]*"' "$cost_state" | head -1 | sed 's/.*:"//' | tr -d '"')
+            session_calls=$(grep -o '"session_calls":"[^"]*"' "$cost_state" | head -1 | sed 's/.*:"//' | tr -d '"')
+            last_model="unknown"
+            last_update="unknown"
+        fi
+
+        # Load budget from config
+        local session_budget="10"
+        if command -v jq &>/dev/null && [[ -f "$CONFIG_FILE" ]]; then
+            session_budget=$(jq -r '.budget.session_budget // 10' "$CONFIG_FILE" 2>/dev/null)
+        fi
+
+        echo "  Session total:  \$$session_total / \$$session_budget"
+        echo "  API calls:      $session_calls"
+        echo "  Last model:     $last_model"
+        echo "  Last updated:   $last_update"
+    else
+        echo "  No cost data yet — cost tracking starts on first tool use."
+    fi
+
+    # Monthly total
+    local month_key monthly_file
+    month_key="$(date +"%Y-%m")"
+    monthly_file="${TMPDIR:-/tmp}/agentops/cost-monthly-$month_key"
+    if [[ -f "$monthly_file" ]]; then
+        local monthly_budget="500"
+        if command -v jq &>/dev/null && [[ -f "$CONFIG_FILE" ]]; then
+            monthly_budget=$(jq -r '.budget.monthly_budget // 500' "$CONFIG_FILE" 2>/dev/null)
+        fi
+        echo "  Monthly total:  \$$(cat "$monthly_file") / \$$monthly_budget ($month_key)"
+    fi
+
+    # Log file stats
+    if [[ -f "$cost_log" ]]; then
+        local log_lines
+        log_lines=$(wc -l < "$cost_log" | tr -d ' ')
+        echo "  Log entries:    $log_lines (in $cost_log)"
+    fi
+    echo ""
+}
+
+# ---------------------------------------------------------------------------
+# Subcommand: lifecycle
+# ---------------------------------------------------------------------------
+cmd_lifecycle() {
+    local action="${1:-list}"
+    shift 2>/dev/null || true
+
+    case "$action" in
+        list|status|start|pause|complete|fail|cancel)
+            bash "$SCRIPTS_DIR/lifecycle-manager.sh" "$action" "$@"
+            ;;
+        *)
+            echo "$PREFIX Usage: agentops.sh lifecycle {list|status|start|pause|complete|fail|cancel} [agent-id]"
+            exit 1
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# Subcommand: plugin
+# ---------------------------------------------------------------------------
+cmd_plugin() {
+    local action="${1:-list}"
+    shift 2>/dev/null || true
+
+    case "$action" in
+        list|validate|run)
+            bash "$AGENTOPS_ROOT/plugins/plugin-loader.sh" "$action" "$@"
+            ;;
+        *)
+            echo "$PREFIX Usage: agentops.sh plugin {list|validate|run} [args...]"
+            exit 1
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
 # Subcommand: version
 # ---------------------------------------------------------------------------
 cmd_version() {
@@ -424,12 +519,15 @@ cmd_help() {
     echo "Usage: bash agentops/bin/agentops.sh <command>"
     echo ""
     echo "Commands:"
-    echo "  check     Quick session health check"
-    echo "  audit     Full project audit"
-    echo "  scaffold  Create or refresh scaffold documents"
-    echo "  doctor    Diagnose and fix configuration issues"
-    echo "  version   Print version"
-    echo "  help      Show this help message"
+    echo "  check      Quick session health check"
+    echo "  audit      Full project audit"
+    echo "  scaffold   Create or refresh scaffold documents"
+    echo "  doctor     Diagnose and fix configuration issues"
+    echo "  cost       Show cost tracking summary"
+    echo "  lifecycle  Manage agent lifecycle states"
+    echo "  plugin     Manage plugins (list/validate/run)"
+    echo "  version    Print version"
+    echo "  help       Show this help message"
 }
 
 # ---------------------------------------------------------------------------
@@ -437,12 +535,17 @@ cmd_help() {
 # ---------------------------------------------------------------------------
 SUBCOMMAND="${1:-help}"
 
+shift || true
+
 case "$SUBCOMMAND" in
-    check)    cmd_check ;;
-    audit)    cmd_audit ;;
-    scaffold) cmd_scaffold ;;
-    doctor)   cmd_doctor ;;
-    version)  cmd_version ;;
+    check)     cmd_check ;;
+    audit)     cmd_audit ;;
+    scaffold)  cmd_scaffold ;;
+    doctor)    cmd_doctor ;;
+    cost)      cmd_cost ;;
+    lifecycle) cmd_lifecycle "$@" ;;
+    plugin)    cmd_plugin "$@" ;;
+    version)   cmd_version ;;
     help|--help|-h) cmd_help ;;
     *)
         echo "$PREFIX Unknown command: $SUBCOMMAND"

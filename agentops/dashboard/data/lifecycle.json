@@ -1,0 +1,2 @@
+{"agent_id":"test-agent-1","from":"CREATED","to":"ACTIVE","timestamp":"2026-03-19T19:09:13Z"}
+{"agent_id":"test-agent-1","from":"ACTIVE","to":"COMPLETED","timestamp":"2026-03-19T19:09:13Z"}

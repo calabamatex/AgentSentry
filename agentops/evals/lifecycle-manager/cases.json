@@ -1,0 +1,72 @@
+[
+  {
+    "name": "start_new_agent",
+    "description": "Starting a new agent transitions CREATED -> ACTIVE",
+    "command": "lifecycle-manager.sh start test-agent",
+    "expected_exit": 0,
+    "expected_output_contains": "CREATED -> ACTIVE"
+  },
+  {
+    "name": "pause_active_agent",
+    "description": "Pausing an active agent transitions ACTIVE -> AWAITING",
+    "setup": "lifecycle-manager.sh start test-agent",
+    "command": "lifecycle-manager.sh pause test-agent",
+    "expected_exit": 0,
+    "expected_output_contains": "ACTIVE -> AWAITING"
+  },
+  {
+    "name": "resume_paused_agent",
+    "description": "Starting an AWAITING agent transitions AWAITING -> ACTIVE",
+    "setup": "lifecycle-manager.sh start test-agent && lifecycle-manager.sh pause test-agent",
+    "command": "lifecycle-manager.sh start test-agent",
+    "expected_exit": 0,
+    "expected_output_contains": "AWAITING -> ACTIVE"
+  },
+  {
+    "name": "complete_active_agent",
+    "description": "Completing an active agent transitions ACTIVE -> COMPLETED",
+    "setup": "lifecycle-manager.sh start test-agent",
+    "command": "lifecycle-manager.sh complete test-agent",
+    "expected_exit": 0,
+    "expected_output_contains": "ACTIVE -> COMPLETED"
+  },
+  {
+    "name": "fail_active_agent",
+    "description": "Failing an active agent transitions to FAILED",
+    "setup": "lifecycle-manager.sh start test-agent",
+    "command": "lifecycle-manager.sh fail test-agent",
+    "expected_exit": 0,
+    "expected_output_contains": "FAILED"
+  },
+  {
+    "name": "cancel_active_agent",
+    "description": "Cancelling an active agent transitions to CANCELLED",
+    "setup": "lifecycle-manager.sh start test-agent",
+    "command": "lifecycle-manager.sh cancel test-agent",
+    "expected_exit": 0,
+    "expected_output_contains": "CANCELLED"
+  },
+  {
+    "name": "cannot_complete_cancelled",
+    "description": "Cannot complete an already-cancelled agent",
+    "setup": "lifecycle-manager.sh start test-agent && lifecycle-manager.sh cancel test-agent",
+    "command": "lifecycle-manager.sh complete test-agent",
+    "expected_exit": 1,
+    "expected_output_contains": "ERROR"
+  },
+  {
+    "name": "list_shows_agents",
+    "description": "List subcommand displays all tracked agents",
+    "setup": "lifecycle-manager.sh start agent-1 && lifecycle-manager.sh start agent-2",
+    "command": "lifecycle-manager.sh list",
+    "expected_exit": 0,
+    "expected_output_contains": "AGENT-ID"
+  },
+  {
+    "name": "events_logged_ndjson",
+    "description": "State transitions emit NDJSON events to lifecycle.json",
+    "setup": "lifecycle-manager.sh start test-agent",
+    "assert": "lifecycle.json contains JSON line with agent_id and from/to states",
+    "expected_fields": ["agent_id", "from", "to", "timestamp"]
+  }
+]

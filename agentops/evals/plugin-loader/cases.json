@@ -1,0 +1,55 @@
+[
+  {
+    "name": "list_no_plugins",
+    "description": "List command with empty community dir shows no plugins",
+    "command": "plugin-loader.sh list",
+    "expected_exit": 0,
+    "expected_output_contains": "No plugins found"
+  },
+  {
+    "name": "validate_no_plugins",
+    "description": "Validate command with empty community dir passes",
+    "command": "plugin-loader.sh validate",
+    "expected_exit": 0,
+    "expected_output_contains": "No plugins to validate"
+  },
+  {
+    "name": "validate_valid_manifest",
+    "description": "Valid plugin manifest passes validation",
+    "setup": "create community/test-plugin/manifest.json with name, version, hooks",
+    "command": "plugin-loader.sh validate",
+    "expected_exit": 0,
+    "expected_output_contains": "OK"
+  },
+  {
+    "name": "validate_missing_name",
+    "description": "Manifest missing required 'name' field fails validation",
+    "setup": "create community/bad-plugin/manifest.json without name field",
+    "command": "plugin-loader.sh validate",
+    "expected_exit": 1,
+    "expected_output_contains": "missing required field"
+  },
+  {
+    "name": "validate_missing_version",
+    "description": "Manifest missing required 'version' field fails validation",
+    "setup": "create community/bad-plugin/manifest.json without version",
+    "command": "plugin-loader.sh validate",
+    "expected_exit": 1,
+    "expected_output_contains": "missing required field"
+  },
+  {
+    "name": "run_missing_plugin",
+    "description": "Running a non-existent plugin fails",
+    "command": "plugin-loader.sh run nonexistent PreToolUse",
+    "expected_exit": 1,
+    "expected_output_contains": "not found"
+  },
+  {
+    "name": "run_undeclared_hook",
+    "description": "Running an undeclared hook on a valid plugin fails",
+    "setup": "create community/test-plugin/manifest.json with only PreToolUse hook",
+    "command": "plugin-loader.sh run test-plugin PostToolUse",
+    "expected_exit": 1,
+    "expected_output_contains": "does not declare hook"
+  }
+]

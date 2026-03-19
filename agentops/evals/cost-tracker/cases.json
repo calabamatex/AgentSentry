@@ -1,0 +1,44 @@
+[
+  {
+    "name": "budget_config_loaded",
+    "description": "Cost tracker reads session_budget and monthly_budget from config",
+    "setup": "ensure agentops.config.json has budget section",
+    "assert": "cost-tracker.sh exits 0 and creates cost-state file",
+    "expected_exit": 0
+  },
+  {
+    "name": "session_cost_accumulates",
+    "description": "Cumulative session cost increments across calls",
+    "setup": "run cost-tracker.sh twice",
+    "assert": "session_calls in cost-state is 2 and session_total > 0",
+    "expected_exit": 0
+  },
+  {
+    "name": "warn_at_80_percent",
+    "description": "Warning emitted when session cost reaches 80% of budget",
+    "setup": "set session_budget=0.001 in config, run cost-tracker.sh",
+    "assert": "stdout contains 'Approaching session budget'",
+    "expected_output_contains": "Approaching session budget"
+  },
+  {
+    "name": "exceeded_at_100_percent",
+    "description": "Exceeded warning when session cost reaches budget limit",
+    "setup": "set session_budget=0.0001 in config, run cost-tracker.sh twice",
+    "assert": "stdout contains 'Budget exceeded'",
+    "expected_output_contains": "Budget exceeded"
+  },
+  {
+    "name": "ndjson_log_appended",
+    "description": "Each call appends an NDJSON line to cost-log.json",
+    "setup": "run cost-tracker.sh",
+    "assert": "cost-log.json has valid JSON lines with required fields",
+    "expected_fields": ["timestamp", "type", "model_tier", "call_cost", "session_total"]
+  },
+  {
+    "name": "never_blocks",
+    "description": "Cost tracker always exits 0 — advisory only, never blocks",
+    "setup": "run cost-tracker.sh with any input",
+    "assert": "exit code is always 0",
+    "expected_exit": 0
+  }
+]
