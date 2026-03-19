@@ -202,8 +202,15 @@ check_blast_radius() {
             done < <(sort -u "$tracking_file")
 
             if $committed; then
-                git commit -m "chore(agentops): auto-checkpoint — blast radius ${unique_count} files" 2>/dev/null || true
-                echo "$PREFIX Auto-checkpoint commit created."
+                local auto_enabled
+                auto_enabled=$(jq -r '.save_points.auto_commit_enabled // true' "$(dirname "${BASH_SOURCE[0]}")/../agentops.config.json" 2>/dev/null || echo "true")
+                if [[ "$auto_enabled" != "true" ]]; then
+                    git reset HEAD 2>/dev/null || true
+                    echo "$PREFIX ADVISORY: Auto-checkpoint would fire (blast radius ${unique_count} files) but auto_commit_enabled=false."
+                else
+                    git commit -m "chore(agentops): auto-checkpoint — blast radius ${unique_count} files" 2>/dev/null || true
+                    echo "$PREFIX Auto-checkpoint commit created."
+                fi
             fi
         fi
     fi

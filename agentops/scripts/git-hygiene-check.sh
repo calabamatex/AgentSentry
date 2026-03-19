@@ -39,6 +39,8 @@ else
     AUTO_COMMIT_MINUTES=30
 fi
 
+AUTO_COMMIT_ENABLED=$(jq -r '.save_points.auto_commit_enabled // true' "$CONFIG_FILE" 2>/dev/null || echo "true")
+
 # ---------------------------------------------------------------------------
 # Read hook input from stdin (PreToolUse passes tool name + payload)
 # ---------------------------------------------------------------------------
@@ -137,15 +139,19 @@ if [[ "$MINUTES_SINCE_COMMIT" -gt "$AUTO_COMMIT_MINUTES" ]] && [[ "$UNCOMMITTED_
 fi
 
 if [[ "$NEEDS_AUTO_SAVE" == true ]]; then
-    git add -A 2>/dev/null || true
-    COMMIT_MSG="[agentops] auto-save before modification"
-    if git commit -m "$COMMIT_MSG" --no-verify 2>/dev/null; then
-        ACTIONS_TAKEN+=("Auto-committed: \"$COMMIT_MSG\" (${UNCOMMITTED_COUNT} files, ${MINUTES_SINCE_COMMIT}min since last commit)")
-        # Reset session counter after auto-save
-        echo "0" > "$SESSION_STATE"
-        FILES_MODIFIED_COUNT=0
-        # Refresh uncommitted count
-        UNCOMMITTED_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
+        echo "$PREFIX ADVISORY: Auto-commit would fire (${UNCOMMITTED_COUNT} files, ${MINUTES_SINCE_COMMIT}min since last commit) but auto_commit_enabled=false."
+    else
+        git add -A 2>/dev/null || true
+        COMMIT_MSG="[agentops] auto-save before modification"
+        if git commit -m "$COMMIT_MSG" --no-verify 2>/dev/null; then
+            ACTIONS_TAKEN+=("Auto-committed: \"$COMMIT_MSG\" (${UNCOMMITTED_COUNT} files, ${MINUTES_SINCE_COMMIT}min since last commit)")
+            # Reset session counter after auto-save
+            echo "0" > "$SESSION_STATE"
+            FILES_MODIFIED_COUNT=0
+            # Refresh uncommitted count
+            UNCOMMITTED_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+        fi
     fi
 fi
 
@@ -158,14 +164,17 @@ fi
 
 # --- Mid-session checkpoint: 8+ file modifications without a checkpoint ---
 if [[ "$FILES_MODIFIED_COUNT" -ge "$MID_SESSION_CHECKPOINT_THRESHOLD" ]] && [[ "$UNCOMMITTED_COUNT" -gt 0 ]]; then
-    git add -A 2>/dev/null || true
-    CHECKPOINT_MSG="[agentops] mid-session checkpoint"
-    if git commit -m "$CHECKPOINT_MSG" --no-verify 2>/dev/null; then
-        ACTIONS_TAKEN+=("Mid-session checkpoint: \"$CHECKPOINT_MSG\" ($FILES_MODIFIED_COUNT modifications tracked)")
-        echo "0" > "$SESSION_STATE"
-        FILES_MODIFIED_COUNT=0
-        # Refresh uncommitted count
-        UNCOMMITTED_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
+        echo "$PREFIX ADVISORY: Mid-session checkpoint would fire ($FILES_MODIFIED_COUNT modifications) but auto_commit_enabled=false."
+    else
+        git add -A 2>/dev/null || true
+        CHECKPOINT_MSG="[agentops] mid-session checkpoint"
+        if git commit -m "$CHECKPOINT_MSG" --no-verify 2>/dev/null; then
+            ACTIONS_TAKEN+=("Mid-session checkpoint: \"$CHECKPOINT_MSG\" ($FILES_MODIFIED_COUNT modifications tracked)")
+            echo "0" > "$SESSION_STATE"
+            FILES_MODIFIED_COUNT=0
+            UNCOMMITTED_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+        fi
     fi
 fi
 

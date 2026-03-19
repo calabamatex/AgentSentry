@@ -17,6 +17,7 @@ PREFIX="[AgentOps]"
 MEDIUM_THRESHOLD=$(jq -r '.task_sizing.medium_risk_threshold // 4' "$CONFIG_FILE" 2>/dev/null || echo 4)
 HIGH_THRESHOLD=$(jq -r '.task_sizing.high_risk_threshold // 8' "$CONFIG_FILE" 2>/dev/null || echo 8)
 CRITICAL_THRESHOLD=$(jq -r '.task_sizing.critical_risk_threshold // 13' "$CONFIG_FILE" 2>/dev/null || echo 13)
+AUTO_COMMIT_ENABLED=$(jq -r '.save_points.auto_commit_enabled // true' "$CONFIG_FILE" 2>/dev/null || echo "true")
 
 # ---------------------------------------------------------------------------
 # Read the user prompt from stdin (JSON or plain text)
@@ -87,9 +88,13 @@ auto_commit() {
         local uncommitted
         uncommitted=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
         if [[ "$uncommitted" -gt 0 ]]; then
-            git add -A &>/dev/null || true
-            git commit -m "[AgentOps] Auto-checkpoint before risk-score $risk_score task" --no-verify &>/dev/null || true
-            echo "$PREFIX Auto-committed $uncommitted file(s) as safety checkpoint."
+            if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
+                echo "$PREFIX ADVISORY: Auto-checkpoint would fire ($uncommitted files) but auto_commit_enabled=false."
+            else
+                git add -A &>/dev/null || true
+                git commit -m "[AgentOps] Auto-checkpoint before risk-score $risk_score task" --no-verify &>/dev/null || true
+                echo "$PREFIX Auto-committed $uncommitted file(s) as safety checkpoint."
+            fi
         fi
     fi
 }
