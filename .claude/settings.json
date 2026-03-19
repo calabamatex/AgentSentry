@@ -30,6 +30,21 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash agentops/scripts/permission-enforcer.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash agentops/scripts/delegation-validator.sh",
+            "timeout": 5000
+          }
+        ]
       }
     ],
     "PostToolUse": [
