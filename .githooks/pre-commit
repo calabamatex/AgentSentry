@@ -18,6 +18,41 @@ if [[ -z "$STAGED_FILES" ]]; then
     exit 0
 fi
 
+# Load exclude paths from config
+AGENTOPS_CONFIG="$(git rev-parse --show-toplevel 2>/dev/null)/agentops/agentops.config.json"
+EXCLUDE_PATHS=""
+if command -v jq &>/dev/null && [[ -f "$AGENTOPS_CONFIG" ]]; then
+    EXCLUDE_PATHS=$(jq -r '.security.exclude_paths // [] | .[]' "$AGENTOPS_CONFIG" 2>/dev/null || true)
+fi
+
+# Filter staged files against exclude paths
+if [[ -n "$EXCLUDE_PATHS" ]]; then
+    FILTERED_FILES=""
+    for file in $STAGED_FILES; do
+        excluded=false
+        while IFS= read -r pattern; do
+            [[ -z "$pattern" ]] && continue
+            if python3 -c "
+import fnmatch, sys, pathlib
+path = sys.argv[1]
+pattern = sys.argv[2]
+if '**' in pattern:
+    match = pathlib.PurePath(path).match(pattern)
+else:
+    match = fnmatch.fnmatch(path, pattern)
+sys.exit(0 if match else 1)
+" "$file" "$pattern" 2>/dev/null; then
+                excluded=true
+                break
+            fi
+        done <<< "$EXCLUDE_PATHS"
+        if [[ "$excluded" != "true" ]]; then
+            FILTERED_FILES="$FILTERED_FILES $file"
+        fi
+    done
+    STAGED_FILES="$FILTERED_FILES"
+fi
+
 # Helper: check if file is binary by extension
 is_binary() {
     local file="$1"

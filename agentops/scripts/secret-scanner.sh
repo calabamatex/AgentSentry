@@ -31,6 +31,39 @@ FILE_PATH="$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null 
 CONTENT="$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // empty' 2>/dev/null || true)"
 
 # ---------------------------------------------------------------------------
+# 2b. Load suppressions and exclude paths from config
+# ---------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/../agentops.config.json"
+
+SUPPRESSIONS=""
+EXCLUDE_PATHS=""
+if command -v jq &>/dev/null && [[ -f "$CONFIG_FILE" ]]; then
+    SUPPRESSIONS=$(jq -r '.security.suppressions // [] | .[]' "$CONFIG_FILE" 2>/dev/null || true)
+    EXCLUDE_PATHS=$(jq -r '.security.exclude_paths // [] | .[]' "$CONFIG_FILE" 2>/dev/null || true)
+fi
+
+# Check if file path matches any exclude pattern
+if [[ -n "$FILE_PATH" && -n "$EXCLUDE_PATHS" ]]; then
+    while IFS= read -r pattern; do
+        [[ -z "$pattern" ]] && continue
+        if python3 -c "
+import fnmatch, sys, pathlib
+path = sys.argv[1]
+pattern = sys.argv[2]
+if '**' in pattern:
+    match = pathlib.PurePath(path).match(pattern)
+else:
+    match = fnmatch.fnmatch(path, pattern)
+sys.exit(0 if match else 1)
+" "$FILE_PATH" "$pattern" 2>/dev/null; then
+            # File is excluded from scanning
+            exit 0
+        fi
+    done <<< "$EXCLUDE_PATHS"
+fi
+
+# ---------------------------------------------------------------------------
 # 3. If there is no content to scan, allow silently
 # ---------------------------------------------------------------------------
 if [[ -z "$CONTENT" ]]; then
@@ -135,6 +168,27 @@ fi
 # --- OpenAI API key pattern ---
 if echo "$CONTENT" | grep -qE 'sk-[a-zA-Z0-9]{20,}T3BlbkFJ[a-zA-Z0-9]{20,}'; then
     VIOLATIONS+=("OpenAI API Key")
+fi
+
+# ---------------------------------------------------------------------------
+# 4b. Filter out suppressed violations
+# ---------------------------------------------------------------------------
+if [[ -n "$SUPPRESSIONS" && ${#VIOLATIONS[@]} -gt 0 ]]; then
+    FILTERED=()
+    for v in "${VIOLATIONS[@]}"; do
+        suppressed=false
+        while IFS= read -r suppression; do
+            [[ -z "$suppression" ]] && continue
+            if echo "$v" | grep -qi "$suppression" 2>/dev/null; then
+                suppressed=true
+                break
+            fi
+        done <<< "$SUPPRESSIONS"
+        if [[ "$suppressed" != "true" ]]; then
+            FILTERED+=("$v")
+        fi
+    done
+    VIOLATIONS=("${FILTERED[@]+"${FILTERED[@]}"}")
 fi
 
 # ---------------------------------------------------------------------------
