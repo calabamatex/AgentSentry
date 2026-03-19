@@ -4,24 +4,41 @@ Install AgentOps into an existing project in under ten minutes. This guide walks
 
 ---
 
-## 1. Prerequisites
+## Feature Maturity
 
-Make sure the following are available on your system before you begin:
+| Feature | Status |
+|---------|--------|
+| Save Points | **[stable]** |
+| Context Health | **[stable]** |
+| Standing Orders | **[stable]** |
+| Small Bets (Task Sizing) | **[stable]** |
+| Safety (Secret Scanner) | **[stable]** |
+| Distributed Tracing | **[beta]** |
+| Agent Identity & Permissions | **[beta]** |
+| Agent-to-Agent Delegation | **[beta]** |
+| Cost Tracking | **[beta]** |
+| Plugin Architecture | **[planned]** |
 
-| Tool | Minimum version | Purpose |
-|------|----------------|---------|
-| **bash** | 3.2+ | All AgentOps scripts are bash-based |
-| **git** | 2.x | Hooks, hygiene checks, commit tracking |
-| **jq** | 1.6+ (recommended) | Config parsing in shell scripts |
-| **python3** | 3.8+ | Required by some evaluation and analysis scripts |
+---
+
+## 1. Requirements
+
+| Category | Tool | Version | Purpose |
+|----------|------|---------|---------|
+| **Required** | bash | 3.2+ | All AgentOps scripts are bash-based |
+| **Required** | git | 2.x | Hooks, hygiene checks, commit tracking |
+| **Recommended** | jq | 1.6+ | Config parsing in shell scripts (falls back to defaults without it) |
+| **Optional** | python3 | 3.8+ | PII scanning, YAML parsing, glob matching |
+| **Evals only** | yq | latest | YAML eval fixtures |
 
 Verify them quickly:
 
 ```bash
 bash --version | head -1
 git --version
-jq --version        # optional but strongly recommended
-python3 --version   # optional — needed for eval scripts only
+jq --version        # recommended — scripts fall back to defaults without it
+python3 --version   # optional — needed for PII scanning and eval scripts
+yq --version        # optional — needed for YAML eval fixtures only
 ```
 
 ---

@@ -1,6 +1,6 @@
 # AgentOps
 
-<!-- Logo placeholder: agentops/dashboard/assets/logo.png -->
+![AgentOps Banner](agentops/dashboard/assets/agentops-banner.png)
 
 **A standalone management and safety framework for AI agent oversight.**
 
