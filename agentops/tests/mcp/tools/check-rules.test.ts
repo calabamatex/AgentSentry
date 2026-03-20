@@ -4,11 +4,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mockValidateRules = vi.fn();
-
 vi.mock('../../../src/primitives/rules-validation', () => ({
-  validateRules: mockValidateRules,
+  validateRules: vi.fn(),
 }));
+
+import { validateRules } from '../../../src/primitives/rules-validation';
+
+const mockValidateRules = validateRules as unknown as ReturnType<typeof vi.fn>;
 
 import { handler } from '../../../src/mcp/tools/check-rules';
 
