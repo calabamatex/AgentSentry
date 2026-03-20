@@ -13,7 +13,10 @@
   },
   "rules_file": {
     "max_lines": 300,
-    "required_sections": ["security", "error handling"]
+    "required_sections": [
+      "security",
+      "error handling"
+    ]
   },
   "task_sizing": {
     "medium_risk_threshold": 4,
@@ -28,7 +31,13 @@
     "check_common_provider_keys": true,
     "permission_fail_mode": "block",
     "suppressions": [],
-    "exclude_paths": ["node_modules/**", "vendor/**", ".git/**", "*.min.js", "*.min.css"]
+    "exclude_paths": [
+      "node_modules/**",
+      "vendor/**",
+      ".git/**",
+      "*.min.js",
+      "*.min.css"
+    ]
   },
   "budget": {
     "session_budget": 10,
@@ -46,5 +55,30 @@
     "database_path": "agentops/data/ops.db",
     "max_events": 100000,
     "auto_prune_days": 365
+  },
+  "enablement": {
+    "level": 3,
+    "skills": {
+      "save_points": {
+        "enabled": true,
+        "mode": "full"
+      },
+      "context_health": {
+        "enabled": true,
+        "mode": "full"
+      },
+      "standing_orders": {
+        "enabled": true,
+        "mode": "basic"
+      },
+      "small_bets": {
+        "enabled": false,
+        "mode": "off"
+      },
+      "proactive_safety": {
+        "enabled": false,
+        "mode": "off"
+      }
+    }
   }
 }
