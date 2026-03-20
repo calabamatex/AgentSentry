@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["name", "description", "category", "author", "version", "requires", "tags"],
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "description": { "type": "string", "maxLength": 200 },
+    "category": { "enum": ["monitor", "auditor", "dashboard", "integration"] },
+    "author": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "github": { "type": "string" },
+        "email": { "type": "string", "format": "email" }
+      }
+    },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "requires": {
+      "type": "object",
+      "required": ["agentops"],
+      "properties": {
+        "agentops": { "type": "string" },
+        "primitives": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "hooks": { "type": "array", "items": { "enum": ["PreToolUse", "PostToolUse", "SessionStart", "Stop"] } },
+    "mcp_tools": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "difficulty": { "enum": ["beginner", "intermediate", "advanced"] }
+  }
+}
