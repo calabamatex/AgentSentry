@@ -418,7 +418,7 @@ tests/
 
 ```bash
 # Phase 1 verification
-npm test && npm run build && npx @claude-flow/cli@latest security scan
+npm test && npm run build && npm run lint
 ```
 
 ---
@@ -869,37 +869,26 @@ Update `AgentOps-Product-Spec.md` to v4.0:
 
 ## Cross-Phase Coordination
 
-### RuFlo Memory Namespace
+### Shared Build Context
 
-All agents share the `agentops-build` memory namespace:
+All agents working on this plan share context through a common namespace. Key conventions:
 
-```bash
-# Key conventions:
-# agentops-build:schema-*     → data schemas and interfaces
-# agentops-build:decision-*   → architectural decisions
-# agentops-build:blocker-*    → issues requiring coordinator attention
-# agentops-build:complete-*   → phase completion signals
+- `schema-*` — data schemas and interfaces (e.g., StorageProvider, OpsEvent)
+- `decision-*` — architectural decisions (e.g., "384 dimensions for all-MiniLM-L6-v2: small model, good quality, MIT license, ONNX support")
+- `blocker-*` — issues requiring coordinator attention
+- `complete-*` — phase completion signals
 
-# Example: Memory Architect records a schema decision
-npx @claude-flow/cli@latest memory store \
-  --key "decision-embedding-dim" \
-  --value "384 dimensions (all-MiniLM-L6-v2). Chosen for: small model size (23MB), good quality, MIT license, ONNX support." \
-  --namespace agentops-build \
-  --tags "decision,embeddings,phase-1"
-```
+### Phase Gate Checklist
 
-### Checkpoint Hooks
+After each phase completes, run the full verification before proceeding:
 
 ```bash
-# After each phase, run:
-npx @claude-flow/cli@latest hooks run post-task --phase "phase-N"
-
-# This triggers:
-# 1. npm test (all tests must pass)
-# 2. npm run build (must succeed)
-# 3. npx @claude-flow/cli@latest security scan
-# 4. Memory store: record phase completion
-# 5. Git commit with phase tag
+# Phase gate (all must pass before moving to next phase):
+npm test                    # All tests pass
+npm run build               # Build succeeds
+npm run lint                # No lint errors
+# Security scan (use project's configured scanner)
+# Git commit with phase tag
 ```
 
 ### Dependency Graph
@@ -939,15 +928,15 @@ Phases 2 and 3 can run in parallel after Phase 1 completes. Phase 4 requires all
 
 ```bash
 # Full verification sequence
-npm test                                           # All tests pass (including provider parity)
-npm run build                                      # Build succeeds
-npx @claude-flow/cli@latest security scan          # No security issues
-node agentops/src/mcp/server.js --self-test        # MCP server responds to all 8 tools
-npm test -- --grep "provider-parity"               # Both backends produce identical results
-npm test -- --grep "migrate"                       # SQLite → Supabase migration preserves integrity
-bash scripts/validate-plugin.sh plugins/_templates/*  # All templates valid
-bash scripts/setup-wizard.sh --dry-run --level 1   # Level 1 config valid
-bash scripts/setup-wizard.sh --dry-run --level 5   # Level 5 config valid
+npm test                                               # All tests pass (including provider parity)
+npm run build                                          # Build succeeds
+npm run lint                                           # No lint errors
+node agentops/src/mcp/server.js --self-test            # MCP server responds to all 8 tools
+npm test -- --grep "provider-parity"                   # Both backends produce identical results
+npm test -- --grep "migrate"                           # SQLite → Supabase migration preserves integrity
+bash agentops/scripts/validate-plugin.sh plugins/_templates/*  # All templates valid
+bash agentops/scripts/setup-wizard.sh --dry-run --level 1      # Level 1 config valid
+bash agentops/scripts/setup-wizard.sh --dry-run --level 5      # Level 5 config valid
 ```
 
 ### Spec Diff Summary
@@ -972,3 +961,97 @@ After all phases complete, `AgentOps-Product-Spec.md` should show:
 | 2 | Phase 3: Primitives & Plugins (parallel with Phase 2) | Primitives Engineer, Plugin Architect, Tester | `src/primitives/*`, `plugins/_templates/*` |
 | 3 | Phase 4: Enablement & Enrichment | Spec Writer, Coder, Tester | Config, wizard, enrichment, spec v4.0 |
 | 3 | Final verification & commit | Coordinator, Security Auditor | All gates pass, tagged release |
+
+---
+
+## Appendix A: RuFlo Build Orchestration
+
+> **Scope:** This appendix contains instructions for the build orchestration layer only. RuFlo manages the multi-agent swarm that *builds* AgentOps. It is not a runtime dependency of the AgentOps product — end users never install, configure, or interact with RuFlo.
+
+### Swarm Initialization
+
+```bash
+# Initialize the build swarm (run once at project start)
+npx @claude-flow/cli@latest swarm init \
+  --topology hierarchical \
+  --max-agents 8 \
+  --strategy specialized
+
+# Seed shared build context
+npx @claude-flow/cli@latest memory store \
+  --key "agentops-v4-context" \
+  --value "OB1 memory integration build. See AgentOps-OB1-Analysis.md for rationale." \
+  --namespace agentops-build \
+  --tags "context,ob1,v4"
+```
+
+### Phase Task Spawning
+
+```bash
+# Phase 1: Memory Store (Critical)
+npx @claude-flow/cli@latest task create \
+  --name "phase-1-memory-store" \
+  --assign memory-architect,coder,tester,security-auditor \
+  --priority critical
+
+# Phase 2: MCP Server (Critical — after Phase 1)
+npx @claude-flow/cli@latest task create \
+  --name "phase-2-mcp-server" \
+  --assign mcp-engineer,security-auditor,tester \
+  --priority critical
+
+# Phase 3: Primitives & Plugins (High — parallel with Phase 2)
+npx @claude-flow/cli@latest task create \
+  --name "phase-3-primitives-plugins" \
+  --assign primitives-engineer,plugin-architect,tester \
+  --priority high
+
+# Phase 4: Enablement & Enrichment (High — after Phases 2+3)
+npx @claude-flow/cli@latest task create \
+  --name "phase-4-enablement-enrichment" \
+  --assign spec-writer,coder,tester \
+  --priority high
+```
+
+### Shared Memory Namespace
+
+All build agents share the `agentops-build` memory namespace for coordination:
+
+```bash
+# Key conventions:
+# agentops-build:schema-*     → data schemas and interfaces
+# agentops-build:decision-*   → architectural decisions
+# agentops-build:blocker-*    → issues requiring coordinator attention
+# agentops-build:complete-*   → phase completion signals
+
+# Example: Memory Architect records a schema decision
+npx @claude-flow/cli@latest memory store \
+  --key "decision-embedding-dim" \
+  --value "384 dimensions (all-MiniLM-L6-v2). Chosen for: small model size (23MB), good quality, MIT license, ONNX support." \
+  --namespace agentops-build \
+  --tags "decision,embeddings,phase-1"
+```
+
+### Phase Gate Hooks
+
+```bash
+# After each phase, run the full gate via RuFlo hooks:
+npx @claude-flow/cli@latest hooks run post-task --phase "phase-N"
+
+# This triggers:
+# 1. npm test (all tests must pass)
+# 2. npm run build (must succeed)
+# 3. npx @claude-flow/cli@latest security scan
+# 4. Memory store: record phase completion
+# 5. Git commit with phase tag
+```
+
+### Security Scanning
+
+```bash
+# Run after every phase and before any commit:
+npx @claude-flow/cli@latest security scan
+
+# Run specifically after security-related changes:
+npx @claude-flow/cli@latest security scan --deep
+```
