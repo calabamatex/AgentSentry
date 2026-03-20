@@ -16,6 +16,8 @@
 
 AgentOps is a standalone management and safety framework that any agentic developer installs into their project to monitor their AI agents. While your agents execute tasks autonomously, AgentOps runs parallel to them—tracking version control discipline, context health, rules compliance, task sizing, and proactive safety checks. It enforces best practices without getting in the way.
 
+AgentOps maintains persistent, searchable memory of all agent operations across sessions, enabling pattern detection, root cause analysis, and semantic search over your project's operational history.
+
 AgentOps is not a replacement for LLM provider dashboards or agent monitoring tools. Those track agent *performance*. AgentOps tracks agent *management hygiene*—the practices that prevent data loss, context drift, blast radius problems, and security gaps.
 
 ### 1.2 What AgentOps Is Not
@@ -58,6 +60,12 @@ your-project/
 │   ├── audit/
 │   ├── evals/
 │   ├── plugins/
+│   ├── src/
+│   │   ├── memory/          # Persistent memory store with hash-chained events
+│   │   ├── mcp/             # MCP server interface (8 tools, stdio+HTTP)
+│   │   ├── primitives/      # Composable TypeScript primitives (7 modules)
+│   │   └── enablement/      # Progressive skill enablement engine
+│   ├── models/              # Embedding models (auto-downloaded)
 │   └── agentops.config.json
 ├── .claude/                   # Your Claude Code config (AgentOps adds hooks)
 ├── .cursorrules              # Your Cursor rules (AgentOps can sync)
@@ -80,6 +88,8 @@ your-project/
 3. **Generic, not opinionated.** AgentOps knows nothing about your tech stack, agent architecture, or deployment model. It watches for universal safety issues.
 
 4. **Installable, not magical.** Install AgentOps from an npm package, a GitHub release, or a simple copy-paste. Remove it by deleting the `agentops/` directory and the appended rules sections. No permanent magic.
+
+5. **Memory-aware** — every agent event is captured, indexed, and searchable by meaning. Events form a hash chain for tamper detection.
 
 ---
 
