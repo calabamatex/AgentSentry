@@ -622,7 +622,7 @@ Central publish/subscribe system for hook events. Uses a singleton pattern so al
 | **Path** | `agentops/src/memory/store.ts` |
 | **Spec section** | Section 25 (Persistent Operations Memory) |
 
-Persistent, hash-chained event storage with vector search. Provider-agnostic (SQLite default, Supabase for teams).
+Persistent, hash-chained event storage with vector search. Provider-agnostic (SQLite default; Supabase for teams planned for a future release).
 
 **Exports:**
 
