@@ -870,54 +870,11 @@ Single self-contained HTML file with inline CSS and JavaScript. Uses:
 
 ## 10. Implementation Phases
 
-### Phase 1: Foundation (Week 1)
-
-| Component | Priority | Effort |
-|---|---|---|
-| `secret-scanner.sh` | P0 | 3h |
-| `git-hygiene-check.sh` | P0 | 2h |
-| Session start validation hook | P0 | 2h |
-| AGENTS.md rules template | P0 | 1h |
-| `.githooks/pre-commit` | P0 | 2h |
-| `/agentops check` (basic) | P1 | 2h |
-
-### Phase 2: Monitoring (Week 2)
-
-| Component | Priority | Effort |
-|---|---|---|
-| `context-estimator.sh` | P0 | 3h |
-| `task-sizer.sh` | P0 | 4h |
-| Blast radius PostToolUse hook | P1 | 3h |
-| Auto-commit on session end | P1 | 2h |
-| `/agentops check` full version | P1 | 3h |
-
-### Phase 3: Scaffold System (Week 3)
-
-| Component | Priority | Effort |
-|---|---|---|
-| Scaffold templates | P0 | 3h |
-| `/agentops scaffold` command | P0 | 2h |
-| `scaffold-validator.sh` | P1 | 2h |
-| Handoff message generator | P1 | 2h |
-
-### Phase 4: Deep Auditing (Week 4)
-
-| Component | Priority | Effort |
-|---|---|---|
-| `security-audit.sh` (full) | P0 | 8h |
-| Error handling audit | P1 | 4h |
-| `rules-file-linter.sh` | P1 | 3h |
-| `/agentops audit` full report | P1 | 4h |
-
-### Phase 5: Dashboard (Week 5-6)
-
-| Component | Priority | Effort |
-|---|---|---|
-| Dashboard HTML shell | P0 | 4h |
-| Overview page | P0 | 4h |
-| Hook data writers | P0 | 4h |
-| 5 Skill detail pages | P1 | 6h |
-| Audit report page | P1 | 3h |
+AgentOps v4.0 implementation:
+- **Phase 1:** Persistent Memory Store — hash-chained event storage with vector search
+- **Phase 2:** MCP Server Interface — 8 tools exposed via stdio and HTTP transport
+- **Phase 3:** Primitives & Plugin Model — 7 composable TypeScript modules, plugin templates
+- **Phase 4:** Progressive Enablement — 5-level adoption, auto-classification, semantic audit
 
 ---
 
@@ -1351,6 +1308,8 @@ If any record is modified, all subsequent hashes break.
 | Dashboard: Audit Trail page | P1 |
 | Compliance report generator | P2 |
 
+Audit records support optional semantic indexing. Natural language queries like 'database schema changes that caused issues' return ranked results from the hash-chained audit history.
+
 ---
 
 ## 20. Agent-to-Agent Trust & Delegation
@@ -1476,6 +1435,8 @@ Central pub/sub system for all extensions:
 ```
 
 Every hook emits events. Plugins subscribe to events. The dashboard subscribes to everything.
+
+Plugins follow a formal contribution model with 4 categories (monitor, auditor, dashboard, integration). Each plugin requires a metadata.json validated against a JSON Schema, a README with 6 required sections, and passes 11 automated validation checks.
 
 ### 21.4 Implementation Components
 
