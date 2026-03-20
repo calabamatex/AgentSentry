@@ -264,13 +264,7 @@ interface MemoryStore {
 }
 ```
 
-**RuFlo memory checkpoint:**
-```bash
-npx @claude-flow/cli@latest memory store \
-  --key "memory-store-schema" \
-  --value "Dual-backend: SQLite+sqlite-vec (default local) and Supabase+pgvector (opt-in teams). StorageProvider interface in providers/storage-provider.ts. 384-dim embeddings. Hash-chained. Migration tool for SQLite→Supabase." \
-  --namespace agentops-build
-```
+**Build checkpoint:** Record architectural decision — dual-backend StorageProvider with SQLite default and Supabase opt-in. 384-dim embeddings. Hash-chained. Migration tool for SQLite→Supabase.
 
 ### 1.2 Embedding Provider Abstraction (`src/memory/embeddings.ts`) — Coder
 
