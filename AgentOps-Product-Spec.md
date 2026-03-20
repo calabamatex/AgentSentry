@@ -1467,19 +1467,19 @@ These principles govern all design decisions:
 
 ## 23. Framework Evolution Roadmap
 
-### Current → v3.0 → v4.0
+### Current → v4.0 → v5.0
 
 ```
-CURRENT (v2.0)          v3.0 (Next 8 Weeks)      v4.0 (Post-Stabilization)
+CURRENT (v3.0)          v4.0 (Current)            v5.0 (Post-Stabilization)
 ─────────────────       ─────────────────        ─────────────────
-5 Core Skills           + Event Bus Core         + Plugin Marketplace
-Shell Scripts           + Tracing (OTEL)         + Self-Improvement
-NDJSON Logs             + Cost Metering          + Delegation Tokens
-HTML Dashboard          + Agent Identity         + Compliance Reports
-Generic Framework       + Lifecycle States       + Community Plugins
-                        + Provider Health        + Behavioral Evals
-                        + Audit Trail
-                        + Testing Framework
+5 Core Skills           + Persistent Memory      + Plugin Marketplace
+Shell Scripts           + MCP Server (8 tools)   + Self-Improvement
+NDJSON Logs             + 7 TS Primitives        + Delegation Tokens
+HTML Dashboard          + Progressive Enablement + Compliance Reports
+Event Bus Core          + Semantic Search        + Community Plugins
+Tracing (OTEL)          + Hash-Chained Events    + Behavioral Evals
+Agent Identity          + Plugin Contribution
+Audit Trail             + Setup Wizard
 ```
 
 ### v3.0 Priority Stack (8 Weeks)
@@ -1494,6 +1494,73 @@ Generic Framework       + Lifecycle States       + Community Plugins
 | 6 | Append-only audit trail | Event bus |
 | 7 | Provider health monitoring | Tracing + cost metering |
 | 8 | Eval framework | All modules stable |
+
+---
+
+## 25. Persistent Operations Memory
+
+AgentOps captures every operational event (decisions, violations, incidents, patterns, handoffs, audit findings) into a persistent, hash-chained memory store. Events are:
+
+- **Immutable:** Each event's hash includes the previous event's hash, forming a tamper-evident chain
+- **Searchable:** Both structured queries (by type, severity, skill, date range) and semantic vector search
+- **Provider-agnostic:** SQLite (local, default) or Supabase (team/cloud) backends via the StorageProvider interface
+- **Embedding-aware:** Auto-detects ONNX, Ollama, or OpenAI embedding providers for semantic search
+
+Key APIs: `MemoryStore.capture()`, `MemoryStore.search()`, `MemoryStore.stats()`, `MemoryStore.verifyChain()`
+
+---
+
+## 26. MCP Server Interface
+
+AgentOps exposes 8 tools via the Model Context Protocol (MCP), enabling any AI client to query the management layer:
+
+| Tool | Purpose |
+|------|---------|
+| `agentops_check_git` | Git hygiene status and risk score |
+| `agentops_check_context` | Context window health estimation |
+| `agentops_check_rules` | Rules compliance validation |
+| `agentops_size_task` | Task risk scoring and decomposition |
+| `agentops_scan_security` | Secret and vulnerability detection |
+| `agentops_capture_event` | Persistent event capture |
+| `agentops_search_history` | Semantic search across event history |
+| `agentops_health` | System health dashboard |
+
+**Transport:** Stdio (default, for Claude Code/Cursor) or HTTP (optional, with access key auth and rate limiting).
+**Integration:** `claude mcp add agentops -- node agentops/dist/src/mcp/server.js`
+
+---
+
+## 27. Primitives Library
+
+Seven composable TypeScript primitives extracted from the core skills:
+
+| Primitive | Key Export | Used By |
+|-----------|-----------|---------|
+| checkpoint-and-branch | `createCheckpoint()`, `createSafetyBranch()` | Save Points, Small Bets |
+| rules-validation | `validateRules()`, `RuleViolation` | Standing Orders, Proactive Safety |
+| risk-scoring | `assessRisk()`, `RiskAssessment` | Small Bets, Proactive Safety |
+| context-estimation | `estimateContext()`, `ContextHealth` | Context Health, Small Bets |
+| scaffold-update | `updateScaffold()`, `ScaffoldResult` | Context Health, Standing Orders |
+| secret-detection | `scanForSecrets()`, `SecretFinding` | Save Points, Proactive Safety |
+| event-capture | `captureEvent()` | All skills |
+
+Primitives enable plugins and MCP tools to share logic without duplicating shell scripts.
+
+---
+
+## 28. Progressive Enablement
+
+AgentOps supports 5 adoption levels, allowing teams to start simple and add capabilities as comfort grows:
+
+| Level | Name | Skills Active |
+|-------|------|--------------|
+| 1 | Safe Ground | Save Points |
+| 2 | Clear Head | + Context Health |
+| 3 | House Rules | + Standing Orders |
+| 4 | Right Size | + Small Bets |
+| 5 | Full Guard | + Proactive Safety |
+
+The setup wizard (`scripts/setup-wizard.sh`) generates the appropriate configuration for any level. The dashboard adapts to show only enabled skills, with upgrade prompts for locked capabilities.
 
 ---
 
