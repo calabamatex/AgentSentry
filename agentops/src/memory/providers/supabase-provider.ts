@@ -59,4 +59,8 @@ export class SupabaseProvider implements StorageProvider {
   async getChain(_since?: string): Promise<OpsEvent[]> {
     throw new NotImplementedError('getChain');
   }
+
+  async prune(_options: { maxEvents?: number; maxAgeDays?: number }): Promise<{ deleted: number }> {
+    throw new NotImplementedError('prune');
+  }
 }

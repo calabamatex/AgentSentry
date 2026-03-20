@@ -61,6 +61,19 @@ export class MemoryStore {
     }
 
     this.initialized = true;
+
+    // Auto-prune if configured
+    try {
+      const config = loadMemoryConfig();
+      if (config.max_events || config.auto_prune_days) {
+        await this.provider.prune({
+          maxEvents: config.max_events,
+          maxAgeDays: config.auto_prune_days,
+        });
+      }
+    } catch {
+      // Pruning is best-effort
+    }
   }
 
   async capture(input: OpsEventInput): Promise<OpsEvent> {
@@ -177,10 +190,74 @@ export class MemoryStore {
     return this.provider.aggregate(options ?? {});
   }
 
+  async prune(options?: { maxEvents?: number; maxAgeDays?: number }): Promise<{ deleted: number }> {
+    await this.ensureInitialized();
+    const config = loadMemoryConfig();
+    const maxEvents = options?.maxEvents ?? config.max_events ?? 100000;
+    const maxAgeDays = options?.maxAgeDays ?? config.auto_prune_days ?? 365;
+    return this.provider.prune({ maxEvents, maxAgeDays });
+  }
+
   async verifyChain(since?: string): Promise<ChainVerification> {
     await this.ensureInitialized();
+
+    // Try incremental verification from last checkpoint
+    let startHash: string | undefined;
+    let previouslyVerified = 0;
+
+    if (!since && this.provider.getLastChainCheckpoint) {
+      try {
+        const checkpoint = await this.provider.getLastChainCheckpoint();
+        if (checkpoint) {
+          startHash = checkpoint.lastEventHash;
+          previouslyVerified = checkpoint.eventsVerified;
+          // Get events after the checkpoint event's timestamp
+          const checkpointEvent = await this.provider.getById(checkpoint.lastEventId);
+          if (checkpointEvent) {
+            since = checkpointEvent.timestamp;
+          }
+        }
+      } catch {
+        // Fall through to full verification
+      }
+    }
+
     const chain = await this.provider.getChain(since);
 
+    if (chain.length === 0) {
+      return { valid: true, total_checked: previouslyVerified };
+    }
+
+    // If incremental, verify first event links to checkpoint
+    if (startHash && chain[0].prev_hash !== startHash) {
+      // Chain broken at checkpoint boundary -- do full verification
+      const fullChain = await this.provider.getChain();
+      return this.verifyChainInternal(fullChain);
+    }
+
+    const result = this.verifyChainInternal(chain);
+
+    // Save checkpoint if verification passed
+    if (result.valid && chain.length > 0 && this.provider.saveChainCheckpoint) {
+      const lastEvent = chain[chain.length - 1];
+      try {
+        await this.provider.saveChainCheckpoint({
+          lastEventId: lastEvent.id,
+          lastEventHash: lastEvent.hash,
+          eventsVerified: previouslyVerified + chain.length,
+        });
+      } catch {
+        // Checkpoint save is best-effort
+      }
+    }
+
+    return {
+      ...result,
+      total_checked: result.valid ? previouslyVerified + result.total_checked : result.total_checked,
+    };
+  }
+
+  private verifyChainInternal(chain: OpsEvent[]): ChainVerification {
     if (chain.length === 0) {
       return { valid: true, total_checked: 0 };
     }

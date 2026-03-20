@@ -29,4 +29,9 @@ export interface StorageProvider {
   aggregate(options: AggregateOptions): Promise<OpsStats>;
 
   getChain(since?: string): Promise<OpsEvent[]>;
+
+  prune(options: { maxEvents?: number; maxAgeDays?: number }): Promise<{ deleted: number }>;
+
+  saveChainCheckpoint?(checkpoint: { lastEventId: string; lastEventHash: string; eventsVerified: number }): Promise<void>;
+  getLastChainCheckpoint?(): Promise<{ lastEventId: string; lastEventHash: string; eventsVerified: number; verifiedAt: string } | null>;
 }

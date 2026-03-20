@@ -77,9 +77,9 @@ export class SqliteProvider implements StorageProvider {
     );
 
     if (event.embedding && event.embedding.length > 0) {
-      const embStmt = db.prepare('INSERT INTO ops_embeddings (id, embedding) VALUES (?, ?)');
+      const embStmt = db.prepare('INSERT INTO ops_embeddings (id, embedding, timestamp) VALUES (?, ?, ?)');
       const buffer = Buffer.from(new Float32Array(event.embedding).buffer);
-      embStmt.run(event.id, buffer);
+      embStmt.run(event.id, buffer, event.timestamp);
     }
   }
 
@@ -109,30 +109,51 @@ export class SqliteProvider implements StorageProvider {
     const limit = options.limit ?? 10;
     const threshold = options.threshold ?? 0.5;
 
-    // Get all embeddings and compute cosine similarity in JS
-    const embRows = db.prepare('SELECT id, embedding FROM ops_embeddings').all() as { id: string; embedding: Buffer }[];
-    if (embRows.length === 0) return [];
+    // Pre-filter embeddings by timestamp if 'since' is provided
+    let embQuery = 'SELECT e.id, e.embedding FROM ops_embeddings e';
+    const embParams: any[] = [];
 
-    const scores: { id: string; score: number }[] = [];
-    for (const row of embRows) {
-      const stored = Array.from(new Float32Array(row.embedding.buffer, row.embedding.byteOffset, row.embedding.byteLength / 4));
-      const score = cosineSimilarity(embedding, stored);
-      if (score >= threshold) {
-        scores.push({ id: row.id, score });
-      }
+    if (options.since) {
+      embQuery += ' WHERE e.timestamp >= ?';
+      embParams.push(options.since);
     }
-    scores.sort((a, b) => b.score - a.score);
 
-    const topIds = scores.slice(0, limit * 2); // over-fetch for filtering
+    // Process in chunks of 1000 to avoid loading all into memory
+    const CHUNK_SIZE = 1000;
+    let offset = 0;
+    const topScores: { id: string; score: number }[] = [];
+
+    while (true) {
+      const chunk = db.prepare(`${embQuery} LIMIT ? OFFSET ?`).all(...embParams, CHUNK_SIZE, offset) as { id: string; embedding: Buffer }[];
+      if (chunk.length === 0) break;
+
+      for (const row of chunk) {
+        const stored = Array.from(new Float32Array(row.embedding.buffer, row.embedding.byteOffset, row.embedding.byteLength / 4));
+        const score = cosineSimilarity(embedding, stored);
+        if (score >= threshold) {
+          // Maintain a sorted top-N list
+          if (topScores.length < limit * 2) {
+            topScores.push({ id: row.id, score });
+            topScores.sort((a, b) => b.score - a.score);
+          } else if (score > topScores[topScores.length - 1].score) {
+            topScores[topScores.length - 1] = { id: row.id, score };
+            topScores.sort((a, b) => b.score - a.score);
+          }
+        }
+      }
+
+      offset += CHUNK_SIZE;
+    }
+
+    // Fetch full events and apply remaining filters
     const results: SearchResult[] = [];
-    for (const { id, score } of topIds) {
+    for (const { id, score } of topScores) {
       if (results.length >= limit) break;
       const event = await this.getById(id);
       if (!event) continue;
       if (options.event_type && event.event_type !== options.event_type) continue;
       if (options.severity && event.severity !== options.severity) continue;
       if (options.skill && event.skill !== options.skill) continue;
-      if (options.since && event.timestamp < options.since) continue;
       if (options.session_id && event.session_id !== options.session_id) continue;
       results.push({ event, score });
     }
@@ -194,6 +215,59 @@ export class SqliteProvider implements StorageProvider {
     sql += ' ORDER BY timestamp ASC';
     const rows = db.prepare(sql).all(...params) as any[];
     return rows.map((r) => this.rowToEvent(r));
+  }
+
+  async prune(options: { maxEvents?: number; maxAgeDays?: number }): Promise<{ deleted: number }> {
+    const db = this.getDb();
+    let totalDeleted = 0;
+
+    // Prune by age first
+    if (options.maxAgeDays) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - options.maxAgeDays);
+      const cutoffStr = cutoff.toISOString();
+
+      // Delete embeddings first (FK constraint)
+      db.prepare('DELETE FROM ops_embeddings WHERE id IN (SELECT id FROM ops_events WHERE timestamp < ?)').run(cutoffStr);
+      const result = db.prepare('DELETE FROM ops_events WHERE timestamp < ?').run(cutoffStr);
+      totalDeleted += result.changes;
+    }
+
+    // Then prune by count (keep newest)
+    if (options.maxEvents) {
+      const count = db.prepare('SELECT COUNT(*) as cnt FROM ops_events').get() as { cnt: number };
+      if (count.cnt > options.maxEvents) {
+        const excess = count.cnt - options.maxEvents;
+        // Delete oldest events beyond the limit
+        db.prepare(`DELETE FROM ops_embeddings WHERE id IN (SELECT id FROM ops_events ORDER BY timestamp ASC LIMIT ?)`).run(excess);
+        const result = db.prepare(`DELETE FROM ops_events WHERE id IN (SELECT id FROM ops_events ORDER BY timestamp ASC LIMIT ?)`).run(excess);
+        totalDeleted += result.changes;
+      }
+    }
+
+    return { deleted: totalDeleted };
+  }
+
+  async saveChainCheckpoint(checkpoint: { lastEventId: string; lastEventHash: string; eventsVerified: number }): Promise<void> {
+    const db = this.getDb();
+    db.prepare(`INSERT INTO chain_checkpoints (verified_at, last_event_id, last_event_hash, events_verified) VALUES (?, ?, ?, ?)`).run(
+      new Date().toISOString(),
+      checkpoint.lastEventId,
+      checkpoint.lastEventHash,
+      checkpoint.eventsVerified,
+    );
+  }
+
+  async getLastChainCheckpoint(): Promise<{ lastEventId: string; lastEventHash: string; eventsVerified: number; verifiedAt: string } | null> {
+    const db = this.getDb();
+    const row = db.prepare('SELECT * FROM chain_checkpoints ORDER BY id DESC LIMIT 1').get() as any;
+    if (!row) return null;
+    return {
+      lastEventId: row.last_event_id,
+      lastEventHash: row.last_event_hash,
+      eventsVerified: row.events_verified,
+      verifiedAt: row.verified_at,
+    };
   }
 
   private buildQuery(options: QueryOptions, countOnly = false): { sql: string; params: any[] } {

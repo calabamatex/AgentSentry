@@ -915,6 +915,14 @@ AgentOps v4.0 implementation:
     "verbose": false,
     "prefix_all_messages": "[AgentOps]"
   },
+  "memory": {
+    "enabled": true,
+    "provider": "sqlite",
+    "embedding_provider": "auto",
+    "database_path": "agentops/data/ops.db",
+    "max_events": 100000,
+    "auto_prune_days": 365
+  },
   "enablement": {
     "level": 3,
     "skills": {
@@ -1482,85 +1490,285 @@ Agent Identity          + Plugin Contribution
 Audit Trail             + Setup Wizard
 ```
 
-### v3.0 Priority Stack (8 Weeks)
+### v4.0 Build Phases (4 Weeks)
 
-| Week | Component | Depends On |
+| Week | Phase | Key Output |
 |---|---|---|
-| 1 | Event bus core | Nothing — foundational |
-| 2 | Agent identity + permissions | Event bus |
-| 3 | Distributed tracing | Event bus |
-| 4 | Cost metering + budgets | Event bus + tracing |
-| 5 | Lifecycle state machine | Event bus |
-| 6 | Append-only audit trail | Event bus |
-| 7 | Provider health monitoring | Tracing + cost metering |
-| 8 | Eval framework | All modules stable |
+| 1 | Phase 1: Persistent Memory Store | StorageProvider interface, SQLite + Supabase backends, embedding abstraction, hook integration |
+| 2 | Phase 2: MCP Server Interface | 8 MCP tools, stdio + HTTP transport, auth, Claude/Cursor integration |
+| 2 | Phase 3: Primitives & Plugins (parallel) | 7 TypeScript primitives, 4 plugin templates, metadata schema, validation pipeline |
+| 3 | Phase 4: Progressive Enablement & Enrichment | 5-level config, setup wizard, auto-classification, semantic audit search |
+| 3 | Final Verification | All gates pass, provider parity confirmed, tagged release |
 
 ---
 
 ## 25. Persistent Operations Memory
 
-AgentOps captures every operational event (decisions, violations, incidents, patterns, handoffs, audit findings) into a persistent, hash-chained memory store. Events are:
+### 25.1 Purpose
 
-- **Immutable:** Each event's hash includes the previous event's hash, forming a tamper-evident chain
-- **Searchable:** Both structured queries (by type, severity, skill, date range) and semantic vector search
-- **Provider-agnostic:** SQLite (local, default) or Supabase (team/cloud) backends via the StorageProvider interface
-- **Embedding-aware:** Auto-detects ONNX, Ollama, or OpenAI embedding providers for semantic search
+AgentOps captures every operational event (decisions, violations, incidents, patterns, handoffs, audit findings) into a persistent, hash-chained memory store. This replaces the flat scaffold-doc approach (where CONTEXT.md was overwritten each session) with append-only, vector-indexed event storage. Scaffold docs still exist but are now *views* of the memory, not the memory itself.
 
-Key APIs: `MemoryStore.capture()`, `MemoryStore.search()`, `MemoryStore.stats()`, `MemoryStore.verifyChain()`
+### 25.2 Event Record Schema
+
+```typescript
+interface OpsEvent {
+  id: string;                    // UUID v4
+  timestamp: string;             // ISO 8601
+  session_id: string;            // Links to the agent session
+  agent_id: string;              // Which agent generated this event
+  event_type: EventType;         // decision | violation | incident | pattern | handoff | audit_finding
+  severity: Severity;            // low | medium | high | critical
+  skill: Skill;                  // save_points | context_health | standing_orders | small_bets | proactive_safety | system
+  title: string;                 // Short description (< 120 chars)
+  detail: string;                // Full context
+  affected_files: string[];      // File paths involved
+  tags: string[];                // Auto-extracted + manual tags
+  metadata: Record<string, unknown>; // Extensible key-value pairs
+  embedding?: number[];          // Vector embedding (when available)
+  hash: string;                  // SHA-256 of content for tamper detection
+  prev_hash: string;             // Hash chain link to previous event
+}
+
+type EventType = 'decision' | 'violation' | 'incident' | 'pattern' | 'handoff' | 'audit_finding';
+type Severity = 'low' | 'medium' | 'high' | 'critical';
+type Skill = 'save_points' | 'context_health' | 'standing_orders' | 'small_bets' | 'proactive_safety' | 'system';
+```
+
+### 25.3 Dual-Backend Storage
+
+All storage backends implement the `StorageProvider` interface:
+
+```typescript
+interface StorageProvider {
+  name: string;                    // 'sqlite' | 'supabase'
+  mode: 'local' | 'remote';
+  initialize(): Promise<void>;
+  close(): Promise<void>;
+  insert(event: OpsEvent): Promise<void>;
+  getById(id: string): Promise<OpsEvent | null>;
+  query(options: QueryOptions): Promise<OpsEvent[]>;
+  count(options: QueryOptions): Promise<number>;
+  vectorSearch(embedding: number[], options: VectorSearchOptions): Promise<SearchResult[]>;
+  aggregate(options: AggregateOptions): Promise<OpsStats>;
+  getChain(since?: string): Promise<OpsEvent[]>;
+}
+```
+
+**Backend A — SQLite + sqlite-vec (default):** Local, zero-dependency, offline-capable. Uses `sqlite-vec` extension for 384-dimensional vector search. Chosen when no config is specified or `"provider": "sqlite"`. Data stored in `agentops/data/ops.db`.
+
+**Backend B — Supabase + pgvector (opt-in for teams):** Cloud-hosted, shared across developers, RLS-isolated. Each developer's events are isolated via Row-Level Security; team dashboards use a service role for cross-developer reads. Requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` environment variables.
+
+**Provider factory logic:** Explicit config takes priority. If no config, auto-detects Supabase env vars. Falls back to SQLite. Validates prerequisites (sqlite-vec loads, Supabase connection healthy) before returning.
+
+**Migration path:** `node agentops/src/memory/migrate.ts --from sqlite --to supabase` exports all events with embeddings and hash chain intact.
+
+### 25.4 Embedding Provider Chain
+
+AgentOps is local-first. Embeddings must work offline with optional cloud upgrade:
+
+1. **Local ONNX** — `all-MiniLM-L6-v2` (~23MB bundled in `agentops/models/`), ~50ms/embed, zero network
+2. **Ollama** — local API if running, ~100ms/embed
+3. **OpenAI API** — if `OPENAI_API_KEY` set, ~200ms/embed
+4. **Anthropic API** — if `ANTHROPIC_API_KEY` set, ~200ms/embed
+5. **No-op provider** — stores events without embeddings; structured queries only
+
+All providers output 384-dimensional vectors. Fallback is automatic and graceful.
+
+### 25.5 Memory Store API
+
+```typescript
+interface MemoryStore {
+  capture(event: Omit<OpsEvent, 'id' | 'hash' | 'prev_hash' | 'embedding'>): Promise<OpsEvent>;
+  search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
+  list(options?: ListOptions): Promise<OpsEvent[]>;
+  stats(options?: StatsOptions): Promise<OpsStats>;
+  verifyChain(since?: string): Promise<ChainVerification>;
+}
+```
+
+### 25.6 Hook Integration
+
+Every existing hook now captures events to the memory store. The hooks continue to work exactly as before — this adds a `capture_event()` call after each check completes. Example captures:
+
+| Hook | Event Type | Example |
+|------|-----------|---------|
+| Secret scanner blocks a write | `violation` | "Agent coder-1 attempted to write AWS key to config/db.ts — blocked" |
+| Git hygiene auto-commits | `decision` | "Auto-committed 7 uncommitted files before modification of auth/jwt.ts" |
+| Context health warning | `pattern` | "Session at 82% context capacity after 34 messages" |
+| Task risk assessment | `decision` | "Task 'refactor auth module' scored HIGH risk (12 files, 2 DB migrations)" |
+| Session handoff | `handoff` | "Session ended at 78% context. 3 tasks remaining. Scaffold docs updated." |
+
+### 25.7 Scaffold Generation from Memory
+
+Scaffold docs shift from being the memory to being a view of the memory. When CONTEXT.md is updated at session end, it queries the memory store for all current-session events, generates a human-readable summary, and writes it. The discrete events remain in the memory store permanently.
 
 ---
 
 ## 26. MCP Server Interface
 
-AgentOps exposes 8 tools via the Model Context Protocol (MCP), enabling any AI client to query the management layer:
+### 26.1 Purpose
 
-| Tool | Purpose |
-|------|---------|
-| `agentops_check_git` | Git hygiene status and risk score |
-| `agentops_check_context` | Context window health estimation |
-| `agentops_check_rules` | Rules compliance validation |
-| `agentops_size_task` | Task risk scoring and decomposition |
-| `agentops_scan_security` | Secret and vulnerability detection |
-| `agentops_capture_event` | Persistent event capture |
-| `agentops_search_history` | Semantic search across event history |
-| `agentops_health` | System health dashboard |
+AgentOps exposes its full management layer via the Model Context Protocol (MCP), enabling any MCP-compatible AI client to query health, capture events, and search history without shell hooks. This is an alternative (or complement) to the hook-based integration.
 
-**Transport:** Stdio (default, for Claude Code/Cursor) or HTTP (optional, with access key auth and rate limiting).
-**Integration:** `claude mcp add agentops -- node agentops/dist/src/mcp/server.js`
+### 26.2 Tool Registrations (8 Tools)
+
+| Tool | Input | Output |
+|------|-------|--------|
+| `agentops_check_git` | (none) | Uncommitted files, time since last commit, branch safety, risk score |
+| `agentops_check_context` | `message_count?` | Context usage %, degradation signals, continue/refresh recommendation |
+| `agentops_check_rules` | `file_path`, `change_description` | Violations against AGENTS.md/CLAUDE.md with rule references |
+| `agentops_size_task` | `task`, `files?` | Risk score (LOW/MEDIUM/HIGH/CRITICAL), affected file estimate, decomposition guidance |
+| `agentops_scan_security` | `content`, `file_path?` | Secrets, PII, missing error handling, injection risks |
+| `agentops_capture_event` | `event_type`, `severity`, `skill`, `title`, `detail`, `affected_files?`, `tags?` | Stored event ID, hash |
+| `agentops_search_history` | `query`, `limit?`, `event_type?`, `severity?`, `since?` | Ranked search results by semantic relevance |
+| `agentops_health` | (none) | Health scores, KPIs, recent alerts, skill-level status as structured JSON |
+
+### 26.3 Transport Options
+
+**Stdio (default):** For Claude Code and Cursor MCP config. Inherits process-level permissions — no additional auth needed.
+
+```bash
+# Start
+node agentops/src/mcp/server.js
+```
+
+**HTTP (optional):** For remote or team access. Requires an access key (generated on install, stored in `.env`). Rate limited to 100 req/min by default.
+
+```bash
+# Start
+node agentops/src/mcp/server.js --http --port 3100
+# Auth: x-agentops-key header or ?key= query param
+```
+
+### 26.4 Client Integration
+
+**Claude Code:**
+```bash
+claude mcp add agentops -- node agentops/src/mcp/server.js
+```
+
+**Cursor (`.cursor/mcp.json`):**
+```json
+{
+  "mcpServers": {
+    "agentops": {
+      "command": "node",
+      "args": ["agentops/src/mcp/server.js"]
+    }
+  }
+}
+```
+
+### 26.5 Security
+
+All inputs validated against typed schemas (no arbitrary SQL). `agentops_scan_security` never executes scanned content. `agentops_capture_event` validates event types, severities, and skill names against enums. No MCP tool exposes raw database access.
 
 ---
 
 ## 27. Primitives Library
 
-Seven composable TypeScript primitives extracted from the core skills:
+### 27.1 Purpose
 
-| Primitive | Key Export | Used By |
-|-----------|-----------|---------|
-| checkpoint-and-branch | `createCheckpoint()`, `createSafetyBranch()` | Save Points, Small Bets |
-| rules-validation | `validateRules()`, `RuleViolation` | Standing Orders, Proactive Safety |
-| risk-scoring | `assessRisk()`, `RiskAssessment` | Small Bets, Proactive Safety |
-| context-estimation | `estimateContext()`, `ContextHealth` | Context Health, Small Bets |
-| scaffold-update | `updateScaffold()`, `ScaffoldResult` | Context Health, Standing Orders |
-| secret-detection | `scanForSecrets()`, `SecretFinding` | Save Points, Proactive Safety |
-| event-capture | `captureEvent()` | All skills |
+The 5 core skills share patterns (checkpoint before risky work, validate rules, score risk, estimate context, detect secrets). Primitives extract these into 7 composable TypeScript modules that skills, MCP tools, and plugins all share — eliminating duplication between shell scripts and TypeScript code.
 
-Primitives enable plugins and MCP tools to share logic without duplicating shell scripts.
+### 27.2 Primitive Catalog
+
+| Primitive | Key Exports | Used By |
+|-----------|------------|---------|
+| `checkpoint-and-branch` | `createCheckpoint()`, `createSafetyBranch()` | Save Points, Small Bets |
+| `rules-validation` | `validateRules()`, `RuleViolation` | Standing Orders, Proactive Safety |
+| `risk-scoring` | `assessRisk()`, `RiskAssessment`, `RiskFactor` | Small Bets, Proactive Safety |
+| `context-estimation` | `estimateContext()`, `ContextHealth` | Context Health, Small Bets |
+| `scaffold-update` | `updateScaffold()`, `ScaffoldResult` | Context Health, Standing Orders |
+| `secret-detection` | `scanForSecrets()`, `SecretFinding` | Save Points, Proactive Safety |
+| `event-capture` | `captureEvent()` | All skills |
+
+### 27.3 Typed Interfaces
+
+Each primitive exports a typed interface. Example:
+
+```typescript
+// risk-scoring.ts
+export interface RiskAssessment {
+  score: number;           // 0-15
+  level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  factors: RiskFactor[];
+  recommendation: string;
+}
+
+export interface RiskFactor {
+  name: string;            // 'file_count' | 'db_changes' | 'shared_code' | 'main_branch'
+  value: number;
+  weight: number;
+  contribution: number;
+}
+
+export function assessRisk(params: {
+  files: string[];
+  hasDatabaseChanges: boolean;
+  touchesSharedCode: boolean;
+  isMainBranch: boolean;
+}): RiskAssessment;
+```
+
+### 27.4 Skill Refactoring
+
+Existing shell scripts are refactored to call primitives via a thin CLI bridge (`cli-capture.js`):
+
+- `scripts/git-hygiene-check.sh` → calls `checkpoint-and-branch` + `event-capture`
+- `scripts/security-audit.sh` → calls `secret-detection` + `rules-validation` + `event-capture`
+- `scripts/task-sizer.sh` → calls `risk-scoring` + `context-estimation` + `event-capture`
+- `scripts/rules-file-linter.sh` → calls `rules-validation` + `event-capture`
+- `scripts/context-estimator.sh` → calls `context-estimation` + `scaffold-update` + `event-capture`
+
+Behavior is identical to v3.0; only the internal implementation changes.
 
 ---
 
 ## 28. Progressive Enablement
 
-AgentOps supports 5 adoption levels, allowing teams to start simple and add capabilities as comfort grows:
+### 28.1 Purpose
 
-| Level | Name | Skills Active |
-|-------|------|--------------|
-| 1 | Safe Ground | Save Points |
-| 2 | Clear Head | + Context Health |
-| 3 | House Rules | + Standing Orders |
-| 4 | Right Size | + Small Bets |
-| 5 | Full Guard | + Proactive Safety |
+New users should not face a wall of 5 skills and 30+ configuration options on day one. Progressive enablement maps the 5 core skills to 5 adoption levels, each building on the previous.
 
-The setup wizard (`scripts/setup-wizard.sh`) generates the appropriate configuration for any level. The dashboard adapts to show only enabled skills, with upgrade prompts for locked capabilities.
+### 28.2 Five Levels
+
+| Level | Name | Skills Active | Time to Set Up |
+|-------|------|--------------|----------------|
+| 1 | Safe Ground | Save Points | ~5 minutes |
+| 2 | Clear Head | + Context Health | ~5 minutes |
+| 3 | House Rules | + Standing Orders | ~10 minutes |
+| 4 | Right Size | + Small Bets | ~10 minutes |
+| 5 | Full Guard | + Proactive Safety | ~15 minutes |
+
+### 28.3 Setup Wizard
+
+The interactive CLI wizard (`scripts/setup-wizard.sh`) asks the user for their preferred level and generates the appropriate `agentops.config.json`, creates only the scaffold docs needed for that level, and registers only the relevant hooks.
+
+```bash
+# Quick start — Level 1 in under 5 minutes
+node agentops/scripts/setup-wizard.js --level 1
+
+# Or interactive
+node agentops/scripts/setup-wizard.js
+```
+
+### 28.4 Dashboard Adaptation
+
+The dashboard renders only enabled skills. Disabled skill panels display "Enable Level X to unlock" with a one-click upgrade path. The header shows the current level: "AgentOps Level 3 — House Rules".
+
+### 28.5 Auto-Classification Enrichment
+
+Events captured by hooks are asynchronously enriched (does not block the agent):
+
+- **Local pattern matching (always available, <10ms):** If files in `auth/`, `login/`, `session/`, `jwt/` → tag `authentication`. If 3+ events on the same files in 7 days → `root_cause_hint`. If severity HIGH but on a feature branch → `severity_context: "mitigated by feature branch isolation"`.
+- **Local LLM via Ollama (if available):** Richer cross-cutting tags and root cause analysis.
+- **Cloud LLM (if API key configured):** Richest enrichment with full semantic analysis.
+- **Skip enrichment:** Structured classification only when no enrichment provider is available.
+
+### 28.6 Semantic Audit Search
+
+The hash-chained audit trail (§19) gains optional vector indexing. When an audit record is created, a text summary is generated, embedded, and stored alongside it. This enables natural language queries like "database schema changes that caused issues" to return ranked audit records.
 
 ---
 
@@ -1592,16 +1800,40 @@ The setup wizard (`scripts/setup-wizard.sh`) generates the appropriate configura
 | File | Purpose |
 |---|---|
 | `agentops/scripts/*.sh` | Monitoring and audit scripts |
+| `agentops/scripts/setup-wizard.js` | Interactive setup for progressive enablement |
 | `agentops/templates/*.md` | Scaffold document templates |
 | `agentops/agentops.config.json` | Configuration |
 | `agentops/dashboard/agentops-dashboard.html` | Web dashboard |
 | `agentops/dashboard/data/*.json` | Dashboard data files |
+| `agentops/src/memory/store.ts` | MemoryStore class — CRUD + vector search |
+| `agentops/src/memory/schema.ts` | OpsEvent record types and validation |
+| `agentops/src/memory/embeddings.ts` | Embedding provider abstraction (ONNX → Ollama → Cloud → No-op) |
+| `agentops/src/memory/enrichment.ts` | Auto-classification enrichment engine |
+| `agentops/src/memory/providers/storage-provider.ts` | StorageProvider interface |
+| `agentops/src/memory/providers/sqlite-provider.ts` | SQLite + sqlite-vec backend (default) |
+| `agentops/src/memory/providers/supabase-provider.ts` | Supabase + pgvector backend (opt-in) |
+| `agentops/src/memory/providers/provider-factory.ts` | Auto-detect or config-driven provider selection |
+| `agentops/src/memory/migrations/*.ts` | Schema creation and versioning for both backends |
+| `agentops/src/memory/migrate.ts` | SQLite → Supabase migration tool |
+| `agentops/src/memory/cli-capture.js` | CLI bridge for shell hooks to capture events |
+| `agentops/src/mcp/server.ts` | MCP server setup and tool registration |
+| `agentops/src/mcp/tools/*.ts` | 8 MCP tool implementations |
+| `agentops/src/mcp/transport.ts` | Stdio + HTTP transport options |
+| `agentops/src/mcp/auth.ts` | Access key validation and rate limiting |
+| `agentops/src/primitives/*.ts` | 7 composable TypeScript primitives |
+| `agentops/src/enablement/config.ts` | Progressive enablement level management |
+| `agentops/models/all-MiniLM-L6-v2/` | Bundled ONNX embedding model (~23MB) |
+| `agentops/data/ops.db` | SQLite database (created at runtime) |
+| `agentops/plugins/_templates/*/` | 4 plugin category templates (monitor, auditor, dashboard, integration) |
+| `agentops/plugins/core/` | Built-in plugins |
+| `agentops/plugins/community/` | User-installed plugins |
 | `agentops/tracing/trace-context.ts` | Trace ID generation |
 | `agentops/audit/audit-logger.ts` | Audit logging |
 | `agentops/audit/audit-trail.jsonl` | Immutable audit log |
 | `agentops/core/event-bus.ts` | Event system |
 | `agentops/evals/` | Test fixtures and golden datasets |
-| `agentops/plugins/` | Plugin system |
+| `config/plugin.schema.json` | Plugin metadata validation schema |
+| `config/agentops.config.schema.json` | Config file JSON Schema |
 | `PLANNING.md` | Scaffold document |
 | `TASKS.md` | Scaffold document |
 | `CONTEXT.md` | Scaffold document |
@@ -1630,27 +1862,49 @@ The setup wizard (`scripts/setup-wizard.sh`) generates the appropriate configura
 
 ## Quick Start
 
+### Option A: Setup Wizard (Recommended — 5 minutes)
+
+```bash
+# Install AgentOps into your project
+npm install agentops
+
+# Run the interactive setup wizard
+node agentops/scripts/setup-wizard.js
+```
+
+The wizard asks for your preferred enablement level (1-5), generates `agentops.config.json`, creates scaffold docs, registers hooks, and optionally adds the MCP server to your AI tool.
+
+### Option B: Manual Setup
+
 1. **Install AgentOps:**
    - Download or clone the agentops/ directory to your project root
-   - Copy agentops.config.json and adjust thresholds for your project
+   - Copy `agentops.config.json` and adjust thresholds
 
 2. **Hook into your tool:**
-   - For Claude Code: Add hook entries to `.claude/settings.json`
+   - For Claude Code: Add hook entries to `.claude/settings.json` (see §8)
    - For Cursor: Follow analogous configuration in `.cursorrules`
    - For others: Create equivalent hook integrations
 
-3. **Create rules files:**
+3. **Add MCP integration (optional):**
+   - Claude Code: `claude mcp add agentops -- node agentops/src/mcp/server.js`
+   - Cursor: Add to `.cursor/mcp.json` (see §26.4)
+
+4. **Create rules files:**
    - Create `AGENTS.md` with universal rules
    - Create `CLAUDE.md` (or tool-specific file) with tool-specific rules
    - Run `/agentops scaffold` to create scaffold documents
 
-4. **Set up git hooks:**
+5. **Set up git hooks:**
    - Run: `git config core.hooksPath .githooks`
 
-5. **View the dashboard:**
+6. **Configure memory (optional):**
+   - Default: SQLite, zero config needed — works immediately
+   - Teams: Set `"provider": "supabase"` in config with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars
+
+7. **View the dashboard:**
    - Open `agentops/dashboard/agentops-dashboard.html` in your browser
 
-6. **Start your session:**
+8. **Start your session:**
    - Run `/agentops check` to verify everything is working
    - Begin your work — AgentOps will monitor in the background
 

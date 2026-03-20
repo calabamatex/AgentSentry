@@ -42,6 +42,28 @@ const MIGRATIONS: { version: number; sql: string }[] = [
       );
     `,
   },
+  {
+    version: 2,
+    sql: `
+      -- Add timestamp to embeddings for pre-filtering
+      ALTER TABLE ops_embeddings ADD COLUMN timestamp TEXT;
+
+      -- Backfill from ops_events
+      UPDATE ops_embeddings SET timestamp = (SELECT timestamp FROM ops_events WHERE ops_events.id = ops_embeddings.id);
+
+      -- Index for time-filtered vector search
+      CREATE INDEX IF NOT EXISTS idx_embeddings_timestamp ON ops_embeddings(timestamp);
+
+      -- Chain verification checkpoint table
+      CREATE TABLE IF NOT EXISTS chain_checkpoints (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        verified_at TEXT NOT NULL,
+        last_event_id TEXT NOT NULL,
+        last_event_hash TEXT NOT NULL,
+        events_verified INTEGER NOT NULL
+      );
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
