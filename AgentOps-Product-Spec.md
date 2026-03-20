@@ -182,6 +182,8 @@ ON session end:
 
 Monitors context window health within a single agent session or across multiple agents working in parallel. Context degradation happens when instructions and state accumulate to the point where early system instructions get lost.
 
+At session start, AgentOps queries the memory store for relevant historical context — past violations, recurring patterns, and unresolved incidents — to inform the current session.
+
 ### 3.2 Real-Time Monitors
 
 #### 3.2.1 Context Usage Estimator
@@ -559,6 +561,8 @@ Present the plan with file boundaries.
 
 Audits for security, privacy, and reliability issues that agents might overlook: secrets exposure, missing error handling, PII leakage, unsafe API usage, and scalability concerns.
 
+Security events are automatically enriched with cross-cutting tags (authentication, database, API, infrastructure) and linked to related historical events for root cause analysis.
+
 ### 6.2 Real-Time Monitors
 
 #### 6.2.1 Secret Exposure Scanner
@@ -780,6 +784,8 @@ AgentOps integrates with your AI tool's hook system by adding entries to your ex
 
 Setup: `git config core.hooksPath .githooks`
 
+AgentOps also exposes an MCP server interface as an alternative to hooks. The 8 MCP tools (check-git, check-context, check-rules, size-task, scan-security, capture-event, search-history, health) can be used by any MCP-compatible AI client.
+
 ---
 
 ## 9. Dashboard (Web-Based Health Monitor)
@@ -951,6 +957,16 @@ Single self-contained HTML file with inline CSS and JavaScript. Uses:
   "notifications": {
     "verbose": false,
     "prefix_all_messages": "[AgentOps]"
+  },
+  "enablement": {
+    "level": 3,
+    "skills": {
+      "save_points": { "enabled": true, "mode": "full" },
+      "context_health": { "enabled": true, "mode": "full" },
+      "standing_orders": { "enabled": true, "mode": "basic" },
+      "small_bets": { "enabled": false, "mode": "off" },
+      "proactive_safety": { "enabled": false, "mode": "off" }
+    }
   }
 }
 ```
