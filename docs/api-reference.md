@@ -587,6 +587,180 @@ Central publish/subscribe system for hook events. Uses a singleton pattern so al
 
 ---
 
+### src/memory/store.ts
+
+| Field | Value |
+|---|---|
+| **Path** | `agentops/src/memory/store.ts` |
+| **Spec section** | Section 25 (Persistent Operations Memory) |
+
+Persistent, hash-chained event storage with vector search. Provider-agnostic (SQLite default, Supabase for teams).
+
+**Exports:**
+
+| Class/Function | Description |
+|---|---|
+| `MemoryStore` | Main store class — `capture()`, `search()`, `list()`, `stats()`, `verifyChain()`, `close()` |
+| `MemoryStoreOptions` | Constructor options: `provider`, `embeddingProvider`, `config` |
+
+**Key Types (from schema.ts):**
+- `OpsEvent` — Full event record with id, timestamp, hash chain, embedding
+- `OpsEventInput` — Input for `capture()` (event minus auto-generated fields)
+- `EventType` — `'decision' | 'violation' | 'incident' | 'pattern' | 'handoff' | 'audit_finding'`
+- `Severity` — `'low' | 'medium' | 'high' | 'critical'`
+- `Skill` — `'save_points' | 'context_health' | 'standing_orders' | 'small_bets' | 'proactive_safety' | 'system'`
+- `SearchResult` — `{ event: OpsEvent; score: number }`
+- `OpsStats` — Aggregate counts by type, severity, skill
+
+**Embedding Providers:** Auto-detects ONNX Runtime, Ollama, or OpenAI. Falls back to noop (text-only search).
+
+**Storage Providers:** SQLite (local, default) or Supabase (team/cloud).
+
+---
+
+### src/mcp/server.ts
+
+| Field | Value |
+|---|---|
+| **Path** | `agentops/src/mcp/server.ts` |
+| **Spec section** | Section 26 (MCP Server Interface) |
+
+Model Context Protocol server exposing 8 tools via stdio or HTTP transport.
+
+**MCP Tools:**
+
+| Tool | Input | Description |
+|---|---|---|
+| `agentops_check_git` | none | Git hygiene status — uncommitted files, branch, risk score |
+| `agentops_check_context` | `message_count?` | Context window health estimation |
+| `agentops_check_rules` | `file_path`, `change_description` | Rules compliance validation |
+| `agentops_size_task` | `task`, `files?` | Task risk scoring (LOW/MEDIUM/HIGH/CRITICAL) |
+| `agentops_scan_security` | `content`, `file_path?` | Secret and vulnerability detection |
+| `agentops_capture_event` | `event_type`, `severity`, `skill`, `title`, `detail`, ... | Capture event to memory store |
+| `agentops_search_history` | `query`, `limit?`, `event_type?`, `severity?`, `since?` | Semantic search across events |
+| `agentops_health` | none | System health dashboard |
+
+**Transport:**
+- Stdio (default): `node agentops/dist/src/mcp/server.js`
+- HTTP: `node agentops/dist/src/mcp/server.js --http --port 3100`
+
+**Auth (HTTP only):** `x-agentops-key` header or `?key=` query param. Rate limited to 100 req/min.
+
+**Integration:**
+```bash
+claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+```
+
+---
+
+### src/primitives/
+
+| Field | Value |
+|---|---|
+| **Path** | `agentops/src/primitives/` |
+| **Spec section** | Section 27 (Primitives Library) |
+
+Seven composable TypeScript primitives extracted from core skills.
+
+**Modules:**
+
+| Module | Key Exports | Used By |
+|---|---|---|
+| `checkpoint-and-branch.ts` | `createCheckpoint()`, `createSafetyBranch()`, `getCurrentBranch()` | Save Points, Small Bets |
+| `rules-validation.ts` | `validateRules()`, `RuleViolation`, `ValidationResult` | Standing Orders, Proactive Safety |
+| `risk-scoring.ts` | `assessRisk()`, `RiskAssessment`, `RiskFactor` | Small Bets, Proactive Safety |
+| `context-estimation.ts` | `estimateContext()`, `ContextHealth` | Context Health, Small Bets |
+| `scaffold-update.ts` | `updateScaffold()`, `ScaffoldResult` | Context Health, Standing Orders |
+| `secret-detection.ts` | `scanForSecrets()`, `SecretFinding` | Save Points, Proactive Safety |
+| `event-capture.ts` | `captureEvent()` | All skills |
+
+**Risk Levels:** 0-3 LOW, 4-7 MEDIUM, 8-11 HIGH, 12-15 CRITICAL
+
+**Factors:** file_count (weight 2), db_changes (weight 3), shared_code (weight 2), main_branch (weight 5)
+
+---
+
+### src/enablement/engine.ts
+
+| Field | Value |
+|---|---|
+| **Path** | `agentops/src/enablement/engine.ts` |
+| **Spec section** | Section 28 (Progressive Enablement) |
+
+Progressive skill enablement with 5 adoption levels.
+
+**Exports:**
+
+| Function | Description |
+|---|---|
+| `generateConfigForLevel(level)` | Generate enablement config for levels 1-5 |
+| `isSkillEnabled(config, skill)` | Check if a skill is active |
+| `getActiveSkills(config)` | List all enabled skills |
+| `getNextLevel(config)` | Get next level info and what it unlocks |
+| `validateEnablementConfig(config)` | Validate an enablement config object |
+
+**Levels:**
+
+| Level | Name | Skills Active |
+|---|---|---|
+| 1 | Safe Ground | save_points |
+| 2 | Clear Head | + context_health |
+| 3 | House Rules | + standing_orders |
+| 4 | Right Size | + small_bets |
+| 5 | Full Guard | + proactive_safety |
+
+**Setup:** `bash agentops/scripts/setup-wizard.sh --level 3`
+
+---
+
+### src/memory/enrichment.ts
+
+| Field | Value |
+|---|---|
+| **Path** | `agentops/src/memory/enrichment.ts` |
+| **Spec section** | Section 25 (Persistent Operations Memory) |
+
+Auto-classification enrichment for captured events.
+
+**Exports:**
+
+| Class | Description |
+|---|---|
+| `LocalPatternMatcher` | Zero-cost local enrichment provider (<10ms) |
+| `EventEnricher` | Orchestrates enrichment across providers |
+
+**Enrichment Result:**
+- `cross_tags` — Domain tags derived from affected file paths (authentication, database, api, testing, configuration, infrastructure)
+- `root_cause_hint` — Pattern-based suggestion when 3+ events share overlapping files
+- `related_events` — IDs of similar past events (up to 5)
+- `severity_context` — Branch-aware severity notes (e.g., "High score mitigated by feature branch isolation")
+
+---
+
+### src/memory/audit-index.ts
+
+| Field | Value |
+|---|---|
+| **Path** | `agentops/src/memory/audit-index.ts` |
+| **Spec section** | Section 19 (Compliance & Audit Trail) |
+
+Semantic search over audit records.
+
+**Exports:**
+
+| Class | Description |
+|---|---|
+| `AuditIndex` | Indexes events for semantic search, generates summaries |
+
+**Key Methods:**
+- `generateSummary(event)` — Creates searchable text summary
+- `indexEvent(event)` — Indexes an event as an audit_finding record
+- `search(query, options?)` — Semantic search across audit records
+- `getFileAuditTrail(filePath, options?)` — Get audit trail for a specific file
+- `getSessionTimeline(sessionId)` — Get chronological event timeline for a session
+
+---
+
 ## Slash Commands
 
 These are invoked as Claude Code slash commands.
