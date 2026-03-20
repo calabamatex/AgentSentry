@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AgentOps Enablement Configuration",
+  "description": "Progressive skill enablement configuration for AgentOps v4.0",
+  "type": "object",
+  "required": ["level", "skills"],
+  "properties": {
+    "level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Current enablement level (1=Safe Ground, 2=Clear Head, 3=House Rules, 4=Right Size, 5=Full Guard)"
+    },
+    "skills": {
+      "type": "object",
+      "required": [
+        "save_points",
+        "context_health",
+        "standing_orders",
+        "small_bets",
+        "proactive_safety"
+      ],
+      "properties": {
+        "save_points": { "$ref": "#/definitions/skillConfig" },
+        "context_health": { "$ref": "#/definitions/skillConfig" },
+        "standing_orders": { "$ref": "#/definitions/skillConfig" },
+        "small_bets": { "$ref": "#/definitions/skillConfig" },
+        "proactive_safety": { "$ref": "#/definitions/skillConfig" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "skillConfig": {
+      "type": "object",
+      "required": ["enabled", "mode"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this skill is active"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["off", "basic", "full"],
+          "description": "Skill operating mode: off, basic (limited), or full (all features)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
