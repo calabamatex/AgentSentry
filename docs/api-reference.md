@@ -642,7 +642,7 @@ Persistent, hash-chained event storage with vector search. Provider-agnostic (SQ
 
 **Embedding Providers:** Auto-detects ONNX Runtime, Ollama, or OpenAI. Falls back to noop (text-only search).
 
-**Storage Providers:** SQLite (local, default) or Supabase (team/cloud).
+**Storage Providers:** SQLite (local, default). Supabase (team/cloud) planned for a future release.
 
 ---
 
