@@ -24,7 +24,7 @@ AGENTOPS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCRIPTS_DIR="$AGENTOPS_ROOT/scripts"
 CONFIG_FILE="$AGENTOPS_ROOT/agentops.config.json"
 PREFIX="[AgentOps]"
-VERSION="0.3.0"
+VERSION="4.0.0"
 
 # Find repo root
 if git rev-parse --is-inside-work-tree &>/dev/null; then

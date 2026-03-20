@@ -6,8 +6,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { StorageProvider } from './storage-provider';
 import { SqliteProvider } from './sqlite-provider';
-import { SupabaseProvider } from './supabase-provider';
-
 export interface MemoryConfig {
   enabled: boolean;
   provider: 'sqlite' | 'supabase';
