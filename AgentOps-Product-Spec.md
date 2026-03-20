@@ -2,8 +2,8 @@
 
 ## Product Specification — Installable Framework
 
-**Version:** 3.0 — Generic Product Specification
-**Date:** March 19, 2026
+**Version:** 4.0 — Generic Product Specification
+**Date:** March 20, 2026
 **Mode:** Dual-mode (real-time session monitor + on-demand project audit)
 **Platform:** Multi-tool compatible (Claude Code, Cursor, Copilot, Codex, and others)
 **Enforcement:** Guardrails — warns and takes preventive action where safe; never silently blocks
