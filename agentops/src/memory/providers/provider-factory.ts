@@ -40,19 +40,22 @@ export function loadMemoryConfig(configPath?: string): MemoryConfig {
 export function createProvider(config?: MemoryConfig): StorageProvider {
   const cfg = config ?? loadMemoryConfig();
 
-  // 1. Explicit config
   if (cfg.provider === 'supabase') {
-    return new SupabaseProvider();
+    throw new Error(
+      'Supabase provider is not yet implemented. ' +
+      'Set "provider": "sqlite" in agentops.config.json, or remove SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY environment variables. ' +
+      'See https://github.com/ruvnet/claude-flow for roadmap.'
+    );
   }
+
   if (cfg.provider === 'sqlite') {
     return new SqliteProvider(cfg.database_path);
   }
 
-  // 2. Auto-detect: check env vars
+  // Auto-detect: if Supabase env vars are present, warn but use SQLite
   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return new SupabaseProvider();
+    // Supabase env vars present but provider not implemented — fall through to SQLite
   }
 
-  // 3. Default: SQLite
   return new SqliteProvider(cfg.database_path);
 }

@@ -26,16 +26,17 @@ describe('ProviderFactory', () => {
       expect(provider.name).toBe('sqlite');
     });
 
-    it('creates SupabaseProvider when configured', () => {
-      const provider = createProvider({
-        enabled: true,
-        provider: 'supabase',
-        embedding_provider: 'auto',
-        database_path: '',
-        max_events: 100000,
-        auto_prune_days: 365,
-      });
-      expect(provider.name).toBe('supabase');
+    it('throws when Supabase provider is configured', () => {
+      expect(() =>
+        createProvider({
+          enabled: true,
+          provider: 'supabase',
+          embedding_provider: 'auto',
+          database_path: '',
+          max_events: 100000,
+          auto_prune_days: 365,
+        })
+      ).toThrow('Supabase provider is not yet implemented');
     });
   });
 });
