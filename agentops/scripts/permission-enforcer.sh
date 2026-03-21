@@ -214,24 +214,15 @@ matches_glob() {
     local path="$1"
     local pattern="$2"
 
-    # Make path relative to repo root for matching
     local rel_path="$path"
     if [[ "$path" == "$REPO_ROOT"/* ]]; then
         rel_path="${path#$REPO_ROOT/}"
     fi
 
-    # Use Python for reliable glob matching (fnmatch with ** support)
-    python3 -c "
-import fnmatch, sys, os
-path = sys.argv[1]
-pattern = sys.argv[2]
-# Support ** for recursive directory matching
-if '**' in pattern:
-    import pathlib
-    match = pathlib.PurePath(path).match(pattern)
-else:
-    match = fnmatch.fnmatch(path, pattern)
-sys.exit(0 if match else 1)
+    node -e "
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\\\]/g, '\\\\$&').replace(/\*\*\\//g, '(?:.+/)?').replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
 " "$rel_path" "$pattern" 2>/dev/null
 }
 
@@ -325,10 +316,10 @@ check_bash_permission() {
     if [[ -n "$deny_patterns" ]]; then
         while IFS= read -r pattern; do
             [[ -z "$pattern" ]] && continue
-            # Use fnmatch-style matching on the command string
-            if python3 -c "
-import fnmatch, sys
-sys.exit(0 if fnmatch.fnmatch(sys.argv[1], sys.argv[2]) else 1)
+            if node -e "
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\\\]/g, '\\\\$&').replace(/\*\*/g, '.*').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
 " "$cmd" "$pattern" 2>/dev/null; then
                 echo "DENY:bash-denied:$pattern"
                 return
@@ -343,9 +334,10 @@ sys.exit(0 if fnmatch.fnmatch(sys.argv[1], sys.argv[2]) else 1)
         local found=false
         while IFS= read -r pattern; do
             [[ -z "$pattern" ]] && continue
-            if python3 -c "
-import fnmatch, sys
-sys.exit(0 if fnmatch.fnmatch(sys.argv[1], sys.argv[2]) else 1)
+            if node -e "
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\\\]/g, '\\\\$&').replace(/\*\*/g, '.*').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
 " "$cmd" "$pattern" 2>/dev/null; then
                 found=true
                 break
