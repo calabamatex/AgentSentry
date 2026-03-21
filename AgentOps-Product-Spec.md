@@ -1629,14 +1629,14 @@ AgentOps exposes its full management layer via the Model Context Protocol (MCP),
 
 ```bash
 # Start
-node agentops/src/mcp/server.js
+node agentops/dist/src/mcp/server.js
 ```
 
 **HTTP (optional):** For remote or team access. Requires an access key (generated on install, stored in `.env`). Rate limited to 100 req/min by default.
 
 ```bash
 # Start
-node agentops/src/mcp/server.js --http --port 3100
+node agentops/dist/src/mcp/server.js --http --port 3100
 # Auth: x-agentops-key header or ?key= query param
 ```
 
@@ -1644,7 +1644,7 @@ node agentops/src/mcp/server.js --http --port 3100
 
 **Claude Code:**
 ```bash
-claude mcp add agentops -- node agentops/src/mcp/server.js
+claude mcp add agentops -- node agentops/dist/src/mcp/server.js
 ```
 
 **Cursor (`.cursor/mcp.json`):**
@@ -1653,7 +1653,7 @@ claude mcp add agentops -- node agentops/src/mcp/server.js
   "mcpServers": {
     "agentops": {
       "command": "node",
-      "args": ["agentops/src/mcp/server.js"]
+      "args": ["agentops/dist/src/mcp/server.js"]
     }
   }
 }
@@ -1886,7 +1886,7 @@ The wizard asks for your preferred enablement level (1-5), generates `agentops.c
    - For others: Create equivalent hook integrations
 
 3. **Add MCP integration (optional):**
-   - Claude Code: `claude mcp add agentops -- node agentops/src/mcp/server.js`
+   - Claude Code: `claude mcp add agentops -- node agentops/dist/src/mcp/server.js`
    - Cursor: Add to `.cursor/mcp.json` (see §26.4)
 
 4. **Create rules files:**

@@ -531,16 +531,16 @@ server.registerTool("agentops_health", {
 
 ```typescript
 // Stdio transport (default — for Claude Code, Cursor MCP config)
-// Start: node agentops/src/mcp/server.js
+// Start: node agentops/dist/src/mcp/server.js
 
 // HTTP transport (optional — for remote/team access)
-// Start: node agentops/src/mcp/server.js --http --port 3100
+// Start: node agentops/dist/src/mcp/server.js --http --port 3100
 // Auth: x-agentops-key header or ?key= query param
 ```
 
 **Claude Code integration (`claude mcp add`):**
 ```bash
-claude mcp add agentops -- node agentops/src/mcp/server.js
+claude mcp add agentops -- node agentops/dist/src/mcp/server.js
 ```
 
 **Cursor integration (`.cursor/mcp.json`):**
@@ -549,7 +549,7 @@ claude mcp add agentops -- node agentops/src/mcp/server.js
   "mcpServers": {
     "agentops": {
       "command": "node",
-      "args": ["agentops/src/mcp/server.js"]
+      "args": ["agentops/dist/src/mcp/server.js"]
     }
   }
 }
@@ -931,7 +931,7 @@ Phases 2 and 3 can run in parallel after Phase 1 completes. Phase 4 requires all
 npm test                                               # All tests pass (including provider parity)
 npm run build                                          # Build succeeds
 npm run lint                                           # No lint errors
-node agentops/src/mcp/server.js --self-test            # MCP server responds to all 8 tools
+node agentops/dist/src/mcp/server.js --self-test            # MCP server responds to all 8 tools
 npm test -- --grep "provider-parity"                   # Both backends produce identical results
 npm test -- --grep "migrate"                           # SQLite → Supabase migration preserves integrity
 bash agentops/scripts/validate-plugin.sh plugins/_templates/*  # All templates valid

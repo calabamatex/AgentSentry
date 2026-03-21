@@ -249,7 +249,7 @@ AgentOps supports 5 progressive adoption levels:
 | 4 | Right Size | + Small Bets |
 | 5 | Full Guard | + Proactive Safety |
 
-Run the setup wizard:
+Run the setup wizard (a configuration generator that writes enablement settings to `agentops.config.json`):
 
 ```bash
 bash agentops/scripts/setup-wizard.sh
@@ -259,6 +259,28 @@ Or set a level directly:
 
 ```bash
 bash agentops/scripts/setup-wizard.sh --level 3
+```
+
+Preview without writing changes:
+
+```bash
+bash agentops/scripts/setup-wizard.sh --dry-run
+```
+
+The wizard prompts for an enablement level (1-5), generates the corresponding enablement JSON, and merges it into `agentops.config.json`. It does **not** install git hooks, register MCP servers, or modify `.claude/settings.json` -- those are separate steps.
+
+---
+
+## 5d. Manual Wiring (Required Separately)
+
+The setup wizard handles enablement configuration only. You must wire up hooks and MCP registration separately:
+
+1. **Git hooks** -- see Step 3 above.
+2. **Claude Code hooks** -- see Step 5 above (`.claude/settings.json`).
+3. **MCP server registration:**
+
+```bash
+claude mcp add agentops -- node agentops/dist/src/mcp/server.js
 ```
 
 ---

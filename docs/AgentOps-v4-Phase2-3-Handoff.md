@@ -98,9 +98,9 @@ agentops/src/mcp/
 | `agentops_health` | none | `MemoryStore.stats()` |
 
 ### Transport
-- **Stdio** (default): `node agentops/src/mcp/server.js`
-- **HTTP** (optional): `node agentops/src/mcp/server.js --http --port 3100` with `x-agentops-key` header
-- Integration: `claude mcp add agentops -- node agentops/src/mcp/server.js`
+- **Stdio** (default): `node agentops/dist/src/mcp/server.js`
+- **HTTP** (optional): `node agentops/dist/src/mcp/server.js --http --port 3100` with `x-agentops-key` header
+- Integration: `claude mcp add agentops -- node agentops/dist/src/mcp/server.js`
 
 ### Security
 - HTTP transport requires access key (generated on install, stored in `.env`)
