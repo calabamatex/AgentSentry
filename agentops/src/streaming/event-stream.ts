@@ -82,6 +82,7 @@ export class EventStream extends EventEmitter {
     this.maxClients = options?.maxClients ?? 50;
     this.bufferSize = options?.bufferSize ?? 100;
     this.heartbeatIntervalMs = options?.heartbeatIntervalMs ?? 30000;
+    this.maxClientBacklog = options?.maxClientBacklog ?? 100;
   }
 
   // -------------------------------------------------------------------------
