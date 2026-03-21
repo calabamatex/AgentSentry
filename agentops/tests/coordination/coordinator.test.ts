@@ -129,10 +129,11 @@ describe('AgentCoordinator', () => {
       });
       await observer.start();
 
-      agents = await observer.listAgents({ status: 'offline' });
-      const offlineAgent = agents.find((a) => a.id === 'agent-1');
-      expect(offlineAgent).toBeDefined();
-      expect(offlineAgent!.status).toBe('offline');
+      // List all agents first, then check for offline
+      const allAgents = await observer.listAgents();
+      const agent1 = allAgents.find((a) => a.id === 'agent-1');
+      expect(agent1).toBeDefined();
+      expect(agent1!.status).toBe('offline');
 
       await observer.stop();
     });
