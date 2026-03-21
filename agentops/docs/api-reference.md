@@ -272,6 +272,49 @@ interface EnrichmentResult {
 
 ---
 
+## Intelligence (Cross-Session)
+
+### `SessionSummarizer`
+
+Generates structured session summaries from MemoryStore events.
+
+```typescript
+constructor(store: MemoryStore)
+summarize(sessionId: string): Promise<SessionSummary>
+summarizeAndStore(sessionId: string): Promise<SessionSummary>
+```
+
+### `PatternDetector`
+
+Detects recurring patterns across sessions (error hotspots, recurring violations, session-level patterns).
+
+```typescript
+constructor(store: MemoryStore)
+detect(options?: { lookbackDays?: number; minOccurrences?: number }): Promise<DetectedPattern[]>
+detectAndStore(options?: { lookbackDays?: number; minOccurrences?: number }): Promise<DetectedPattern[]>
+```
+
+### `ContextRecaller`
+
+Searches memory for relevant prior context given a task description.
+
+```typescript
+constructor(store: MemoryStore)
+recall(query: string, options?: { maxResults?: number; lookbackDays?: number }): Promise<RecallResult>
+```
+
+### `HandoffGenerator`
+
+Generates structured handoff messages combining session data with git state.
+
+```typescript
+constructor(store: MemoryStore)
+generate(sessionId: string, options?: { projectPath?: string; remainingWork?: string[] }): Promise<HandoffMessage>
+generateAndStore(sessionId: string, options?: { projectPath?: string; remainingWork?: string[] }): Promise<HandoffMessage>
+```
+
+---
+
 ## Audit
 
 ### `AuditIndex`
