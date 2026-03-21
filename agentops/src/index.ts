@@ -45,3 +45,15 @@ export { EventStream } from './streaming/event-stream';
 export { SseTransport } from './streaming/sse-transport';
 export { WsTransport } from './streaming/ws-transport';
 export type { StreamFilter, StreamClient, StreamEvent, EventStreamOptions } from './streaming/event-stream';
+
+// Observability (M5)
+export { Logger, generateTraceId } from './observability/logger';
+export type { LogLevel, LogEntry, OutputSink, LoggerOptions } from './observability/logger';
+export { CircuitBreaker, CircuitOpenError, retry, withCircuitBreaker } from './observability/circuit-breaker';
+export type { CircuitState, CircuitBreakerOptions, CircuitBreakerStats, RetryOptions } from './observability/circuit-breaker';
+export { HealthChecker, createHealthMiddleware, memoryUsageCheck, eventLoopCheck } from './observability/health';
+export type { ComponentCheck, HealthCheckResult, HealthCheckerOptions } from './observability/health';
+export { ShutdownManager, createShutdownHandler, httpServerShutdown, intervalShutdown, customShutdown } from './observability/shutdown';
+export type { ShutdownOptions, ShutdownReport } from './observability/shutdown';
+export { MetricsCollector, createMetricsMiddleware } from './observability/metrics';
+export type { HistogramSnapshot } from './observability/metrics';
