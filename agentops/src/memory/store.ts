@@ -48,7 +48,8 @@ export class MemoryStore {
     // Only auto-detect if no embedding provider was explicitly provided
     if (this.autoDetectEmbedding && this.embeddingProvider instanceof NoopEmbeddingProvider) {
       try {
-        this.embeddingProvider = await detectEmbeddingProvider();
+        const config = loadMemoryConfig();
+        this.embeddingProvider = await detectEmbeddingProvider(config.embedding_provider);
       } catch {
         // Keep noop
       }

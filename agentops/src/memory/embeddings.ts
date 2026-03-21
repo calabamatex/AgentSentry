@@ -176,7 +176,46 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
   }
 }
 
-export async function detectEmbeddingProvider(): Promise<EmbeddingProvider> {
+export type EmbeddingProviderChoice = 'auto' | 'onnx' | 'ollama' | 'openai' | 'voyage' | 'noop';
+
+export async function detectEmbeddingProvider(
+  preferred?: EmbeddingProviderChoice,
+): Promise<EmbeddingProvider> {
+  // If a specific provider is requested (not 'auto'), try only that one
+  if (preferred && preferred !== 'auto') {
+    switch (preferred) {
+      case 'noop':
+        return new NoopEmbeddingProvider();
+      case 'onnx':
+        try {
+          require.resolve('onnxruntime-node');
+          return new OnnxEmbeddingProvider();
+        } catch {
+          throw new Error('ONNX provider requested but onnxruntime-node is not available');
+        }
+      case 'ollama': {
+        const ollamaAvailable = await checkOllama();
+        if (ollamaAvailable) {
+          return new OllamaEmbeddingProvider();
+        }
+        throw new Error('Ollama provider requested but Ollama is not reachable at 127.0.0.1:11434');
+      }
+      case 'openai':
+        if (process.env.OPENAI_API_KEY) {
+          return new OpenAIEmbeddingProvider();
+        }
+        throw new Error('OpenAI provider requested but OPENAI_API_KEY is not set');
+      case 'voyage':
+        if (process.env.VOYAGE_API_KEY) {
+          return new VoyageEmbeddingProvider();
+        }
+        throw new Error('Voyage provider requested but VOYAGE_API_KEY is not set');
+      default:
+        throw new Error(`Unknown embedding provider: ${preferred}`);
+    }
+  }
+
+  // Auto-detect: ONNX -> Ollama -> OpenAI -> Voyage -> Noop
   // 1. Try ONNX local
   try {
     require.resolve('onnxruntime-node');
@@ -201,7 +240,12 @@ export async function detectEmbeddingProvider(): Promise<EmbeddingProvider> {
     return new OpenAIEmbeddingProvider();
   }
 
-  // 4. Fallback to noop
+  // 4. Try Voyage AI
+  if (process.env.VOYAGE_API_KEY) {
+    return new VoyageEmbeddingProvider();
+  }
+
+  // 5. Fallback to noop
   return new NoopEmbeddingProvider();
 }
 
@@ -266,6 +310,44 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+      }, (res) => {
+        let body = '';
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(body);
+            resolve(result.data?.[0]?.embedding || []);
+          } catch (err) {
+            reject(err);
+          }
+        });
+      });
+      req.on('error', reject);
+      req.write(data);
+      req.end();
+    });
+  }
+}
+
+export class VoyageEmbeddingProvider implements EmbeddingProvider {
+  readonly name = 'voyage';
+  readonly dimension = 384;
+
+  async embed(text: string): Promise<number[]> {
+    return new Promise((resolve, reject) => {
+      const data = JSON.stringify({
+        model: 'voyage-3-lite',
+        input: [text],
+        output_dimension: 384,
+      });
+      const req = https.request({
+        hostname: 'api.voyageai.com',
+        path: '/v1/embeddings',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.VOYAGE_API_KEY}`,
         },
       }, (res) => {
         let body = '';

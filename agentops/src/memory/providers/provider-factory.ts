@@ -9,7 +9,7 @@ import { SqliteProvider } from './sqlite-provider';
 export interface MemoryConfig {
   enabled: boolean;
   provider: 'sqlite' | 'supabase';
-  embedding_provider: 'auto' | 'onnx' | 'ollama' | 'openai' | 'noop';
+  embedding_provider: 'auto' | 'onnx' | 'ollama' | 'openai' | 'voyage' | 'noop';
   database_path: string;
   max_events: number;
   auto_prune_days: number;

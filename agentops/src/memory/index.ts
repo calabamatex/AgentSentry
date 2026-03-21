@@ -30,6 +30,7 @@ export {
   OnnxEmbeddingProvider,
   OllamaEmbeddingProvider,
   OpenAIEmbeddingProvider,
+  VoyageEmbeddingProvider,
   detectEmbeddingProvider,
 } from './embeddings';
 export { registerEventSubscriber } from './event-subscriber';
