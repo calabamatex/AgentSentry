@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "AgentOps MCP Server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["agentops/dist/src/mcp/server.js", "--port", "3100"],
+      "port": 3100
+    },
+    {
+      "name": "AgentOps Test Watcher",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vitest", "--watch"],
+      "port": 0
+    }
+  ]
+}
