@@ -30,7 +30,8 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "benchmark": "tsx scripts/run-benchmark.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
