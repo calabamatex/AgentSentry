@@ -154,12 +154,6 @@ export class PreparedStatementCache {
     // Evict oldest entry if at capacity
     if (this.cache.size >= this.maxStatements) {
       const oldestKey = this.cache.keys().next().value as string;
-      const oldestStmt = this.cache.get(oldestKey)!;
-      try {
-        oldestStmt.finalize?.();
-      } catch {
-        // Statement may already be finalized
-      }
       this.cache.delete(oldestKey);
     }
 
@@ -169,13 +163,6 @@ export class PreparedStatementCache {
   }
 
   clear(): void {
-    for (const stmt of this.cache.values()) {
-      try {
-        stmt.finalize?.();
-      } catch {
-        // Statement may already be finalized
-      }
-    }
     this.cache.clear();
   }
 
