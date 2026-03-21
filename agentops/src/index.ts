@@ -61,3 +61,15 @@ export type { HistogramSnapshot } from './observability/metrics';
 // Dashboard (M7)
 export { DashboardServer } from './dashboard/server';
 export type { DashboardServerOptions, DashboardServerInfo } from './dashboard/server';
+
+// Performance Optimization (M8)
+export { LRUCache, CachedStorageProvider } from './memory/cache';
+export type { LRUCacheOptions, CacheStats } from './memory/cache';
+export { BatchProcessor, batchInsert } from './memory/batch';
+export type { BatchResult, BatchSearchResult, BatchOptions } from './memory/batch';
+export { ConnectionPool, PooledSupabaseProvider } from './memory/providers/connection-pool';
+export type { ConnectionPoolOptions, PoolStats, PooledSupabaseProviderConfig } from './memory/providers/connection-pool';
+export { QueryOptimizer, PreparedStatementCache } from './memory/query-optimizer';
+export type { QueryPlan, TableStats } from './memory/query-optimizer';
+export { BenchmarkSuite } from './memory/benchmark';
+export type { BenchmarkResult, BenchmarkReport } from './memory/benchmark';

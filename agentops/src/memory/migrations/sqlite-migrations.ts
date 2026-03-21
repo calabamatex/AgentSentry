@@ -3,6 +3,7 @@
  */
 
 import type Database from 'better-sqlite3';
+import { MIGRATION_V3_SQL } from './migration-v3';
 
 const MIGRATIONS: { version: number; sql: string }[] = [
   {
@@ -63,6 +64,10 @@ const MIGRATIONS: { version: number; sql: string }[] = [
         events_verified INTEGER NOT NULL
       );
     `,
+  },
+  {
+    version: 3,
+    sql: MIGRATION_V3_SQL,
   },
 ];
 
