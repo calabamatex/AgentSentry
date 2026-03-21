@@ -96,7 +96,7 @@ export class PluginRegistry {
     const sources: Array<{ dir: string; source: InstalledPlugin['source'] }> = [
       { dir: join(this.pluginsDir, 'core'), source: 'core' },
       { dir: join(this.pluginsDir, 'community'), source: 'community' },
-      { dir: join(this.pluginsDir, 'marketplace'), source: 'marketplace' },
+      // Note: "marketplace" directory removed — local registry only
     ];
 
     for (const { dir, source } of sources) {
