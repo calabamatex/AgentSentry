@@ -16,6 +16,7 @@ import { streamCommand } from './commands/stream';
 import { pluginCommand } from './commands/plugin';
 import { configCommand } from './commands/config';
 import { dashboardCommand } from './commands/dashboard';
+import { enableCommand } from './commands/enable';
 
 // ---------------------------------------------------------------------------
 // Version (read from package.json at build time is fragile — hardcode + sync)

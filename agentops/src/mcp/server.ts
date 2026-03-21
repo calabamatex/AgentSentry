@@ -18,6 +18,7 @@ import * as scanSecurity from './tools/scan-security';
 import * as captureEvent from './tools/capture-event';
 import * as searchHistory from './tools/search-history';
 import * as health from './tools/health';
+import * as recallContext from './tools/recall-context';
 
 /**
  * Tool definition with name, description, inputSchema, and handler.
@@ -47,6 +48,7 @@ export const tools: ToolDefinition[] = [
   captureEvent,
   searchHistory,
   health,
+  recallContext,
 ];
 
 const toolMap = new Map<string, ToolDefinition>();
