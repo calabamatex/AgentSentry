@@ -1,24 +1,25 @@
-name: CI
+name: Publish to npm
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  release:
+    types: [published]
 
 jobs:
-  build-and-test:
+  publish:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20, 22]
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 22
+          registry-url: https://registry.npmjs.org
           cache: npm
           cache-dependency-path: agentops/package-lock.json
       - run: cd agentops && npm ci
       - run: cd agentops && npm run build
       - run: cd agentops && npm test
+      - run: cd agentops && npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
