@@ -26,10 +26,14 @@ export { generateConfigForLevel, isSkillEnabled, getActiveSkills, getNextLevel, 
 // Enrichment
 export { EventEnricher, LocalPatternMatcher } from './memory/enrichment';
 
+// Intelligence (cross-session)
+export { SessionSummarizer, PatternDetector, ContextRecaller } from './memory/intelligence';
+export type { SessionSummary, DetectedPattern, RecallResult } from './memory/intelligence';
+
 // Audit
 export { AuditIndex } from './memory/audit-index';
 
-// Coordination
+// Coordination [experimental]
 export { AgentCoordinator } from './coordination/coordinator';
 export type { AgentInfo, LockInfo, CoordinationMessage, CoordinatorOptions } from './coordination/coordinator';
 
@@ -40,7 +44,7 @@ export type { PluginManifest, InstalledPlugin, PluginSearchOptions } from './plu
 // MCP Server
 export { createMcpServer } from './mcp/server';
 
-// Streaming
+// Streaming [beta]
 export { EventStream } from './streaming/event-stream';
 export { SseTransport } from './streaming/sse-transport';
 export { WsTransport } from './streaming/ws-transport';
