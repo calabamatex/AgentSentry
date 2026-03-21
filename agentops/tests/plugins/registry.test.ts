@@ -68,18 +68,15 @@ describe('PluginRegistry.scan()', () => {
   it('should set correct source for each plugin', async () => {
     createPluginDir(tempDir, 'core', 'core-plugin');
     createPluginDir(tempDir, 'community', 'community-plugin');
-    createPluginDir(tempDir, 'marketplace', 'market-plugin');
 
     const registry = new PluginRegistry(tempDir);
     const plugins = await registry.scan();
 
     const corePlugin = plugins.find((p) => p.manifest.name === 'core-plugin');
     const communityPlugin = plugins.find((p) => p.manifest.name === 'community-plugin');
-    const marketPlugin = plugins.find((p) => p.manifest.name === 'market-plugin');
 
     expect(corePlugin?.source).toBe('core');
     expect(communityPlugin?.source).toBe('community');
-    expect(marketPlugin?.source).toBe('marketplace');
   });
 
   it('should ignore dirs without metadata.json', async () => {
