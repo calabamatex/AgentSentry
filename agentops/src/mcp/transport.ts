@@ -42,6 +42,9 @@ export function createHttpTransport(
     sessionIdGenerator: () => randomUUID(),
   });
 
+  // Track the actual listening port (updated once server starts)
+  let actualPort = port;
+
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -57,7 +60,6 @@ export function createHttpTransport(
     // Access key validation
     if (accessKey) {
       const headerKey = req.headers['x-agentops-key'] as string | undefined;
-      const actualPort = result.port || port;
       const url = new URL(req.url ?? '/', `http://localhost:${actualPort}`);
       const queryKey = url.searchParams.get('key') ?? undefined;
       const providedKey = headerKey ?? queryKey ?? '';
@@ -112,6 +114,7 @@ export function createHttpTransport(
   server.on('listening', () => {
     const addr = server.address() as AddressInfo;
     if (addr) {
+      actualPort = addr.port;
       result.port = addr.port;
     }
   });

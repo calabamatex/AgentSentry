@@ -128,6 +128,7 @@ export async function main(): Promise<void> {
   if (isHttp) {
     const accessKey = process.env.AGENTOPS_ACCESS_KEY;
     const httpTransport = createHttpTransport(port, accessKey);
+    await server.connect(httpTransport.transport);
     console.error(`AgentOps MCP HTTP server listening on port ${httpTransport.port}`);
 
     process.on('SIGINT', async () => {
