@@ -298,11 +298,12 @@ export class EventStream extends EventEmitter {
   // Stats
   // -------------------------------------------------------------------------
 
-  getStats(): { clientCount: number; bufferSize: number; eventsPublished: number; started: boolean } {
+  getStats(): { clientCount: number; bufferSize: number; eventsPublished: number; eventsDropped: number; started: boolean } {
     return {
       clientCount: this.clients.size,
       bufferSize: this.buffer.length,
       eventsPublished: this.eventsPublished,
+      eventsDropped: this.eventsDropped,
       started: this.started,
     };
   }
