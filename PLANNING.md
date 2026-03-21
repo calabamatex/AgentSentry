@@ -26,11 +26,11 @@ AgentOps is a standalone agent management framework with four layers:
 | Enablement Engine | Stable, 47 tests |
 | Enrichment + Audit | Stable, 67 tests |
 | Auto-Pruning + Perf | Stable, 18 tests |
-| Plugin Templates | Stable (templates only) |
+| Plugin System | Stable, commit-monitor plugin shipped |
 | Supabase Provider | Planned (stub) |
 
 ## Roadmap
 
-- **v4.1**: Ship first real plugin, Supabase provider, dashboard HTML updates
+- **v4.1**: Supabase provider, dashboard HTML updates, CI build matrix
 - **v4.2**: Cloud LLM enrichment, multi-agent coordination
 - **v5.0**: Team dashboards, real-time streaming, plugin marketplace
