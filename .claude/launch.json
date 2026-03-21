@@ -4,7 +4,7 @@
     {
       "name": "AgentOps MCP Server",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["agentops/dist/src/mcp/server.js", "--port", "3100"],
+      "runtimeArgs": ["agentops/dist/src/mcp/server.js", "--http", "--port", "3100"],
       "port": 3100
     },
     {

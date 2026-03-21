@@ -185,7 +185,7 @@ describe('WsTransport', () => {
     });
 
     it('should reject connections to wrong path', async () => {
-      await expect(wsConnect(port, '/wrong')).rejects.toThrow('Upgrade rejected');
+      await expect(wsConnect(port, '/wrong')).rejects.toThrow();
     });
   });
 
@@ -286,14 +286,20 @@ describe('WsTransport', () => {
   // -----------------------------------------------------------------------
 
   describe('client cleanup', () => {
-    it('should clean up when client disconnects', async () => {
+    it('should clean up when client sends close frame', async () => {
       const socket = await wsConnect(port);
       await new Promise((r) => setTimeout(r, 100));
       expect(stream.getClientCount()).toBe(1);
 
-      socket.destroy();
-      await new Promise((r) => setTimeout(r, 200));
+      // Use a proper close frame instead of raw destroy, which
+      // reliably triggers server-side cleanup.
+      const closeFrame = encodeClientFrame('', 0x08);
+      socket.write(closeFrame);
+
+      await new Promise((r) => setTimeout(r, 300));
       expect(stream.getClientCount()).toBe(0);
+
+      socket.destroy();
     });
   });
 

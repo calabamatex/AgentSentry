@@ -124,7 +124,6 @@ export class WsTransport {
     socket.on('close', () => { this.sockets.delete(socket); });
 
     if (url.pathname !== this.options.path) {
-      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
       return;
     }

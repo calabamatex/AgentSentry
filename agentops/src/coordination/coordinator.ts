@@ -343,10 +343,6 @@ export class AgentCoordinator {
     this.messageHandlers.delete(channel);
   }
 
-  // -----------------------------------------------------------------------
-  // Task Delegation
-  // -----------------------------------------------------------------------
-
   async delegateTask(
     toAgentId: string,
     task: { name: string; params: Record<string, unknown> },
@@ -402,10 +398,6 @@ export class AgentCoordinator {
 
     return null;
   }
-
-  // -----------------------------------------------------------------------
-  // Event Builders (private)
-  // -----------------------------------------------------------------------
 
   private buildRegistryEvent(info: AgentInfo): OpsEventInput {
     return {
