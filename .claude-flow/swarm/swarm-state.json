@@ -269,6 +269,24 @@
       },
       "createdAt": "2026-03-21T16:26:40.254Z",
       "updatedAt": "2026-03-21T16:26:40.254Z"
+    },
+    "swarm-1774114020726-kcasse": {
+      "swarmId": "swarm-1774114020726-kcasse",
+      "topology": "hierarchical",
+      "maxAgents": 8,
+      "status": "running",
+      "agents": [],
+      "tasks": [],
+      "config": {
+        "topology": "hierarchical",
+        "maxAgents": 8,
+        "strategy": "specialized",
+        "communicationProtocol": "message-bus",
+        "autoScaling": true,
+        "consensusMechanism": "majority"
+      },
+      "createdAt": "2026-03-21T17:27:00.727Z",
+      "updatedAt": "2026-03-21T17:27:00.727Z"
     }
   },
   "version": "3.0.0"
