@@ -57,3 +57,7 @@ export { ShutdownManager, createShutdownHandler, httpServerShutdown, intervalShu
 export type { ShutdownOptions, ShutdownReport } from './observability/shutdown';
 export { MetricsCollector, createMetricsMiddleware } from './observability/metrics';
 export type { HistogramSnapshot } from './observability/metrics';
+
+// Dashboard (M7)
+export { DashboardServer } from './dashboard/server';
+export type { DashboardServerOptions, DashboardServerInfo } from './dashboard/server';
