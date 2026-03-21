@@ -14,6 +14,14 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Dependency checks — fail loudly, not silently
+# ---------------------------------------------------------------------------
+if ! command -v jq &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'jq' is required but not found. Install with: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 0
+fi
+
 PREFIX="[AgentOps]"
 
 # ---------------------------------------------------------------------------

@@ -6,6 +6,18 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Dependency checks — fail loudly, not silently
+# ---------------------------------------------------------------------------
+if ! command -v jq &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'jq' is required but not found. Install with: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 0
+fi
+if ! command -v git &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'git' is required but not found." >&2
+    exit 0
+fi
+
 PREFIX="[AgentOps]"
 TMPBASE="${TMPDIR:-/tmp}/agentops"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

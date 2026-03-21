@@ -37,6 +37,18 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Dependency checks — fail loudly, not silently
+# ---------------------------------------------------------------------------
+if ! command -v jq &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'jq' is required but not found. Install with: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 0
+fi
+if ! command -v node &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'node' is required but not found. AgentOps is a Node.js package." >&2
+    exit 0
+fi
+
 PREFIX="[AgentOps]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"

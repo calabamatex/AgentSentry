@@ -76,33 +76,28 @@ else
   exit 1
 fi
 
-# Helper to read JSON fields using python3
 json_get() {
-  python3 -c "
-import json, sys
-data = json.load(open('${METADATA}'))
-keys = '$1'.split('.')
-val = data
-for k in keys:
-    if isinstance(val, dict) and k in val:
-        val = val[k]
-    else:
-        sys.exit(1)
-print(val)
+  node -e "
+const data = JSON.parse(require('fs').readFileSync('${METADATA}', 'utf-8'));
+const keys = '$1'.split('.');
+let val = data;
+for (const k of keys) {
+  if (val && typeof val === 'object' && k in val) val = val[k];
+  else process.exit(1);
+}
+console.log(typeof val === 'object' ? JSON.stringify(val) : String(val));
 " 2>/dev/null
 }
 
 json_has() {
-  python3 -c "
-import json, sys
-data = json.load(open('${METADATA}'))
-keys = '$1'.split('.')
-val = data
-for k in keys:
-    if isinstance(val, dict) and k in val:
-        val = val[k]
-    else:
-        sys.exit(1)
+  node -e "
+const data = JSON.parse(require('fs').readFileSync('${METADATA}', 'utf-8'));
+const keys = '$1'.split('.');
+let val = data;
+for (const k of keys) {
+  if (val && typeof val === 'object' && k in val) val = val[k];
+  else process.exit(1);
+}
 " 2>/dev/null
 }
 
