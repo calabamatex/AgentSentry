@@ -36,7 +36,7 @@ describe('ProviderFactory', () => {
           max_events: 100000,
           auto_prune_days: 365,
         })
-      ).toThrow('Supabase provider is not yet implemented');
+      ).toThrow("Supabase provider is planned but not yet implemented. Use 'sqlite' (default).");
     });
   });
 });
