@@ -18,3 +18,4 @@
 {"ts":"2026-03-21T10:05:18Z","type":"enrichment","msg":"Cross-tag analysis complete","cross_tags":["security","deps"],"root_cause":"outdated dependency with known CVE"}
 {"ts":"2026-03-21T10:12:30Z","type":"context","msg":"Context window usage check","usage":38,"tokens_used":30400,"tokens_max":80000}
 {"ts":"2026-03-21T10:20:00Z","type":"session-end","msg":"Session ended cleanly — no uncommitted changes","severity":"info"}
+{"timestamp":"2026-03-21T15:41:18Z","type":"session-end","message":"Session ended with auto-commit: [agentops] session-end checkpoint — 5 file(s) changed","severity":"info"}
