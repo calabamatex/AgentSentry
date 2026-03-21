@@ -68,7 +68,7 @@ else
 fi
 
 # 3. metadata.json is valid JSON
-if python3 -c "import json; json.load(open('${METADATA}'))" 2>/dev/null; then
+if node -e "JSON.parse(require('fs').readFileSync('${METADATA}', 'utf-8'))" 2>/dev/null; then
   check 3 "metadata.json is valid JSON" "pass"
 else
   check 3 "metadata.json is valid JSON" "fail"
