@@ -42,9 +42,7 @@ export function createProvider(config?: MemoryConfig): StorageProvider {
 
   if (cfg.provider === 'supabase') {
     throw new Error(
-      'Supabase provider is not yet implemented. ' +
-      'Set "provider": "sqlite" in agentops.config.json, or remove SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY environment variables. ' +
-      'See https://github.com/ruvnet/claude-flow for roadmap.'
+      "Supabase provider is planned but not yet implemented. Use 'sqlite' (default)."
     );
   }
 

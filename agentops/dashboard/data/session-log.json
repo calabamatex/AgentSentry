@@ -50,3 +50,4 @@
 {"timestamp":"2026-03-21T14:52:28Z","type":"session-end","message":"Session ended with auto-commit: [agentops] session-end checkpoint — 4 file(s) changed","severity":"info"}
 {"timestamp":"2026-03-21T14:53:06Z","type":"session-end","message":"Session ended with auto-commit: [agentops] session-end checkpoint — 5 file(s) changed","severity":"info"}
 {"timestamp":"2026-03-21T14:53:11Z","type":"session-end","message":"Session ended cleanly — no uncommitted changes","severity":"info"}
+{"timestamp":"2026-03-21T14:56:46Z","type":"session-end","message":"Session ended with auto-commit: [agentops] session-end checkpoint — 2 file(s) changed","severity":"info"}
