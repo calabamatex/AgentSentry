@@ -1,5 +1,5 @@
 /**
- * Tests for PluginRegistry — plugin marketplace/discovery (M4 Task 4.4).
+ * Tests for PluginRegistry — local plugin registry (M4 Task 4.4).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
