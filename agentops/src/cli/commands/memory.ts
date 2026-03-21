@@ -65,9 +65,9 @@ export const memoryCommand: CommandDefinition = {
       } else {
         table(results.map((r) => ({
           score: r.score.toFixed(3),
-          type: r.event.type,
+          type: r.event.event_type,
           severity: r.event.severity,
-          summary: (r.event.title ?? '').slice(0, 60),
+          title: r.event.title.slice(0, 60),
           timestamp: r.event.timestamp,
         })));
       }
@@ -88,9 +88,9 @@ export const memoryCommand: CommandDefinition = {
       } else {
         table(events.map((e) => ({
           id: e.id.slice(0, 8),
-          type: e.type,
+          type: e.event_type,
           severity: e.severity,
-          title: (e.title ?? '').slice(0, 50),
+          title: e.title.slice(0, 50),
           timestamp: e.timestamp,
         })));
       }
@@ -102,12 +102,12 @@ export const memoryCommand: CommandDefinition = {
       if (json) {
         output(stats, true);
       } else {
-        output(`Total events: ${stats.totalEvents}`, false);
-        output(`Types: ${Object.entries(stats.byType).map(([k, v]) => `${k}=${v}`).join(', ')}`, false);
-        output(`Severities: ${Object.entries(stats.bySeverity).map(([k, v]) => `${k}=${v}`).join(', ')}`, false);
-        output(`Skills: ${Object.entries(stats.bySkill).map(([k, v]) => `${k}=${v}`).join(', ')}`, false);
-        if (stats.oldestEvent) output(`Oldest: ${stats.oldestEvent}`, false);
-        if (stats.newestEvent) output(`Newest: ${stats.newestEvent}`, false);
+        output(`Total events: ${stats.total_events}`, false);
+        output(`Types: ${Object.entries(stats.by_type).map(([k, v]) => `${k}=${v}`).join(', ')}`, false);
+        output(`Severities: ${Object.entries(stats.by_severity).map(([k, v]) => `${k}=${v}`).join(', ')}`, false);
+        output(`Skills: ${Object.entries(stats.by_skill).map(([k, v]) => `${k}=${v}`).join(', ')}`, false);
+        if (stats.first_event) output(`Oldest: ${stats.first_event}`, false);
+        if (stats.last_event) output(`Newest: ${stats.last_event}`, false);
       }
       return;
     }
@@ -118,9 +118,12 @@ export const memoryCommand: CommandDefinition = {
         output(result, true);
       } else {
         const icon = result.valid ? '✓' : '✗';
-        output(`${icon} Chain ${result.valid ? 'valid' : 'BROKEN'}  (${result.totalLinks} links)`, false);
-        if (result.brokenLinks.length > 0) {
-          output(`Broken at: ${result.brokenLinks.join(', ')}`, false);
+        output(`${icon} Chain ${result.valid ? 'valid' : 'BROKEN'}  (${result.total_checked} checked)`, false);
+        if (result.first_broken_at) {
+          output(`First break at: ${result.first_broken_at}`, false);
+        }
+        if (result.broken_event_id) {
+          output(`Broken event: ${result.broken_event_id}`, false);
         }
       }
       return;

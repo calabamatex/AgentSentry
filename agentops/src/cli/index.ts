@@ -15,6 +15,7 @@ import { memoryCommand } from './commands/memory';
 import { streamCommand } from './commands/stream';
 import { pluginCommand } from './commands/plugin';
 import { configCommand } from './commands/config';
+import { dashboardCommand } from './commands/dashboard';
 
 // ---------------------------------------------------------------------------
 // Version (read from package.json at build time is fragile — hardcode + sync)
@@ -33,6 +34,7 @@ const commands: CommandDefinition[] = [
   streamCommand,
   pluginCommand,
   configCommand,
+  dashboardCommand,
 ];
 
 const commandMap = new Map(commands.map((c) => [c.name, c]));
@@ -62,6 +64,7 @@ function printHelp(): void {
     '  agentops stream --filter type=error',
     '  agentops plugin list',
     '  agentops config show',
+    '  agentops dashboard --port 9200',
   ];
   process.stdout.write(lines.join('\n') + '\n');
 }
