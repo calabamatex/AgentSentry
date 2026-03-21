@@ -104,7 +104,7 @@ Then add the following to your `.claude/settings.json`:
 
 ```bash
 # Add AgentOps as an MCP server
-claude mcp add agentops -- node agentops/src/mcp/server.js
+claude mcp add agentops -- node agentops/dist/src/mcp/server.js
 ```
 
 Or in `.cursor/mcp.json`:
@@ -114,7 +114,7 @@ Or in `.cursor/mcp.json`:
   "mcpServers": {
     "agentops": {
       "command": "node",
-      "args": ["agentops/src/mcp/server.js"]
+      "args": ["agentops/dist/src/mcp/server.js"]
     }
   }
 }

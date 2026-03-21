@@ -12,7 +12,7 @@ cd agentops && npm install
 npm run build
 
 # 3. Wire as MCP server in Claude Code
-claude mcp add agentops -- node dist/mcp/server.js
+claude mcp add agentops -- node dist/src/mcp/server.js
 
 # 4. Verify
 claude mcp list
