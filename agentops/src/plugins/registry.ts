@@ -255,7 +255,7 @@ export class PluginRegistry {
     return installed;
   }
 
-  /** Uninstall a plugin (only community/marketplace plugins). */
+  /** Uninstall a plugin (only community plugins). */
   async uninstall(name: string): Promise<boolean> {
     const plugin = this.plugins.get(name);
     if (!plugin) return false;
