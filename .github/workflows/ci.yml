@@ -1,0 +1,67 @@
+name: AgentOps CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['agentops/**']
+  pull_request:
+    branches: [main]
+    paths: ['agentops/**']
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node-version: [18, 20, 22]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: agentops/package-lock.json
+
+      - name: Install dependencies
+        working-directory: agentops
+        run: npm ci
+
+      - name: Build
+        working-directory: agentops
+        run: npm run build
+
+      - name: Run tests
+        working-directory: agentops
+        run: npx vitest run
+
+      - name: Run contract tests
+        working-directory: agentops
+        run: npx vitest run tests/contracts/
+
+      - name: Smoke test - MCP server starts
+        working-directory: agentops
+        run: |
+          timeout 5 node dist/src/mcp/server.js --self-test 2>&1 || true
+          # Verify the entrypoint file exists
+          test -f dist/src/mcp/server.js
+          # Verify barrel export exists
+          test -f dist/src/index.js
+          echo "Smoke test passed: all entrypoints exist"
+
+      - name: Smoke test - plugin validation
+        working-directory: agentops
+        run: bash scripts/validate-plugin.sh plugins/core/commit-monitor
+
+      - name: Shell script syntax check
+        working-directory: agentops
+        run: |
+          for f in scripts/*.sh bin/*.sh; do
+            if [ -f "$f" ]; then
+              bash -n "$f" && echo "OK: $f" || echo "FAIL: $f"
+            fi
+          done

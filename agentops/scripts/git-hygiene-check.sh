@@ -41,6 +41,17 @@ fi
 
 AUTO_COMMIT_ENABLED=$(jq -r '.save_points.auto_commit_enabled // true' "$CONFIG_FILE" 2>/dev/null || echo "true")
 
+# Auto-checkpoint mode: auto | dry-run | confirm
+CHECKPOINT_MODE="auto"
+if [[ -f "$CONFIG_FILE" ]] && command -v jq &>/dev/null; then
+    CHECKPOINT_MODE=$(jq -r '.auto_checkpoint_mode // "auto"' "$CONFIG_FILE" 2>/dev/null || echo "auto")
+fi
+# Validate the mode value
+case "$CHECKPOINT_MODE" in
+    auto|dry-run|confirm) ;;
+    *) CHECKPOINT_MODE="auto" ;;
+esac
+
 # ---------------------------------------------------------------------------
 # Read hook input from stdin (PreToolUse passes tool name + payload)
 # ---------------------------------------------------------------------------

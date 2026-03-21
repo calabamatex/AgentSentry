@@ -11,6 +11,33 @@
 - ALWAYS read a file before editing it
 - NEVER commit secrets, credentials, or .env files
 
+## RuFlo Orchestration (MANDATORY)
+
+RuFlo (https://github.com/ruvnet/ruflo/) is the REQUIRED orchestration layer for all multi-agent code creation in this project. This is not optional.
+
+### When RuFlo coordination is REQUIRED
+- Any task spawning 2+ agents in parallel
+- Any multi-file change spanning 3+ files
+- Any milestone or phase-level work
+- Any cross-session continuation of prior work
+
+### What MUST happen before spawning agents
+1. **Initialize swarm**: Call `mcp__claude-flow__swarm_init` with hierarchical topology
+2. **Store task context**: Call `mcp__claude-flow__memory_store` with milestone/task description
+3. **Orchestrate tasks**: Call `mcp__claude-flow__task_orchestrate` for formal decomposition
+4. Then spawn agents via Agent tool in the SAME message
+
+### What MUST happen after agents complete
+1. **Store outcomes**: Call `mcp__claude-flow__memory_store` with results, patterns learned, errors encountered
+2. **Log intelligence**: Store patterns that would help future sessions (e.g., "path resolution from tests/ to root is 2 levels")
+3. Then verify build + tests
+
+### When RuFlo is NOT required
+- Single-file edits (use Edit tool directly)
+- Read-only research (use Grep/Read/Glob)
+- Git operations (use Bash directly)
+- Answering questions (no tools needed)
+
 ## File Organization
 
 - NEVER save to root folder — use the directories below
