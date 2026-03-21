@@ -26,5 +26,5 @@ This session completed all 4 build phases of AgentOps v4.0, plus P0 scaling fixe
 ## Constraints
 
 - Do NOT modify: `audit-logger.ts`, `event-bus.ts`, `trace-context.ts`
-- Supabase provider is a stub — throws NotImplementedError
+- Supabase provider is implemented `[beta]` — requires external Supabase instance with env vars
 - ONNX model (86MB) is in git; should move to Git LFS

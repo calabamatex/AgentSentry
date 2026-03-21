@@ -33,6 +33,18 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Dependency checks — fail loudly, not silently
+# ---------------------------------------------------------------------------
+if ! command -v jq &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'jq' is required but not found. Install with: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 0
+fi
+if ! command -v node &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'node' is required but not found. AgentOps is a Node.js package." >&2
+    exit 0
+fi
+
 PREFIX="[AgentOps]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -100,92 +112,74 @@ fi
 # We use Python to parse YAML frontmatter reliably. Falls back to allow-all
 # if parsing fails (fail-open for agent definitions without permissions block).
 # ---------------------------------------------------------------------------
-PERMISSIONS_JSON="$(python3 << 'PYEOF'
-import sys, json, re, os
+PERMISSIONS_JSON="$(AGENT_FILE="$AGENT_FILE" node -e '
+const fs = require("fs");
+const path = require("path");
 
-agent_file = os.environ.get("AGENT_FILE", "")
-if not agent_file or not os.path.isfile(agent_file):
-    # No agent file — output empty permissions (allow-all)
-    print(json.dumps({"_empty": True}))
-    sys.exit(0)
+const agentFile = process.env.AGENT_FILE || "";
+if (!agentFile || !fs.existsSync(agentFile)) {
+  console.log(JSON.stringify({_empty: true}));
+  process.exit(0);
+}
 
-with open(agent_file, "r") as f:
-    content = f.read()
+const content = fs.readFileSync(agentFile, "utf-8");
+const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+if (!fmMatch) {
+  console.log(JSON.stringify({_empty: true}));
+  process.exit(0);
+}
 
-# Extract YAML frontmatter between --- markers
-fm_match = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
-if not fm_match:
-    print(json.dumps({"_empty": True}))
-    sys.exit(0)
+const frontmatter = fmMatch[1];
+const perms = {};
+let currentSection = null;
+let currentKey = null;
 
-frontmatter = fm_match.group(1)
+for (const line of frontmatter.split("\n")) {
+  const stripped = line.trim();
+  if (!stripped || stripped.startsWith("#")) continue;
+  if (stripped === "permissions:") continue;
 
-# Minimal YAML parser for our known schema (avoids PyYAML dependency)
-# Handles the nested permissions structure we define
-def parse_permissions(text):
-    perms = {}
-    current_section = None    # files | tools | bash
-    current_key = None        # read | write | deny | allow
+  const indent = line.length - line.trimStart().length;
 
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
+  if ([2,4].includes(indent) && stripped.endsWith(":") && ["files","tools","bash"].includes(stripped.slice(0,-1))) {
+    currentSection = stripped.slice(0,-1);
+    if (!perms[currentSection]) perms[currentSection] = {};
+    currentKey = null;
+    continue;
+  }
 
-        # Top-level: permissions:
-        if stripped == "permissions:":
-            continue
+  if ([4,6,8].includes(indent) && currentSection) {
+    const km = stripped.match(/^(read|write|deny|allow):\s*(.*)/);
+    if (km) {
+      currentKey = km[1];
+      const rest = km[2].trim();
+      if (!perms[currentSection]) perms[currentSection] = {};
+      if (!perms[currentSection][currentKey]) perms[currentSection][currentKey] = [];
+      if (rest.startsWith("[")) {
+        const items = [...rest.matchAll(/"([^"]*)"/g)].map(m => m[1]);
+        if (items.length === 0) {
+          const sq = [...rest.matchAll(/\x27([^\x27]*)\x27/g)].map(m => m[1]);
+          perms[currentSection][currentKey].push(...sq);
+        } else {
+          perms[currentSection][currentKey].push(...items);
+        }
+      } else if (rest && rest !== "[]") {
+        perms[currentSection][currentKey].push(rest);
+      }
+      continue;
+    }
+  }
 
-        # Detect indent level
-        indent = len(line) - len(line.lstrip())
+  if (currentSection && currentKey && stripped.startsWith("- ")) {
+    const item = stripped.slice(2).trim().replace(/^["\x27]|["\x27]$/g, "");
+    if (!perms[currentSection]) perms[currentSection] = {};
+    if (!perms[currentSection][currentKey]) perms[currentSection][currentKey] = [];
+    perms[currentSection][currentKey].push(item);
+  }
+}
 
-        # Section level (files:, tools:, bash:) — indent 4 or 2 under permissions
-        if indent in (2, 4) and stripped.endswith(":") and stripped[:-1] in ("files", "tools", "bash"):
-            current_section = stripped[:-1]
-            if current_section not in perms:
-                perms[current_section] = {}
-            current_key = None
-            continue
-
-        # Key level (read:, write:, deny:, allow:)
-        if indent in (4, 6, 8) and current_section:
-            key_match = re.match(r'^(read|write|deny|allow):\s*(.*)', stripped)
-            if key_match:
-                current_key = key_match.group(1)
-                rest = key_match.group(2).strip()
-                if current_section not in perms:
-                    perms[current_section] = {}
-                if current_key not in perms[current_section]:
-                    perms[current_section][current_key] = []
-
-                # Inline list: ["a", "b"]
-                if rest.startswith("["):
-                    items = re.findall(r'"([^"]*)"', rest)
-                    if not items:
-                        items = re.findall(r"'([^']*)'", rest)
-                    perms[current_section][current_key].extend(items)
-                elif rest and rest != "[]":
-                    perms[current_section][current_key].append(rest)
-                continue
-
-        # List items under current key: - "pattern" or - pattern
-        if current_section and current_key and stripped.startswith("- "):
-            item = stripped[2:].strip().strip('"').strip("'")
-            if current_section not in perms:
-                perms[current_section] = {}
-            if current_key not in perms[current_section]:
-                perms[current_section][current_key] = []
-            perms[current_section][current_key].append(item)
-
-    return perms
-
-perms = parse_permissions(frontmatter)
-if not perms:
-    print(json.dumps({"_empty": True}))
-else:
-    print(json.dumps(perms))
-PYEOF
-)" 2>/dev/null || echo '{"_empty":true}'
+console.log(JSON.stringify(Object.keys(perms).length ? perms : {_empty: true}));
+' 2>/dev/null)" || echo '{"_empty":true}'
 
 # ---------------------------------------------------------------------------
 # 5. Logging helper (defined before first use)
@@ -232,24 +226,15 @@ matches_glob() {
     local path="$1"
     local pattern="$2"
 
-    # Make path relative to repo root for matching
     local rel_path="$path"
     if [[ "$path" == "$REPO_ROOT"/* ]]; then
         rel_path="${path#$REPO_ROOT/}"
     fi
 
-    # Use Python for reliable glob matching (fnmatch with ** support)
-    python3 -c "
-import fnmatch, sys, os
-path = sys.argv[1]
-pattern = sys.argv[2]
-# Support ** for recursive directory matching
-if '**' in pattern:
-    import pathlib
-    match = pathlib.PurePath(path).match(pattern)
-else:
-    match = fnmatch.fnmatch(path, pattern)
-sys.exit(0 if match else 1)
+    node -e "
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\\\]/g, '\\\\$&').replace(/\*\*\\//g, '(?:.+/)?').replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
 " "$rel_path" "$pattern" 2>/dev/null
 }
 
@@ -343,10 +328,10 @@ check_bash_permission() {
     if [[ -n "$deny_patterns" ]]; then
         while IFS= read -r pattern; do
             [[ -z "$pattern" ]] && continue
-            # Use fnmatch-style matching on the command string
-            if python3 -c "
-import fnmatch, sys
-sys.exit(0 if fnmatch.fnmatch(sys.argv[1], sys.argv[2]) else 1)
+            if node -e "
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\\\]/g, '\\\\$&').replace(/\*\*/g, '.*').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
 " "$cmd" "$pattern" 2>/dev/null; then
                 echo "DENY:bash-denied:$pattern"
                 return
@@ -361,9 +346,10 @@ sys.exit(0 if fnmatch.fnmatch(sys.argv[1], sys.argv[2]) else 1)
         local found=false
         while IFS= read -r pattern; do
             [[ -z "$pattern" ]] && continue
-            if python3 -c "
-import fnmatch, sys
-sys.exit(0 if fnmatch.fnmatch(sys.argv[1], sys.argv[2]) else 1)
+            if node -e "
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\\\]/g, '\\\\$&').replace(/\*\*/g, '.*').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
 " "$cmd" "$pattern" 2>/dev/null; then
                 found=true
                 break

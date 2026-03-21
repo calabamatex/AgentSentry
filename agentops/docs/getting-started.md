@@ -154,3 +154,18 @@ The dashboard exposes these endpoints:
 - See the [API Reference](./api-reference.md) for the full public API
 - Check `docs/examples/` for runnable code samples
 - Read the [Plugin Tutorial](./plugin-tutorial.md) for building custom plugins
+
+## Feature Maturity
+
+| Feature                  | Status         | Notes                                    |
+|--------------------------|----------------|------------------------------------------|
+| SQLite memory store      | **Stable**     | Default provider, hash-chained events    |
+| MCP server (8 tools)     | **Stable**     | stdio transport                          |
+| Claude Code hooks        | **Stable**     | Session start, post-write, checkpoint    |
+| Progressive enablement   | **Stable**     | 5 levels, progressive skill unlock       |
+| Observability suite      | **Stable**     | Logger, circuit breaker, metrics, health |
+| Supabase provider        | Beta           | Requires external Supabase instance      |
+| Dashboard / streaming    | Beta           | Local SSE/WebSocket, in-process bus      |
+| CLI                      | Beta           | 8 command groups                         |
+| Plugin registry          | Experimental   | Local directory scanning only            |
+| Multi-agent coordination | Experimental   | Single-machine, event-sourced            |

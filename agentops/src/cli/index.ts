@@ -16,6 +16,7 @@ import { streamCommand } from './commands/stream';
 import { pluginCommand } from './commands/plugin';
 import { configCommand } from './commands/config';
 import { dashboardCommand } from './commands/dashboard';
+import { enableCommand } from './commands/enable';
 
 // ---------------------------------------------------------------------------
 // Version (read from package.json at build time is fragile — hardcode + sync)
@@ -35,6 +36,7 @@ const commands: CommandDefinition[] = [
   pluginCommand,
   configCommand,
   dashboardCommand,
+  enableCommand,
 ];
 
 const commandMap = new Map(commands.map((c) => [c.name, c]));
@@ -65,6 +67,7 @@ function printHelp(): void {
     '  agentops plugin list',
     '  agentops config show',
     '  agentops dashboard --port 9200',
+    '  agentops enable --level 1',
   ];
   process.stdout.write(lines.join('\n') + '\n');
 }

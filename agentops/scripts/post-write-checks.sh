@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Dependency checks — fail loudly, not silently
+# ---------------------------------------------------------------------------
+if ! command -v jq &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'jq' is required but not found. Install with: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 0  # advisory only, don't block
+fi
+if ! command -v git &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'git' is required but not found." >&2
+    exit 0
+fi
+if ! command -v node &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'node' is required but not found. AgentOps is a Node.js package." >&2
+    exit 0
+fi
+
 ###############################################################################
 # post-write-checks.sh — AgentOps PostToolUse hook for Write|Edit
 #
@@ -19,16 +35,7 @@ PREFIX="[AgentOps]"
 # Parse hook input
 # ---------------------------------------------------------------------------
 INPUT="$(cat)"
-FILE_PATH="$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    # Navigate possible shapes: .tool_input.file_path or .input.file_path
-    ti = data.get('tool_input', data.get('input', {}))
-    print(ti.get('file_path', ''))
-except Exception:
-    print('')
-" 2>/dev/null || true)"
+FILE_PATH="$(echo "$INPUT" | jq -r '.tool_input.file_path // .input.file_path // empty' 2>/dev/null || true)"
 
 if [[ -z "$FILE_PATH" || ! -f "$FILE_PATH" ]]; then
     exit 0

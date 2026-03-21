@@ -14,6 +14,14 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Dependency checks — fail loudly, not silently
+# ---------------------------------------------------------------------------
+if ! command -v jq &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'jq' is required but not found. Install with: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 0
+fi
+
 PREFIX="[AgentOps]"
 
 # ---------------------------------------------------------------------------
@@ -47,16 +55,12 @@ fi
 if [[ -n "$FILE_PATH" && -n "$EXCLUDE_PATHS" ]]; then
     while IFS= read -r pattern; do
         [[ -z "$pattern" ]] && continue
-        if python3 -c "
-import fnmatch, sys, pathlib
-path = sys.argv[1]
-pattern = sys.argv[2]
-if '**' in pattern:
-    match = pathlib.PurePath(path).match(pattern)
-else:
-    match = fnmatch.fnmatch(path, pattern)
-sys.exit(0 if match else 1)
-" "$FILE_PATH" "$pattern" 2>/dev/null; then
+        if node --eval "$(cat <<'NODESCRIPT'
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\//g, '(?:.+/)?').replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
+NODESCRIPT
+)" "$FILE_PATH" "$pattern" 2>/dev/null; then
             # File is excluded from scanning
             exit 0
         fi

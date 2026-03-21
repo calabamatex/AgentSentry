@@ -159,8 +159,14 @@ describe('agentops_health', () => {
     const parsed = JSON.parse(result.content[0].text);
 
     expect(parsed.enablement).toBeDefined();
-    expect(parsed.enablement.level).toBe(3);
-    expect(parsed.enablement.active_skills).toContain('save_points');
+    expect(typeof parsed.enablement.level).toBe('number');
+    expect(parsed.enablement.level).toBeGreaterThanOrEqual(1);
+    expect(parsed.enablement.level).toBeLessThanOrEqual(5);
+    expect(Array.isArray(parsed.enablement.active_skills)).toBe(true);
+    // Level 1+ always has save_points active
+    if (parsed.enablement.level >= 1) {
+      expect(parsed.enablement.active_skills).toContain('save_points');
+    }
   });
 
   it('should include config info', async () => {

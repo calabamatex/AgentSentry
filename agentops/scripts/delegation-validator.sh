@@ -37,6 +37,18 @@
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Dependency checks — fail loudly, not silently
+# ---------------------------------------------------------------------------
+if ! command -v jq &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'jq' is required but not found. Install with: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 0
+fi
+if ! command -v node &>/dev/null; then
+    echo "[AgentOps] CRITICAL: 'node' is required but not found. AgentOps is a Node.js package." >&2
+    exit 0
+fi
+
 PREFIX="[AgentOps]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -137,12 +149,11 @@ iso_to_epoch() {
     local cleaned
     cleaned="$(echo "$iso" | sed 's/Z$/+0000/' | sed 's/\([+-][0-9][0-9]\):\([0-9][0-9]\)$/\1\2/')"
     date -jf "%Y-%m-%dT%H:%M:%S%z" "$cleaned" +%s 2>/dev/null && return 0
-    # Last resort: python
-    python3 -c "
-from datetime import datetime, timezone
-import sys
-dt = datetime.fromisoformat(sys.argv[1].replace('Z', '+00:00'))
-print(int(dt.timestamp()))
+    # Last resort: node
+    node -e "
+const d = new Date(process.argv[1]);
+if (isNaN(d.getTime())) process.exit(1);
+process.stdout.write(String(Math.floor(d.getTime() / 1000)));
 " "$iso" 2>/dev/null && return 0
     echo "0"
 }
@@ -224,15 +235,10 @@ if [[ -n "$FILE_PATH" ]]; then
 
         while IFS= read -r pattern; do
             [[ -z "$pattern" ]] && continue
-            if python3 -c "
-import fnmatch, sys, pathlib
-path = sys.argv[1]
-pattern = sys.argv[2]
-if '**' in pattern:
-    match = pathlib.PurePath(path).match(pattern)
-else:
-    match = fnmatch.fnmatch(path, pattern)
-sys.exit(0 if match else 1)
+            if node -e "
+const p = process.argv[1], g = process.argv[2];
+const re = new RegExp('^' + g.replace(/[.+^${}()|[\]\\\\]/g, '\\\\$&').replace(/\*\*\\//g, '(?:.+/)?').replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*').replace(/\?/g, '.') + '$');
+process.exit(re.test(p) ? 0 : 1);
 " "$REL_PATH" "$pattern" 2>/dev/null; then
                 FILE_ALLOWED=true
                 break
@@ -266,37 +272,27 @@ if [[ -n "$SCOPE_MAX_TOKENS" && "$SCOPE_MAX_TOKENS" != "null" && "$SCOPE_MAX_TOK
         # Best approach: sum input_tokens + output_tokens from cost-log entries
         # since the delegation was issued.
         if [[ -f "$DASHBOARD_DATA/cost-log.json" && -n "$TOKEN_ISSUED" ]]; then
-            CURRENT_TOKENS="$(python3 -c "
-import json, sys
-from datetime import datetime, timezone
-
-issued = sys.argv[1]
-try:
-    issued_dt = datetime.fromisoformat(issued.replace('Z', '+00:00'))
-except:
-    print(0)
-    sys.exit(0)
-
-total = 0
-try:
-    with open(sys.argv[2], 'r') as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                entry = json.loads(line)
-                ts = entry.get('timestamp', '')
-                entry_dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
-                if entry_dt >= issued_dt:
-                    total += int(entry.get('input_tokens', 0))
-                    total += int(entry.get('output_tokens', 0))
-            except:
-                continue
-except:
-    pass
-
-print(total)
+            CURRENT_TOKENS="$(node -e "
+const fs = require('fs');
+const issued = process.argv[1];
+const logFile = process.argv[2];
+try {
+  const issuedMs = new Date(issued).getTime();
+  let total = 0;
+  const lines = fs.readFileSync(logFile, 'utf-8').split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      const entry = JSON.parse(line);
+      const entryMs = new Date(entry.timestamp || '').getTime();
+      if (entryMs >= issuedMs) {
+        total += parseInt(entry.input_tokens || 0, 10);
+        total += parseInt(entry.output_tokens || 0, 10);
+      }
+    } catch {}
+  }
+  process.stdout.write(String(total));
+} catch { process.stdout.write('0'); }
 " "$TOKEN_ISSUED" "$DASHBOARD_DATA/cost-log.json" 2>/dev/null)" || true
         fi
     fi

@@ -1,5 +1,8 @@
 /**
  * Coordination module — multi-agent coordination primitives.
+ *
+ * [experimental] Single-machine, event-sourced coordination.
+ * Not a distributed system. See lease.ts for consistency guarantees.
  */
 
 export {
@@ -9,3 +12,9 @@ export {
   type CoordinationMessage,
   type CoordinatorOptions,
 } from './coordinator';
+
+export {
+  LeaseManager,
+  type Lease,
+  type LeaseManagerOptions,
+} from './lease';

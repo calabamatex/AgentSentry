@@ -272,6 +272,49 @@ interface EnrichmentResult {
 
 ---
 
+## Intelligence (Cross-Session)
+
+### `SessionSummarizer`
+
+Generates structured session summaries from MemoryStore events.
+
+```typescript
+constructor(store: MemoryStore)
+summarize(sessionId: string): Promise<SessionSummary>
+summarizeAndStore(sessionId: string): Promise<SessionSummary>
+```
+
+### `PatternDetector`
+
+Detects recurring patterns across sessions (error hotspots, recurring violations, session-level patterns).
+
+```typescript
+constructor(store: MemoryStore)
+detect(options?: { lookbackDays?: number; minOccurrences?: number }): Promise<DetectedPattern[]>
+detectAndStore(options?: { lookbackDays?: number; minOccurrences?: number }): Promise<DetectedPattern[]>
+```
+
+### `ContextRecaller`
+
+Searches memory for relevant prior context given a task description.
+
+```typescript
+constructor(store: MemoryStore)
+recall(query: string, options?: { maxResults?: number; lookbackDays?: number }): Promise<RecallResult>
+```
+
+### `HandoffGenerator`
+
+Generates structured handoff messages combining session data with git state.
+
+```typescript
+constructor(store: MemoryStore)
+generate(sessionId: string, options?: { projectPath?: string; remainingWork?: string[] }): Promise<HandoffMessage>
+generateAndStore(sessionId: string, options?: { projectPath?: string; remainingWork?: string[] }): Promise<HandoffMessage>
+```
+
+---
+
 ## Audit
 
 ### `AuditIndex`
@@ -289,11 +332,14 @@ getSessionTimeline(sessionId: string): Promise<AuditSearchResult[]>
 
 ---
 
-## Coordination
+## Coordination [experimental]
+
+> Single-machine, event-sourced coordination. Not a distributed system.
+> No consensus protocol. Best-effort only. See `lease.ts` for formal lease model.
 
 ### `AgentCoordinator`
 
-Multi-agent coordination with agent registry, distributed locks, messaging, and task delegation.
+Multi-agent coordination with agent registry, locks, messaging, and task delegation.
 
 ```typescript
 constructor(options: CoordinatorOptions)
@@ -383,7 +429,7 @@ interface CoordinationMessage {
 
 ### `PluginRegistry`
 
-Discovers, validates, installs, and manages plugins from `core/`, `community/`, and `marketplace/` directories.
+[experimental] Local plugin registry — discovers, validates, installs, and manages plugins from `core/` and `community/` directories. Local directory scanning only.
 
 ```typescript
 constructor(pluginsDir?: string)  // default: 'plugins'
@@ -417,7 +463,7 @@ interface PluginManifest {
 interface InstalledPlugin {
   manifest: PluginManifest; path: string;
   enabled: boolean; installedAt: string;
-  source: 'core' | 'community' | 'marketplace';
+  source: 'core' | 'community';
 }
 
 interface PluginSearchOptions {
@@ -434,17 +480,20 @@ interface PluginSearchOptions {
 
 ### `createMcpServer(): Server`
 
-Creates and configures an MCP server with all AgentOps tools registered: `check-git`, `check-context`, `check-rules`, `size-task`, `scan-security`, `capture-event`, `search-history`, `health`.
+Creates and configures an MCP server with all AgentOps tools registered: `check-git`, `check-context`, `check-rules`, `size-task`, `scan-security`, `capture-event`, `search-history`, `health`, `recall-context`.
 
 Returns a `@modelcontextprotocol/sdk` `Server` instance ready for transport connection.
 
 ---
 
-## Streaming
+## Streaming [beta]
+
+> Local event streaming for the development dashboard. Not a cloud event platform.
+> See ADR-001 for architecture decision.
 
 ### `EventStream`
 
-Real-time event streaming bridge. Subscribes to the internal event bus and fans out to connected clients with filter-based routing and a rolling replay buffer.
+Real-time event streaming bridge with backpressure handling. Subscribes to the internal event bus and fans out to connected clients with filter-based routing and a rolling replay buffer.
 
 ```typescript
 constructor(options?: EventStreamOptions)

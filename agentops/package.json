@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/agentops.git"
+    "url": "https://github.com/calabamatex/AgenticManagement.git"
   },
   "license": "MIT",
   "keywords": [
@@ -22,7 +22,9 @@
     "mcp"
   ],
   "files": [
-    "dist/"
+    "dist/",
+    "scripts/",
+    "agentops.config.json"
   ],
   "publishConfig": {
     "access": "public"

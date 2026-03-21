@@ -104,27 +104,24 @@ export async function handler(
     }
 
     // Check enablement
-    let enablementInfo = { level: 3, name: 'House Rules', active_skills: [] as string[] };
+    let enablementLevel = 3; // default
     try {
-      // Try to read from config file
       const fs = require('fs');
       const path = require('path');
       const cfgPath = path.resolve('agentops/agentops.config.json');
       const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-      if (raw.enablement?.level) {
-        const level = raw.enablement.level;
-        const config = generateConfigForLevel(level);
-        enablementInfo = {
-          level,
-          name: LEVEL_NAMES[level] || `Level ${level}`,
-          active_skills: getActiveSkills(config),
-        };
+      if (raw.enablement?.level && typeof raw.enablement.level === 'number') {
+        enablementLevel = raw.enablement.level;
       }
     } catch {
-      // Use defaults
-      const config = generateConfigForLevel(3);
-      enablementInfo.active_skills = getActiveSkills(config);
+      // Use default level
     }
+    const enablementConfig = generateConfigForLevel(enablementLevel);
+    const enablementInfo = {
+      level: enablementLevel,
+      name: LEVEL_NAMES[enablementLevel] || `Level ${enablementLevel}`,
+      active_skills: getActiveSkills(enablementConfig),
+    };
 
     // Check for degraded conditions
     const criticalCount = stats.by_severity?.critical ?? 0;

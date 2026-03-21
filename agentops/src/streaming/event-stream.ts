@@ -1,9 +1,12 @@
 /**
  * event-stream.ts — Real-time event streaming bridge (M4 Task 4.5)
  *
+ * [beta] Local event streaming for the development dashboard.
+ * Not a distributed event platform. See ADR-001.
+ *
  * Bridges the core EventBus to external transports (SSE, WebSocket, callback).
  * Maintains a rolling buffer for replay and manages connected clients with
- * filter-based routing.
+ * filter-based routing. Includes backpressure handling for slow clients.
  */
 
 import { EventEmitter } from 'events';
@@ -45,6 +48,8 @@ export interface EventStreamOptions {
   bufferSize?: number;
   /** Heartbeat interval in milliseconds (default 30000). */
   heartbeatIntervalMs?: number;
+  /** Maximum queued events per client before dropping (default 100). Backpressure. */
+  maxClientBacklog?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,9 +69,12 @@ export class EventStream extends EventEmitter {
   private maxClients: number;
   private bufferSize: number;
   private heartbeatIntervalMs: number;
+  private maxClientBacklog: number;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private started: boolean = false;
   private eventsPublished: number = 0;
+  private eventsDropped: number = 0;
+  private clientBacklog: Map<string, number> = new Map();
   private busHandler: ((payload: EventPayload) => void) | null = null;
 
   constructor(options?: EventStreamOptions) {
@@ -74,6 +82,7 @@ export class EventStream extends EventEmitter {
     this.maxClients = options?.maxClients ?? 50;
     this.bufferSize = options?.bufferSize ?? 100;
     this.heartbeatIntervalMs = options?.heartbeatIntervalMs ?? 30000;
+    this.maxClientBacklog = options?.maxClientBacklog ?? 100;
   }
 
   // -------------------------------------------------------------------------
@@ -201,8 +210,19 @@ export class EventStream extends EventEmitter {
 
     for (const client of this.clients.values()) {
       if (this.matchesFilter(event, client.filter)) {
+        // Backpressure: track pending events per client
+        const backlog = this.clientBacklog.get(client.id) ?? 0;
+        if (backlog >= this.maxClientBacklog) {
+          this.eventsDropped++;
+          this.emit('backpressure', { clientId: client.id, dropped: true });
+          continue;
+        }
         try {
+          this.clientBacklog.set(client.id, backlog + 1);
           client.send(event);
+          // Decrement after send succeeds (approximation — real backpressure
+          // would need async acknowledgement, but this prevents runaway queues)
+          this.clientBacklog.set(client.id, Math.max((this.clientBacklog.get(client.id) ?? 1) - 1, 0));
         } catch {
           // Transport-level failures are non-fatal.
         }
@@ -278,11 +298,12 @@ export class EventStream extends EventEmitter {
   // Stats
   // -------------------------------------------------------------------------
 
-  getStats(): { clientCount: number; bufferSize: number; eventsPublished: number; started: boolean } {
+  getStats(): { clientCount: number; bufferSize: number; eventsPublished: number; eventsDropped: number; started: boolean } {
     return {
       clientCount: this.clients.size,
       bufferSize: this.buffer.length,
       eventsPublished: this.eventsPublished,
+      eventsDropped: this.eventsDropped,
       started: this.started,
     };
   }

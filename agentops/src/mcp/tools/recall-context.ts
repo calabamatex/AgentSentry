@@ -1,0 +1,88 @@
+/**
+ * recall-context.ts — MCP tool: recall relevant prior context for a task.
+ *
+ * Searches across session summaries, patterns, and events in MemoryStore
+ * to surface relevant prior work context.
+ */
+
+import { ContextRecaller } from '../../memory/intelligence';
+import { MemoryStore } from '../../memory/store';
+
+export const name = 'agentops_recall_context';
+
+export const description =
+  'Search memory for relevant prior session context given a task description. ' +
+  'Returns matching sessions, summaries, and related events.';
+
+export const inputSchema = {
+  type: 'object' as const,
+  properties: {
+    query: {
+      type: 'string',
+      description: 'Task description or search query to find relevant prior context',
+    },
+    max_results: {
+      type: 'number',
+      description: 'Maximum number of session results to return (default: 5)',
+    },
+    lookback_days: {
+      type: 'number',
+      description: 'How many days back to search (default: 90)',
+    },
+  },
+  required: ['query'] as string[],
+};
+
+export async function handler(
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  const query = args.query as string;
+  if (!query || typeof query !== 'string') {
+    return {
+      content: [{ type: 'text', text: 'Error: query is required and must be a string' }],
+    };
+  }
+
+  const maxResults = typeof args.max_results === 'number' ? args.max_results : 5;
+  const lookbackDays = typeof args.lookback_days === 'number' ? args.lookback_days : 90;
+
+  try {
+    const store = new MemoryStore();
+    const recaller = new ContextRecaller(store);
+
+    const result = await recaller.recall(query, { maxResults, lookbackDays });
+
+    await store.close();
+
+    if (result.results.length === 0) {
+      return {
+        content: [{ type: 'text', text: `No relevant prior context found for: "${query}"` }],
+      };
+    }
+
+    const sections: string[] = [`Found ${result.results.length} relevant session(s) for: "${query}"\n`];
+
+    for (const r of result.results) {
+      sections.push(`--- Session: ${r.session_id} (relevance: ${r.relevance_score.toFixed(2)}) ---`);
+      if (r.summary) {
+        sections.push(`Summary: ${r.summary}`);
+      }
+      if (r.relevant_events.length > 0) {
+        sections.push('Key events:');
+        for (const e of r.relevant_events) {
+          sections.push(`  [${e.event_type}/${e.severity}] ${e.title}: ${e.detail.slice(0, 200)}`);
+        }
+      }
+      sections.push('');
+    }
+
+    return {
+      content: [{ type: 'text', text: sections.join('\n') }],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      content: [{ type: 'text', text: `Error recalling context: ${message}` }],
+    };
+  }
+}

@@ -1,5 +1,16 @@
 /**
  * coordinator.ts — Multi-agent coordination primitives for AgentOps.
+ *
+ * [experimental] Single-machine, event-sourced coordination.
+ * Not a distributed system. No consensus protocol. Best-effort only.
+ *
+ * Guarantees:
+ *  - Append-only event log (events are never deleted)
+ *  - Locks have TTL-based expiry (checked at read time)
+ *  - No CAS/compare-and-swap — race conditions possible under concurrency
+ *  - No cross-machine coordination
+ *
+ * See also: lease.ts for formal lease model with fencing tokens.
  */
 
 import { v4 as uuidv4 } from 'uuid';
