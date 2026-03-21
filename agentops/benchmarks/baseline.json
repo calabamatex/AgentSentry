@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-03-21T19:01:11.618Z",
+  "system": {
+    "nodeVersion": "v22.14.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpus": 8,
+    "memoryMb": 16384
+  },
+  "results": [
+    {
+      "name": "Insert (single)",
+      "iterations": 500,
+      "totalTimeMs": 5348.192849999988,
+      "avgTimeMs": 10.696385699999976,
+      "opsPerSecond": 93.48952328822644,
+      "p50Ms": 6.114416000000347,
+      "p95Ms": 10.763458999999784,
+      "p99Ms": 22.912000000000262
+    },
+    {
+      "name": "Search (keyword)",
+      "iterations": 500,
+      "totalTimeMs": 10142.12686799998,
+      "avgTimeMs": 20.284253735999958,
+      "opsPerSecond": 49.299324146454865,
+      "p50Ms": 17.213832999999795,
+      "p95Ms": 30.939916999999696,
+      "p99Ms": 55.29437499999949
+    },
+    {
+      "name": "Insert (batch)",
+      "iterations": 500,
+      "totalTimeMs": 3305.4714590000003,
+      "avgTimeMs": 6.610942918000001,
+      "opsPerSecond": 151.26435251425957,
+      "metadata": {
+        "batchSize": 100,
+        "captured": 500,
+        "errors": 0
+      }
+    },
+    {
+      "name": "Cache (hit/miss)",
+      "iterations": 500,
+      "totalTimeMs": 13015.733517000015,
+      "avgTimeMs": 26.03146703400003,
+      "opsPerSecond": 38.41504586329642,
+      "p50Ms": 24.005874999998923,
+      "p95Ms": 34.30762500000128,
+      "p99Ms": 62.839208000001236,
+      "metadata": {
+        "coldQueries": 100,
+        "hotQueries": 400,
+        "coldAvgMs": 28.6051,
+        "hotAvgMs": 25.388,
+        "speedup": 1.13
+      }
+    },
+    {
+      "name": "Concurrent R/W",
+      "iterations": 500,
+      "totalTimeMs": 8230.294708000001,
+      "avgTimeMs": 16.460589416,
+      "opsPerSecond": 60.75116599579243,
+      "p50Ms": 152.0515000000014,
+      "p95Ms": 277.4740840000013,
+      "p99Ms": 357.0640829999975,
+      "metadata": {
+        "readers": 5,
+        "writers": 5,
+        "opsPerWorker": 50,
+        "totalOps": 500
+      }
+    }
+  ],
+  "totalTimeMs": 41208.030249999996
+}
