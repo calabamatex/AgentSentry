@@ -16,7 +16,7 @@ import { EventStream, StreamClient, StreamEvent, StreamFilter } from './event-st
 // ---------------------------------------------------------------------------
 
 /** RFC 6455 Section 4.2.2 — magic GUID for Sec-WebSocket-Accept. */
-const WS_MAGIC_GUID = '258EAFA5-E914-47DA-95CA-5AB9FC11';
+export const WS_MAGIC_GUID = '258EAFA5-E914-47DA-95CA-5AB9FC11';
 
 // WebSocket opcodes
 const OPCODE_TEXT = 0x01;
@@ -45,6 +45,7 @@ export class WsTransport {
   private server: http.Server | null = null;
   private stream: EventStream;
   private options: Required<WsTransportOptions>;
+  private sockets: Set<net.Socket> = new Set();
 
   constructor(stream: EventStream, options?: WsTransportOptions) {
     this.stream = stream;
@@ -91,11 +92,18 @@ export class WsTransport {
   async stop(): Promise<void> {
     if (!this.server) return;
 
+    // Destroy all tracked WebSocket sockets so the server can close promptly.
+    for (const socket of this.sockets) {
+      try { socket.destroy(); } catch { /* best-effort */ }
+    }
+    this.sockets.clear();
+
     return new Promise((resolve) => {
       this.server!.close(() => {
         this.server = null;
         resolve();
       });
+      // Also close any HTTP-level connections.
       this.server!.closeAllConnections?.();
     });
   }
@@ -110,6 +118,10 @@ export class WsTransport {
 
   private handleUpgrade(req: http.IncomingMessage, socket: net.Socket, _head: Buffer): void {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+
+    // Track all upgrade sockets for forced cleanup on stop().
+    this.sockets.add(socket);
+    socket.on('close', () => { this.sockets.delete(socket); });
 
     if (url.pathname !== this.options.path) {
       socket.write('HTTP/1.1 404 Not Found\r\n\r\n');

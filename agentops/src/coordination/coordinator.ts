@@ -149,22 +149,30 @@ export class AgentCoordinator {
       limit: 500,
     });
 
-    // Deduplicate by agent id — keep most recent event per agent
-    const byAgent = new Map<string, AgentInfo>();
+    // Deduplicate by agent id — keep most recent event per agent.
+    // Events come DESC by timestamp but same-ms events may be unordered,
+    // so we track by event timestamp and prefer later or same-timestamp
+    // events that indicate a status change (e.g., offline wins ties).
+    const byAgent = new Map<string, { info: AgentInfo; eventTs: string }>();
     for (const evt of events) {
       const info = evt.metadata as unknown as AgentInfo;
       if (!info?.id) continue;
-      if (!byAgent.has(info.id)) {
-        byAgent.set(info.id, info);
+      const existing = byAgent.get(info.id);
+      if (!existing) {
+        byAgent.set(info.id, { info, eventTs: evt.timestamp });
+      } else if (
+        evt.timestamp > existing.eventTs ||
+        (evt.timestamp === existing.eventTs && info.status === 'offline')
+      ) {
+        byAgent.set(info.id, { info, eventTs: evt.timestamp });
       }
-      // events come desc by timestamp — first hit is most recent
     }
 
     const offlineThreshold = this.heartbeatIntervalMs * 2;
     const now = Date.now();
 
     const agents: AgentInfo[] = [];
-    for (const info of byAgent.values()) {
+    for (const { info } of byAgent.values()) {
       const elapsed = now - new Date(info.lastSeen).getTime();
       if (info.status !== 'offline' && elapsed > offlineThreshold) {
         info.status = 'offline';
@@ -347,6 +355,8 @@ export class AgentCoordinator {
       const msg = evt.metadata as unknown as CoordinationMessage;
       if (!msg?.channel || msg.channel !== channel) continue;
       if (msg.to !== '*' && msg.to !== this.agentId) continue;
+      // Apply strict "after" filter using message timestamp (since uses >=)
+      if (since && msg.timestamp <= since) continue;
       messages.push(msg);
     }
 
