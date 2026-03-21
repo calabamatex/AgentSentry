@@ -1,8 +1,9 @@
 /**
- * registry.ts — Plugin Registry for AgentOps Marketplace/Discovery (M4 Task 4.4)
+ * registry.ts — Local Plugin Registry for AgentOps (M4 Task 4.4)
  *
- * Discovers, validates, installs, and manages plugins from core/, community/,
- * and marketplace sources. Uses only fs/path — no external dependencies.
+ * [experimental] Discovers, validates, installs, and manages plugins from
+ * core/ and community/ directories. Local directory scanning only — no
+ * remote discovery or download. Uses only fs/path — no external dependencies.
  */
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'fs';
