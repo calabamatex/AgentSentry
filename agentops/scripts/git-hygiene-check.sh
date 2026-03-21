@@ -152,6 +152,10 @@ fi
 if [[ "$NEEDS_AUTO_SAVE" == true ]]; then
     if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
         echo "$PREFIX ADVISORY: Auto-commit would fire (${UNCOMMITTED_COUNT} files, ${MINUTES_SINCE_COMMIT}min since last commit) but auto_commit_enabled=false."
+    elif [[ "$CHECKPOINT_MODE" = "dry-run" ]]; then
+        echo "$PREFIX DRY-RUN: Would auto-commit ${UNCOMMITTED_COUNT} file(s) (${MINUTES_SINCE_COMMIT}min since last commit). No changes made."
+    elif [[ "$CHECKPOINT_MODE" = "confirm" ]]; then
+        echo "$PREFIX CONFIRM: ${UNCOMMITTED_COUNT} file(s) ready for checkpoint (${MINUTES_SINCE_COMMIT}min since last commit). Run 'git add -A && git commit -m \"[agentops] auto-save before modification\"' to commit."
     else
         git add -A 2>/dev/null || true
         COMMIT_MSG="[agentops] auto-save before modification"
@@ -177,6 +181,10 @@ fi
 if [[ "$FILES_MODIFIED_COUNT" -ge "$MID_SESSION_CHECKPOINT_THRESHOLD" ]] && [[ "$UNCOMMITTED_COUNT" -gt 0 ]]; then
     if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
         echo "$PREFIX ADVISORY: Mid-session checkpoint would fire ($FILES_MODIFIED_COUNT modifications) but auto_commit_enabled=false."
+    elif [[ "$CHECKPOINT_MODE" = "dry-run" ]]; then
+        echo "$PREFIX DRY-RUN: Would mid-session checkpoint ${UNCOMMITTED_COUNT} file(s) ($FILES_MODIFIED_COUNT modifications). No changes made."
+    elif [[ "$CHECKPOINT_MODE" = "confirm" ]]; then
+        echo "$PREFIX CONFIRM: ${UNCOMMITTED_COUNT} file(s) ready for mid-session checkpoint ($FILES_MODIFIED_COUNT modifications). Run 'git add -A && git commit -m \"[agentops] mid-session checkpoint\"' to commit."
     else
         git add -A 2>/dev/null || true
         CHECKPOINT_MSG="[agentops] mid-session checkpoint"
