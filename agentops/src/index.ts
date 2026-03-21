@@ -62,6 +62,14 @@ export type { ShutdownOptions, ShutdownReport } from './observability/shutdown';
 export { MetricsCollector, createMetricsMiddleware } from './observability/metrics';
 export type { HistogramSnapshot } from './observability/metrics';
 
+// Handoff
+export { HandoffGenerator } from './memory/handoff';
+export type { HandoffMessage } from './memory/handoff';
+
+// Coordination [experimental] — Lease model
+export { LeaseManager } from './coordination/lease';
+export type { Lease, LeaseManagerOptions } from './coordination/lease';
+
 // Dashboard (M7)
 export { DashboardServer } from './dashboard/server';
 export type { DashboardServerOptions, DashboardServerInfo } from './dashboard/server';
