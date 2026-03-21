@@ -94,6 +94,8 @@ check_type '.security.permission_fail_mode' 'string' 'security.permission_fail_m
 check_type '.budget.session_budget' 'number' 'budget.session_budget'
 check_type '.budget.monthly_budget' 'number' 'budget.monthly_budget'
 
+check_type '.auto_checkpoint_mode' 'string' 'auto_checkpoint_mode'
+
 # ---------------------------------------------------------------------------
 # 4. Value range validation
 # ---------------------------------------------------------------------------
