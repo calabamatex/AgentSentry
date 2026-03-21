@@ -94,6 +94,8 @@ check_type '.security.permission_fail_mode' 'string' 'security.permission_fail_m
 check_type '.budget.session_budget' 'number' 'budget.session_budget'
 check_type '.budget.monthly_budget' 'number' 'budget.monthly_budget'
 
+check_type '.auto_checkpoint_mode' 'string' 'auto_checkpoint_mode'
+
 # ---------------------------------------------------------------------------
 # 4. Value range validation
 # ---------------------------------------------------------------------------
@@ -138,6 +140,12 @@ fi
 FAIL_MODE=$(jq -r '.security.permission_fail_mode // "block"' "$CONFIG_FILE" 2>/dev/null || echo "block")
 if [[ "$FAIL_MODE" != "block" && "$FAIL_MODE" != "warn" ]]; then
     ERRORS+=("security.permission_fail_mode must be 'block' or 'warn', got '$FAIL_MODE'")
+fi
+
+# auto_checkpoint_mode must be "auto", "dry-run", or "confirm"
+CHECKPOINT_MODE=$(jq -r '.auto_checkpoint_mode // "auto"' "$CONFIG_FILE" 2>/dev/null || echo "auto")
+if [[ "$CHECKPOINT_MODE" != "auto" && "$CHECKPOINT_MODE" != "dry-run" && "$CHECKPOINT_MODE" != "confirm" ]]; then
+    ERRORS+=("auto_checkpoint_mode must be 'auto', 'dry-run', or 'confirm', got '$CHECKPOINT_MODE'")
 fi
 
 # ---------------------------------------------------------------------------

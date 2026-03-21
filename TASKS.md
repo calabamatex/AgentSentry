@@ -11,12 +11,20 @@
 - [x] Tier 2: Rules unification, health enrichment, doc corrections
 - [x] Tier 3: Scaffold docs, first real plugin
 
-## Open
+## Completed (M3 — Adoption Polish)
+
+- [x] CI build matrix (Linux + macOS)
+- [x] Install smoke test (7/7 pass)
+- [x] Dashboard v4 (plugins, enablement levels, enrichment panels)
+- [x] E2E plugin tutorial
+- [x] ONNX model to Git LFS (86MB → tracked)
+- [x] Dry-run/confirm mode for auto-checkpoint hooks
+- [x] RuFlo enforcement hook + CLAUDE.md rule
+
+## Open (M4 — Cloud & Scale)
 
 - [ ] Implement Supabase storage provider
 - [ ] Cloud LLM enrichment provider (Ollama/OpenAI)
-- [ ] Update dashboard HTML for v4.0 features
-- [ ] CI build matrix (Linux + macOS)
-- [ ] Add dry-run/confirm mode for auto-checkpoint hooks
+- [ ] Multi-agent coordination primitives
 - [ ] Plugin marketplace / discovery
-- [ ] End-to-end plugin tutorial
+- [ ] Real-time event streaming
