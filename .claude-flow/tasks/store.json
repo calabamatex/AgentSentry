@@ -1,0 +1,24 @@
+{
+  "tasks": {
+    "task-1774122241524-49vk0m": {
+      "taskId": "task-1774122241524-49vk0m",
+      "type": "bugfix",
+      "description": "Phase 1: Stop the Bleeding - Fix all trust-destroying issues in AgentOps. 4 workstreams: (1.1) Package integrity, (1.2) Python3 dependency elimination, (1.3) Documentation reconciliation, (1.4) Hook reliability",
+      "priority": "critical",
+      "status": "pending",
+      "progress": 0,
+      "assignedTo": [],
+      "tags": [
+        "phase1",
+        "trust-fix",
+        "packaging",
+        "docs",
+        "hooks"
+      ],
+      "createdAt": "2026-03-21T19:44:01.524Z",
+      "startedAt": null,
+      "completedAt": null
+    }
+  },
+  "version": "3.0.0"
+}

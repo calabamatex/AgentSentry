@@ -22,7 +22,9 @@
     "mcp"
   ],
   "files": [
-    "dist/"
+    "dist/",
+    "scripts/",
+    "agentops.config.json"
   ],
   "publishConfig": {
     "access": "public"
