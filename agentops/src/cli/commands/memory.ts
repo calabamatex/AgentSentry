@@ -53,7 +53,10 @@ export const memoryCommand: CommandDefinition = {
       }
 
       const limit = typeof args.flags['limit'] === 'string' ? parseInt(args.flags['limit'], 10) : 10;
-      const results = await store.search(query, limit);
+      const event_type = typeof args.flags['type'] === 'string' ? args.flags['type'] as any : undefined;
+      const severity = typeof args.flags['severity'] === 'string' ? args.flags['severity'] as any : undefined;
+
+      const results = await store.search(query, { limit, event_type, severity });
 
       if (json) {
         output(results, true);
@@ -64,7 +67,7 @@ export const memoryCommand: CommandDefinition = {
           score: r.score.toFixed(3),
           type: r.event.type,
           severity: r.event.severity,
-          summary: r.event.summary.slice(0, 60),
+          summary: (r.event.title ?? '').slice(0, 60),
           timestamp: r.event.timestamp,
         })));
       }
@@ -73,14 +76,10 @@ export const memoryCommand: CommandDefinition = {
 
     if (sub === 'list') {
       const limit = typeof args.flags['limit'] === 'string' ? parseInt(args.flags['limit'], 10) : 20;
-      const type = typeof args.flags['type'] === 'string' ? args.flags['type'] : undefined;
-      const severity = typeof args.flags['severity'] === 'string' ? args.flags['severity'] : undefined;
+      const event_type = typeof args.flags['type'] === 'string' ? args.flags['type'] as any : undefined;
+      const severity = typeof args.flags['severity'] === 'string' ? args.flags['severity'] as any : undefined;
 
-      const events = await store.query({
-        limit,
-        ...(type ? { type: type as any } : {}),
-        ...(severity ? { severity: severity as any } : {}),
-      });
+      const events = await store.list({ limit, event_type, severity });
 
       if (json) {
         output(events, true);
@@ -91,7 +90,7 @@ export const memoryCommand: CommandDefinition = {
           id: e.id.slice(0, 8),
           type: e.type,
           severity: e.severity,
-          summary: e.summary.slice(0, 50),
+          title: (e.title ?? '').slice(0, 50),
           timestamp: e.timestamp,
         })));
       }

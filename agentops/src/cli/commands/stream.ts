@@ -16,8 +16,6 @@ export const streamCommand: CommandDefinition = {
     '',
     'Options:',
     '  --filter <key=value>   Filter events (type, severity, skill, agent, session)',
-    '                         Can be specified multiple times',
-    '  --replay <n>           Replay last n buffered events (default 0)',
     '  --json                 Output events as JSON lines (default)',
     '  --pretty               Pretty-print events (human-readable)',
     '',
@@ -26,23 +24,27 @@ export const streamCommand: CommandDefinition = {
 
   async run(args: ParsedArgs): Promise<void> {
     const json = !args.flags['pretty'];
-    const replay = typeof args.flags['replay'] === 'string' ? parseInt(args.flags['replay'], 10) : 0;
 
     // Build filter from --filter flags
     const filter = buildFilter(args);
 
-    const eventStream = EventStream.getInstance();
+    const eventStream = new EventStream();
+    eventStream.start();
 
     // Track whether stdout is writable (backpressure handling)
     let draining = true;
     process.stdout.on('drain', () => { draining = true; });
 
-    const clientId = eventStream.addClient({
-      id: `cli-${Date.now()}`,
+    const clientId = `cli-${Date.now()}`;
+
+    eventStream.addClient({
+      id: clientId,
       connectedAt: new Date().toISOString(),
       filter,
       transport: 'callback',
       send(event: StreamEvent): void {
+        if (event.type === 'heartbeat') return; // suppress heartbeats in CLI
+
         const line = json
           ? JSON.stringify(event)
           : formatEvent(event);
@@ -55,11 +57,12 @@ export const streamCommand: CommandDefinition = {
       close(): void {
         // No-op for stdout
       },
-    }, replay);
+    });
 
     // Clean SIGINT teardown
     const cleanup = (): void => {
       eventStream.removeClient(clientId);
+      eventStream.stop();
       process.stdout.write('\n');
       process.exit(0);
     };
@@ -74,6 +77,7 @@ export const streamCommand: CommandDefinition = {
     process.on('beforeExit', () => {
       clearInterval(keepAlive);
       eventStream.removeClient(clientId);
+      eventStream.stop();
     });
   },
 };

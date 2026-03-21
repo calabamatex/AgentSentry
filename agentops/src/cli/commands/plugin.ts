@@ -16,7 +16,7 @@ export const pluginCommand: CommandDefinition = {
     'Subcommands:',
     '  list              List installed plugins',
     '  search <query>    Search available plugins',
-    '  install <name>    Install a plugin',
+    '  install <path>    Install a plugin from a local path',
     '  enable <name>     Enable an installed plugin',
     '  disable <name>    Disable an installed plugin',
     '  info <name>       Show plugin details',
@@ -40,7 +40,7 @@ export const pluginCommand: CommandDefinition = {
     const registry = new PluginRegistry();
 
     if (sub === 'list') {
-      const installed = registry.listInstalled();
+      const installed = await registry.list();
       if (json) {
         output(installed, true);
       } else if (installed.length === 0) {
@@ -62,30 +62,30 @@ export const pluginCommand: CommandDefinition = {
       const category = typeof args.flags['category'] === 'string' ? args.flags['category'] : undefined;
       const tags = typeof args.flags['tag'] === 'string' ? [args.flags['tag']] : undefined;
 
-      const results = registry.search({ query, category, tags });
+      const results = await registry.list({ query, category, tags });
       if (json) {
         output(results, true);
       } else if (results.length === 0) {
         output('No plugins found.', false);
       } else {
         table(results.map((p) => ({
-          name: p.name,
-          version: p.version,
-          category: p.category,
-          description: p.description.slice(0, 50),
+          name: p.manifest.name,
+          version: p.manifest.version,
+          category: p.manifest.category,
+          description: p.manifest.description.slice(0, 50),
         })));
       }
       return;
     }
 
     if (sub === 'install') {
-      const name = args.positionals[1];
-      if (!name) {
-        process.stderr.write('Usage: agentops plugin install <name>\n');
+      const sourcePath = args.positionals[1];
+      if (!sourcePath) {
+        process.stderr.write('Usage: agentops plugin install <path>\n');
         process.exitCode = 1;
         return;
       }
-      const result = registry.install(name);
+      const result = await registry.install(sourcePath);
       output(json ? result : `Installed: ${result.manifest.name} v${result.manifest.version}`, json);
       return;
     }
@@ -93,7 +93,8 @@ export const pluginCommand: CommandDefinition = {
     if (sub === 'enable') {
       const name = args.positionals[1];
       if (!name) { process.stderr.write('Usage: agentops plugin enable <name>\n'); process.exitCode = 1; return; }
-      registry.enable(name);
+      const ok = await registry.enable(name);
+      if (!ok) { process.stderr.write(`Plugin not found: ${name}\n`); process.exitCode = 1; return; }
       output(json ? { enabled: name } : `Enabled: ${name}`, json);
       return;
     }
@@ -101,7 +102,8 @@ export const pluginCommand: CommandDefinition = {
     if (sub === 'disable') {
       const name = args.positionals[1];
       if (!name) { process.stderr.write('Usage: agentops plugin disable <name>\n'); process.exitCode = 1; return; }
-      registry.disable(name);
+      const ok = await registry.disable(name);
+      if (!ok) { process.stderr.write(`Plugin not found: ${name}\n`); process.exitCode = 1; return; }
       output(json ? { disabled: name } : `Disabled: ${name}`, json);
       return;
     }
@@ -109,7 +111,7 @@ export const pluginCommand: CommandDefinition = {
     if (sub === 'info') {
       const name = args.positionals[1];
       if (!name) { process.stderr.write('Usage: agentops plugin info <name>\n'); process.exitCode = 1; return; }
-      const info = registry.getInfo(name);
+      const info = await registry.get(name);
       if (!info) {
         process.stderr.write(`Plugin not found: ${name}\n`);
         process.exitCode = 1;
