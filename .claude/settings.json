@@ -101,6 +101,11 @@
             "type": "command",
             "command": "bash agentops/scripts/context-estimator.sh",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash agentops/scripts/ruflo-enforcement.sh",
+            "timeout": 5000
           }
         ]
       }
