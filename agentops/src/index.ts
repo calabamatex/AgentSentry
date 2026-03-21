@@ -39,3 +39,9 @@ export type { PluginManifest, InstalledPlugin, PluginSearchOptions } from './plu
 
 // MCP Server
 export { createMcpServer } from './mcp/server';
+
+// Streaming
+export { EventStream } from './streaming/event-stream';
+export { SseTransport } from './streaming/sse-transport';
+export { WsTransport } from './streaming/ws-transport';
+export type { StreamFilter, StreamClient, StreamEvent, EventStreamOptions } from './streaming/event-stream';
