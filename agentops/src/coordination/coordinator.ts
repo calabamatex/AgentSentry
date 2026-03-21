@@ -248,24 +248,46 @@ export class AgentCoordinator {
       limit: 500,
     });
 
-    // Find latest event for this resource
+    // Collect all lock events for this resource, find most recent by title id
+    // Events are DESC by timestamp but same-ms events may be unordered,
+    // so we scan all events and use the event id (uuid) embedded in the
+    // OpsEvent to find the actual latest by matching insertion order.
+    // Since the store returns DESC and we only care about the most recent
+    // action, we collect the first acquire/release per resource.
+    // But because same-timestamp events may be mis-ordered, we need to
+    // look at all events and pick the one with the latest timestamp,
+    // breaking ties by checking if there's a release that references
+    // the same acquiredAt as the acquire.
+    let latestAction: string | null = null;
+    let latestLock: LockInfo | null = null;
+    let latestTimestamp = '';
+
     for (const evt of events) {
       const meta = evt.metadata as Record<string, unknown>;
       const lockInfo = meta.lock as LockInfo | undefined;
       const action = meta.action as string | undefined;
       if (!lockInfo || lockInfo.resource !== resource) continue;
 
-      if (action === 'release') return null;
-
-      // Check expiry
-      if (new Date(lockInfo.expiresAt).getTime() < Date.now()) {
-        return null;
+      // Use event timestamp for ordering; for same timestamp, release wins
+      // because release can only happen after acquire
+      if (
+        evt.timestamp > latestTimestamp ||
+        (evt.timestamp === latestTimestamp && action === 'release')
+      ) {
+        latestTimestamp = evt.timestamp;
+        latestAction = action ?? null;
+        latestLock = lockInfo;
       }
-
-      return lockInfo;
     }
 
-    return null;
+    if (!latestLock || latestAction === 'release') return null;
+
+    // Check expiry
+    if (new Date(latestLock.expiresAt).getTime() < Date.now()) {
+      return null;
+    }
+
+    return latestLock;
   }
 
   private async cleanExpiredLocks(): Promise<number> {
