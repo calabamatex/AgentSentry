@@ -37,7 +37,7 @@ export interface InstalledPlugin {
   path: string;
   enabled: boolean;
   installedAt: string;
-  source: 'core' | 'community' | 'marketplace';
+  source: 'core' | 'community';
 }
 
 export interface PluginSearchOptions {
