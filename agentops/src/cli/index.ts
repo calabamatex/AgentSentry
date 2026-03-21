@@ -15,6 +15,7 @@ import { memoryCommand } from './commands/memory';
 import { streamCommand } from './commands/stream';
 import { pluginCommand } from './commands/plugin';
 import { configCommand } from './commands/config';
+import { dashboardCommand } from './commands/dashboard';
 
 // ---------------------------------------------------------------------------
 // Version (read from package.json at build time is fragile — hardcode + sync)
