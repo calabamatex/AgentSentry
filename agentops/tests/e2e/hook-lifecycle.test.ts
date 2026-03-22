@@ -95,7 +95,7 @@ describe('Hook Lifecycle (e2e)', () => {
       const input = JSON.stringify({
         tool_input: {
           file_path: '/tmp/test-secret.ts',
-          content: 'const key = "sk_test_FAKE_NOT_REAL_KEY_FOR_TESTING";',
+          content: 'const key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc";',
         },
       });
       const { exitCode, stderr } = runHook('secret-scanner.sh', input);
