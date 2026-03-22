@@ -10,6 +10,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'hook-session-checkpoint' });
 
 const PREFIX = '[AgentOps]';
 const TMPBASE = path.join(process.env.TMPDIR ?? '/tmp', 'agentops');
@@ -21,7 +24,8 @@ function getConfigPath(): string {
 function readConfig(): Record<string, any> {
   try {
     return JSON.parse(fs.readFileSync(getConfigPath(), 'utf-8'));
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
     return {};
   }
 }
@@ -30,7 +34,8 @@ function isGitRepo(): boolean {
   try {
     execSync('git rev-parse --is-inside-work-tree', { stdio: ['pipe', 'pipe', 'pipe'] });
     return true;
-  } catch {
+  } catch (e) {
+    logger.debug('Not inside a git repository', { error: e instanceof Error ? e.message : String(e) });
     return false;
   }
 }
@@ -51,7 +56,8 @@ function autoCommit(config: Record<string, any>): string {
   try {
     const porcelain = execSync('git status --porcelain', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
     changedFiles = porcelain.split('\n').filter(Boolean).length;
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to get git status', { error: e instanceof Error ? e.message : String(e) });
     return '';
   }
 
@@ -76,7 +82,8 @@ function autoCommit(config: Record<string, any>): string {
     execSync(`git commit -m "${commitMsg}" --no-verify`, { stdio: 'pipe' });
     console.log(`${PREFIX} Committed: ${commitMsg}`);
     return commitMsg;
-  } catch {
+  } catch (e) {
+    logger.warn('Auto-commit failed during session checkpoint', { error: e instanceof Error ? e.message : String(e) });
     return '';
   }
 }

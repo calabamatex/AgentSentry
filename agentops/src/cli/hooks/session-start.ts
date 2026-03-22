@@ -9,6 +9,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'hook-session-start' });
 
 const PREFIX = '[AgentOps]';
 
@@ -21,7 +24,8 @@ interface CheckResults {
 function getRepoRoot(): string {
   try {
     return execSync('git rev-parse --show-toplevel', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to get repo root via git', { error: e instanceof Error ? e.message : String(e) });
     return process.cwd();
   }
 }
@@ -30,7 +34,8 @@ function isGitRepo(): boolean {
   try {
     execSync('git rev-parse --is-inside-work-tree', { stdio: ['pipe', 'pipe', 'pipe'] });
     return true;
-  } catch {
+  } catch (e) {
+    logger.debug('Not inside a git repository', { error: e instanceof Error ? e.message : String(e) });
     return false;
   }
 }
@@ -43,7 +48,8 @@ function readConfig(): { claudeMdMaxLines: number; agentsMdMaxLines: number } {
       claudeMdMaxLines: config.rules_file?.claude_md_max_lines ?? config.rules_file?.max_lines ?? 300,
       agentsMdMaxLines: config.rules_file?.agents_md_max_lines ?? config.rules_file?.max_lines ?? 300,
     };
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
     return { claudeMdMaxLines: 300, agentsMdMaxLines: 300 };
   }
 }
@@ -57,7 +63,8 @@ function checkGitState(results: CheckResults): void {
   let branch: string;
   try {
     branch = execSync('git branch --show-current', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim() || 'detached';
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to get current git branch', { error: e instanceof Error ? e.message : String(e) });
     branch = 'detached';
   }
 
