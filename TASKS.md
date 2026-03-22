@@ -21,10 +21,16 @@
 - [x] Dry-run/confirm mode for auto-checkpoint hooks
 - [x] RuFlo enforcement hook + CLAUDE.md rule
 
-## In Progress (M4 — Cloud & Scale)
+## Completed (M4 — Cloud & Scale)
 
-- [x] Supabase storage provider `[beta]` — implemented, needs production hardening
-- [ ] Cloud LLM enrichment provider (Ollama/OpenAI)
-- [x] Multi-agent coordination primitives `[experimental]` — single-machine, event-sourced
+- [x] Supabase storage provider `[beta]` — full CRUD, vector search, chain checkpoints via raw HTTPS; needs production validation
+- [x] Multi-agent coordination primitives `[experimental]` — single-machine, event-sourced, no consensus protocol
 - [x] Plugin registry `[experimental]` — local directory scanning only, no remote discovery
-- [x] Real-time event streaming `[beta]` — local SSE/WebSocket transport
+- [x] Real-time event streaming `[beta]` — local SSE/WebSocket transport with backpressure (ADR-001)
+
+## Open (M5 — Hardening)
+
+- [ ] Cloud LLM enrichment provider (Ollama/OpenAI)
+- [ ] Supabase provider production validation (load testing, error recovery)
+- [ ] Remote plugin discovery and trust model
+- [ ] Distributed streaming transport (Redis/NATS) — pending demand signal

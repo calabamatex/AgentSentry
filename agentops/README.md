@@ -69,11 +69,11 @@ Once wired, these tools are available in any Claude Code session:
 
 | Level | Name | What's active |
 |-------|------|--------------|
-| 1 | Safe Ground | Save points only |
-| 2 | Clear Head | + context health, standing orders |
-| 3 | House Rules | + risk scoring, rules checking (default) |
-| 4 | Right Size | + enrichment, audit search, plugins |
-| 5 | Full Guard | All features, strict mode |
+| 1 | Safe Ground | save_points (full) |
+| 2 | Clear Head | + context_health (full) |
+| 3 | House Rules | + standing_orders (basic) |
+| 4 | Right Size | standing_orders→full, + small_bets (basic) |
+| 5 | Full Guard | small_bets→full, + proactive_safety (full) |
 
 ## Storage
 

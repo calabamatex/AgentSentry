@@ -159,13 +159,14 @@ The dashboard exposes these endpoints:
 
 | Feature                  | Status         | Notes                                    |
 |--------------------------|----------------|------------------------------------------|
-| SQLite memory store      | **Stable**     | Default provider, hash-chained events    |
+| SQLite memory store      | **Stable**     | Default provider, hash-chained, auto-pruning |
 | MCP server (9 tools)     | **Stable**     | stdio + HTTP transport                   |
-| Claude Code hooks        | **Stable**     | TypeScript implementations + shell wrappers |
-| Progressive enablement   | **Stable**     | 5 levels, progressive skill unlock       |
-| Observability suite      | **Stable**     | Logger, circuit breaker, metrics, health |
+| Claude Code hooks        | **Stable**     | TypeScript implementations with shell wrappers |
+| Progressive enablement   | **Stable**     | 5 levels                                 |
+| CLI (8 commands)         | **Stable**     | health, memory, config, enable, plugin, metrics, stream, dashboard |
+| Enrichment & observability | **Stable**   | Auto-classification, circuit breaker, structured logging |
 | Supabase provider        | Beta           | Requires external Supabase instance      |
 | Dashboard / streaming    | Beta           | Local SSE/WebSocket, in-process bus      |
-| CLI                      | Beta           | 8 command groups                         |
+| Cross-session intelligence | Beta         | Session summaries, pattern detection, context recall |
 | Plugin registry          | Experimental   | Local directory scanning only            |
 | Multi-agent coordination | Experimental   | Single-machine, event-sourced            |
