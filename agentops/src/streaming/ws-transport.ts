@@ -226,7 +226,7 @@ export class WsTransport {
           const closeFrame = Buffer.alloc(2);
           closeFrame[0] = 0x80 | OPCODE_CLOSE;
           closeFrame[1] = 0;
-          try { socket.write(closeFrame); } catch { /* ignore */ }
+          try { socket.write(closeFrame); } catch (e) { logger.debug('Close frame echo failed', { error: e instanceof Error ? e.message : String(e) }); }
           socket.end();
           return;
         }
