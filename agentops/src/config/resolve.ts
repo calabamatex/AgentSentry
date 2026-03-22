@@ -52,6 +52,11 @@ export function resolveConfigPath(explicit?: string): string | undefined {
  * directory. If no config file, use ~/.agentops/data/ as home-dir fallback.
  */
 export function resolveDatabasePath(dbPath: string, configFilePath?: string): string {
+  // SQLite special paths (e.g. ':memory:') used as-is
+  if (dbPath === ':memory:' || dbPath.startsWith(':')) {
+    return dbPath;
+  }
+
   // Absolute paths used as-is
   if (path.isAbsolute(dbPath)) {
     return dbPath;

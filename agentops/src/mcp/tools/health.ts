@@ -42,6 +42,7 @@ export interface HealthResult {
     provider: string;
     dimension: number;
     available: boolean;
+    onnx_model_present: boolean;
   };
   enablement: {
     level: number;
