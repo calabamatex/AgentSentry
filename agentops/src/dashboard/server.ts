@@ -263,7 +263,8 @@ export class DashboardServer {
       const plugins = await this.pluginRegistry.list();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(plugins));
-    } catch {
+    } catch (e) {
+      logger.warn('Failed to list plugins for dashboard', { error: e instanceof Error ? e.message : String(e) });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('[]');
     }
