@@ -16,11 +16,18 @@ describe('Package contents', () => {
       encoding: 'utf-8',
     });
 
-    // Check for critical directories/files in pack output
+    // Check for critical directories/files in pack output.
+    // Shell wrappers in scripts/ delegate to compiled TS hooks in dist/,
+    // so both must be present for hooks to function at runtime.
     const requiredPatterns = [
       'dist/src/index.js',
       'dist/src/cli/index.js',
       'dist/src/mcp/server.js',
+      'dist/src/cli/hooks/session-start.js',
+      'dist/src/cli/hooks/post-write.js',
+      'dist/src/cli/hooks/session-checkpoint.js',
+      'dist/src/analyzers/error-handling.js',
+      'dist/src/analyzers/pii-scanner.js',
       'scripts/session-start-checks.sh',
       'scripts/post-write-checks.sh',
       'scripts/session-checkpoint.sh',
@@ -46,6 +53,21 @@ describe('Package contents', () => {
 
     for (const script of requiredScripts) {
       expect(existsSync(join(scriptsDir, script))).toBe(true);
+    }
+  });
+
+  it('compiled TypeScript hooks exist in dist/', () => {
+    const distDir = join(__dirname, '../../dist/src');
+    const requiredHooks = [
+      'cli/hooks/session-start.js',
+      'cli/hooks/post-write.js',
+      'cli/hooks/session-checkpoint.js',
+      'analyzers/error-handling.js',
+      'analyzers/pii-scanner.js',
+    ];
+
+    for (const hook of requiredHooks) {
+      expect(existsSync(join(distDir, hook))).toBe(true);
     }
   });
 

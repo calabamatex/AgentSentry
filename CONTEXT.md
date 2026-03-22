@@ -1,10 +1,10 @@
 # AgentOps — Session Context
 
-**Last updated:** 2026-03-20
+**Last updated:** 2026-03-22
 **Branch:** main
-**Test count:** 427 tests passing
+**Test count:** 1003 tests passing (79 test files)
 **Build status:** Clean
-Last verified: 2026-03-20
+Last verified: 2026-03-22
 
 ## Recent Work
 
@@ -26,5 +26,5 @@ This session completed all 4 build phases of AgentOps v4.0, plus P0 scaling fixe
 ## Constraints
 
 - Do NOT modify: `audit-logger.ts`, `event-bus.ts`, `trace-context.ts`
-- Supabase provider is implemented `[beta]` — requires external Supabase instance with env vars
-- ONNX model (86MB) is in git; should move to Git LFS
+- Supabase provider is implemented `[beta]` — full CRUD, vector search, and chain checkpoints via raw HTTPS against PostgREST; requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars
+- ONNX model tracked via Git LFS
