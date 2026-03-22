@@ -97,7 +97,7 @@ export class WsTransport {
 
     // Destroy all tracked WebSocket sockets so the server can close promptly.
     for (const socket of this.sockets) {
-      try { socket.destroy(); } catch { /* best-effort */ }
+      try { socket.destroy(); } catch (e) { logger.debug('Socket destroy failed during stop', { error: e instanceof Error ? e.message : String(e) }); }
     }
     this.sockets.clear();
 
