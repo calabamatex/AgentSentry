@@ -17,6 +17,7 @@ import { pluginCommand } from './commands/plugin';
 import { configCommand } from './commands/config';
 import { dashboardCommand } from './commands/dashboard';
 import { enableCommand } from './commands/enable';
+import { initCommand } from './commands/init';
 
 // ---------------------------------------------------------------------------
 // Version — single source of truth from package.json
@@ -29,6 +30,7 @@ import { VERSION } from '../version';
 // ---------------------------------------------------------------------------
 
 const commands: CommandDefinition[] = [
+  initCommand,
   healthCommand,
   metricsCommand,
   memoryCommand,
@@ -60,6 +62,8 @@ function printHelp(): void {
     '  --version    Show version',
     '',
     'Examples:',
+    '  agentops init',
+    '  agentops init --level 2',
     '  agentops health',
     '  agentops metrics --json',
     '  agentops memory search "auth patterns"',

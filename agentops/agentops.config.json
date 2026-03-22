@@ -57,15 +57,15 @@
     "auto_prune_days": 365
   },
   "enablement": {
-    "level": 2,
+    "level": 1,
     "skills": {
       "save_points": {
         "enabled": true,
         "mode": "full"
       },
       "context_health": {
-        "enabled": true,
-        "mode": "full"
+        "enabled": false,
+        "mode": "off"
       },
       "standing_orders": {
         "enabled": false,
@@ -80,6 +80,6 @@
         "mode": "off"
       }
     },
-    "updated_at": "2026-03-22T19:16:59.765Z"
+    "updated_at": "2026-03-22T22:06:42.910Z"
   }
 }
