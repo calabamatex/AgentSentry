@@ -88,6 +88,9 @@ function checkBlastRadius(filePath: string): void {
   for (const f of uniqueFiles) {
     if (fs.existsSync(f)) {
       try {
+        if (f.endsWith('.db') || f.endsWith('.db-journal') || f.endsWith('.db-wal')) {
+          continue;
+        }
         execSync(`git add "${f}"`, { stdio: 'pipe' });
         anyAdded = true;
       } catch (e) {

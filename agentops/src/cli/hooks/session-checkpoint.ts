@@ -78,7 +78,7 @@ function autoCommit(config: Record<string, any>): string {
   console.log(`${PREFIX} Uncommitted changes detected (${summary}). Auto-committing...`);
 
   try {
-    execSync('git add -A', { stdio: 'pipe' });
+    execSync('git add -A -- . ":!*.db" ":!*.db-journal" ":!*.db-wal"', { stdio: 'pipe' });
     execSync(`git commit -m "${commitMsg}" --no-verify`, { stdio: 'pipe' });
     console.log(`${PREFIX} Committed: ${commitMsg}`);
     return commitMsg;
