@@ -234,7 +234,7 @@ export class WsTransport {
         if (result.opcode === OPCODE_PING) {
           // Respond with pong
           const pong = this.encodePongFrame(result.payload);
-          try { socket.write(pong); } catch { /* ignore */ }
+          try { socket.write(pong); } catch (e) { logger.debug('Pong frame write failed', { error: e instanceof Error ? e.message : String(e) }); }
           continue;
         }
 
