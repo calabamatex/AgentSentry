@@ -7,6 +7,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { StorageProvider } from './storage-provider';
 import { runMigrations } from '../migrations/sqlite-migrations';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'sqlite-provider' });
 import {
   OpsEvent,
   QueryOptions,
