@@ -117,8 +117,8 @@ export class EventStream extends EventEmitter {
       for (const client of this.clients.values()) {
         try {
           client.send({ id: '', type: 'heartbeat', timestamp: new Date().toISOString(), data: {} });
-        } catch {
-          // Client send failure handled silently; transport will clean up.
+        } catch (e) {
+          logger.debug('Heartbeat send failed for client', { error: e instanceof Error ? e.message : String(e) });
         }
       }
     }, this.heartbeatIntervalMs);
