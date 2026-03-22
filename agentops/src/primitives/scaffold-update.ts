@@ -44,7 +44,8 @@ function validateFileContent(filePath: string): string[] {
     if (!content.includes('#')) {
       issues.push('File has no markdown headings');
     }
-  } catch {
+  } catch (e) {
+    logger.warn('Scaffold file could not be read', { error: e instanceof Error ? e.message : String(e), file: filePath });
     issues.push('File could not be read');
   }
   return issues;
