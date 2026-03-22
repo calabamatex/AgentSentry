@@ -74,8 +74,8 @@ function checkGitState(results: CheckResults): void {
     if (uncommitted > 0) {
       results.advisories.push(`${uncommitted} uncommitted changes on branch '${branch}'.`);
     }
-  } catch {
-    // ignore
+  } catch (e) {
+    logger.debug('Failed to get git status', { error: e instanceof Error ? e.message : String(e) });
   }
 }
 

@@ -8,6 +8,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { CommandDefinition, ParsedArgs, output, isJson, table } from '../parser';
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'cli-config' });
 
 const CONFIG_PATH = path.resolve('agentops/agentops.config.json');
 
