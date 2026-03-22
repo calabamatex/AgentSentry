@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/calabamatex/AgenticManagement/actions/workflows/ci.yml/badge.svg)](https://github.com/calabamatex/AgenticManagement/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-907%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-1003%20passing-brightgreen.svg)](#)
 
 **Memory-aware management and safety framework for AI agents.**
 
