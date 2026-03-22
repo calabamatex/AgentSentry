@@ -22,6 +22,7 @@ import { HealthChecker, memoryUsageCheck, eventLoopCheck } from '../observabilit
 import { MetricsCollector } from '../observability/metrics';
 import { PluginRegistry } from '../plugins/registry';
 import { getDashboardHtml } from './html';
+import { VERSION } from '../version';
 import { MemoryStore } from '../memory/store';
 
 // ---------------------------------------------------------------------------

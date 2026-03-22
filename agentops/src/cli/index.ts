@@ -19,10 +19,10 @@ import { dashboardCommand } from './commands/dashboard';
 import { enableCommand } from './commands/enable';
 
 // ---------------------------------------------------------------------------
-// Version (read from package.json at build time is fragile — hardcode + sync)
+// Version — single source of truth from package.json
 // ---------------------------------------------------------------------------
 
-const VERSION = '4.0.0';
+import { VERSION } from '../version';
 
 // ---------------------------------------------------------------------------
 // Command registry

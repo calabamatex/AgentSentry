@@ -56,7 +56,6 @@
     "max_events": 100000,
     "auto_prune_days": 365
   },
-  "auto_checkpoint_mode": "auto",
   "enablement": {
     "level": 2,
     "skills": {

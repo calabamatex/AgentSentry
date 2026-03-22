@@ -8,6 +8,7 @@ import {
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { createStdioTransport, createHttpTransport } from './transport';
+import { VERSION } from '../version';
 
 // Import all tools
 import * as checkGit from './tools/check-git';
@@ -63,7 +64,7 @@ export function createMcpServer(): Server {
   const server = new Server(
     {
       name: 'agentops',
-      version: '4.0.0',
+      version: VERSION,
     },
     {
       capabilities: {
