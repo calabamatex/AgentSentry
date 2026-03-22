@@ -22,3 +22,26 @@ jobs:
       - run: cd agentops && npm ci
       - run: cd agentops && npm run build
       - run: cd agentops && npm test
+
+  benchmark:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agentops/package-lock.json
+      - run: cd agentops && npm ci
+      - run: cd agentops && npm run build
+      - name: Run performance benchmarks with regression thresholds
+        run: cd agentops && npx vitest run tests/performance/benchmark-regression.test.ts --reporter=verbose
+        timeout-minutes: 5
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: agentops/benchmarks/ci-latest.json
+          retention-days: 30
