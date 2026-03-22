@@ -237,6 +237,7 @@
       }
     ]
   },
+  "disabledMcpjsonServers": ["Claude Preview"],
   "statusLine": {
     "type": "command",
     "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/statusline.cjs\"'"
