@@ -71,15 +71,15 @@ Once wired, these tools are available in any Claude Code session:
 
 ## Progressive Enablement
 
-AgentOps ships at **Level 3 (House Rules)** by default — session checkpoints, context health monitoring, and rules validation are all active out of the box. This is the right level for most users: you get meaningful safety without configuration overhead.
+AgentOps ships at **Level 2 (Clear Head)** by default — session checkpoints and context health monitoring are active out of the box. This gives you meaningful safety without configuration overhead.
 
 If you want to customize, adjust `enablement.level` in `agentops.config.json`:
 
 | Level | Name | What's active |
 |-------|------|--------------|
 | 1 | Safe Ground | save_points (full) |
-| 2 | Clear Head | + context_health (full) |
-| 3 | **House Rules** (default) | + standing_orders (basic) |
+| 2 | **Clear Head** (default) | + context_health (full) |
+| 3 | House Rules | + standing_orders (basic) |
 | 4 | Right Size | standing_orders→full, + small_bets (basic) |
 | 5 | Full Guard | small_bets→full, + proactive_safety (full) |
 
@@ -95,12 +95,14 @@ Auto-pruning keeps the database bounded — configure `max_events` and `max_age_
 
 ```bash
 npm run build      # TypeScript compilation
-npm test           # 1003 tests via vitest
+npm test           # ~990 tests via vitest
 npm run test:watch # Watch mode
 npm run benchmark  # Run performance benchmarks
 ```
 
 ## Project Structure
+
+> **npm package scope:** The published npm package ships `dist/src/` (runtime core) and `agentops.config.json`. Shell scripts (`scripts/`), plugin templates (`plugins/`), and documentation (`docs/`) are available in the source repository.
 
 ```
 src/
@@ -137,7 +139,7 @@ docs/           # Getting started, API reference, schema, roadmap
 
 ## Disabling or Removing AgentOps
 
-AgentOps is additive — it never modifies your code, your git history, or your project files.
+AgentOps is additive — it does not modify your source code or project files. When `save_points.auto_commit_enabled` is `true` (the default), AgentOps creates git stash snapshots as safety checkpoints. These are non-destructive and do not alter your commit history. Set `auto_commit_enabled` to `false` in `agentops.config.json` to disable stash snapshots entirely.
 
 **Disable temporarily:** Set `"enabled": false` in the `memory` section of `agentops.config.json`. All hooks become no-ops. Your data is preserved.
 

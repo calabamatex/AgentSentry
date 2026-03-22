@@ -68,8 +68,8 @@
         "mode": "full"
       },
       "standing_orders": {
-        "enabled": true,
-        "mode": "basic"
+        "enabled": false,
+        "mode": "off"
       },
       "small_bets": {
         "enabled": false,

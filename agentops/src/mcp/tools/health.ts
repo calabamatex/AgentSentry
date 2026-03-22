@@ -5,7 +5,8 @@
 import { MemoryStore } from '../../memory/store';
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { detectEmbeddingProvider } from '../../memory/embeddings';
-import { getActiveSkills, generateConfigForLevel, LEVEL_NAMES } from '../../enablement/engine';
+import { getActiveSkills, generateConfigForLevel, validateLevelMatchesSkills, LEVEL_NAMES } from '../../enablement/engine';
+import type { EnablementConfig } from '../../enablement/engine';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 
@@ -46,6 +47,10 @@ export interface HealthResult {
     level: number;
     name: string;
     active_skills: string[];
+    config_drift?: {
+      has_drift: boolean;
+      drifted_skills: string[];
+    };
   };
   config: {
     max_events: number;
@@ -123,11 +128,33 @@ export async function handler(
       logger.debug('Failed to read enablement level from config', { error: e instanceof Error ? e.message : String(e) });
     }
     const enablementConfig = generateConfigForLevel(enablementLevel);
-    const enablementInfo = {
+    const enablementInfo: HealthResult['enablement'] = {
       level: enablementLevel,
       name: LEVEL_NAMES[enablementLevel] || `Level ${enablementLevel}`,
       active_skills: getActiveSkills(enablementConfig),
     };
+
+    // Check for config drift (skills object doesn't match declared level)
+    try {
+      const cfgPath2 = resolveConfigPath();
+      if (cfgPath2) {
+        const fsModule2 = await import('fs');
+        const rawConfig = JSON.parse(fsModule2.readFileSync(cfgPath2, 'utf8'));
+        if (rawConfig.enablement?.skills) {
+          const drift = validateLevelMatchesSkills(enablementLevel, rawConfig.enablement.skills as EnablementConfig['skills']);
+          enablementInfo.config_drift = {
+            has_drift: !drift.valid,
+            drifted_skills: drift.drifted,
+          };
+          if (!drift.valid) {
+            issues.push(`Enablement config drift: skills ${drift.drifted.join(', ')} do not match level ${enablementLevel}. Run 'agentops enable --level ${enablementLevel}' to repair.`);
+            if (overallStatus === 'healthy') overallStatus = 'degraded';
+          }
+        }
+      }
+    } catch (e) {
+      logger.debug('Failed to check enablement config drift', { error: e instanceof Error ? e.message : String(e) });
+    }
 
     // Check for degraded conditions
     const criticalCount = stats.by_severity?.critical ?? 0;
