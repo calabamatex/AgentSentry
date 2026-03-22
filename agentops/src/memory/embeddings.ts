@@ -6,6 +6,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as https from 'https';
 import * as http from 'http';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'embeddings' });
 
 export interface EmbeddingProvider {
   embed(text: string): Promise<number[]>;
@@ -190,7 +193,8 @@ export async function detectEmbeddingProvider(
         try {
           require.resolve('onnxruntime-node');
           return new OnnxEmbeddingProvider();
-        } catch {
+        } catch (e) {
+          logger.debug('ONNX runtime not available', { error: e instanceof Error ? e.message : String(e) });
           throw new Error('ONNX provider requested but onnxruntime-node is not available');
         }
       case 'ollama': {
@@ -221,8 +225,8 @@ export async function detectEmbeddingProvider(
     require.resolve('onnxruntime-node');
     const provider = new OnnxEmbeddingProvider();
     return provider;
-  } catch {
-    // onnxruntime-node not available
+  } catch (e) {
+    logger.debug('ONNX runtime not available for auto-detection', { error: e instanceof Error ? e.message : String(e) });
   }
 
   // 2. Try Ollama (if running locally)
@@ -231,8 +235,8 @@ export async function detectEmbeddingProvider(
     if (ollamaAvailable) {
       return new OllamaEmbeddingProvider();
     }
-  } catch {
-    // Ollama not available
+  } catch (e) {
+    logger.debug('Ollama not available for auto-detection', { error: e instanceof Error ? e.message : String(e) });
   }
 
   // 3. Try OpenAI

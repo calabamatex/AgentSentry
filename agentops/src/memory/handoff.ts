@@ -10,6 +10,9 @@
 import { execSync } from 'child_process';
 import { MemoryStore } from './store';
 import { SessionSummarizer, PatternDetector } from './intelligence';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'handoff' });
 
 // ---------------------------------------------------------------------------
 // Types
