@@ -103,4 +103,28 @@ describe('MemoryStore search', () => {
     const results = await store.search('nonexistent_term_xyz');
     expect(results).toHaveLength(0);
   });
+
+  it('fallback search finds older events beyond default limit', async () => {
+    // Insert 15 events — the first one has the unique search term
+    for (let i = 0; i < 12; i++) {
+      await store.capture({
+        timestamp: `2026-01-10T${String(i).padStart(2, '0')}:00:00Z`,
+        session_id: 'sess-fill',
+        agent_id: 'agent-1',
+        event_type: 'decision',
+        severity: 'low',
+        skill: 'save_points',
+        title: `Filler event ${i}`,
+        detail: `This is filler event number ${i}`,
+        affected_files: [],
+        tags: [],
+        metadata: {},
+      });
+    }
+
+    // The original "auth refactor" event from seed data (2026-01-01) should still be findable
+    const results = await store.search('auth refactor', { limit: 20 });
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results.some(r => r.event.title.includes('auth refactor'))).toBe(true);
+  });
 });

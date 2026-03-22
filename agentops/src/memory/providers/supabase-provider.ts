@@ -283,6 +283,31 @@ export class SupabaseProvider implements StorageProvider {
     };
   }
 
+  async textSearch(query: string, options: QueryOptions): Promise<OpsEvent[]> {
+    const encodedQuery = encodeURIComponent(`%${query}%`);
+    const params: string[] = [
+      `or=(title.ilike.${encodedQuery},detail.ilike.${encodedQuery})`,
+    ];
+
+    if (options.event_type) params.push(`event_type=eq.${options.event_type}`);
+    if (options.severity) params.push(`severity=eq.${options.severity}`);
+    if (options.skill) params.push(`skill=eq.${options.skill}`);
+    if (options.since) params.push(`timestamp=gte.${encodeURIComponent(options.since)}`);
+    if (options.until) params.push(`timestamp=lte.${encodeURIComponent(options.until)}`);
+    if (options.session_id) params.push(`session_id=eq.${encodeURIComponent(options.session_id)}`);
+    if (options.agent_id) params.push(`agent_id=eq.${encodeURIComponent(options.agent_id)}`);
+
+    const limit = options.limit ?? 10;
+    const offset = options.offset ?? 0;
+    params.push(`order=timestamp.desc`);
+    params.push(`limit=${limit}`);
+    params.push(`offset=${offset}`);
+
+    const qs = params.join('&');
+    const rows = await this.request<any[]>(`/rest/v1/ops_events?${qs}`, { method: 'GET' });
+    return (rows || []).map((r: any) => this.rowToEvent(r));
+  }
+
   // ── Private helpers ──────────────────────────────────────────────────
 
   private async request<T>(

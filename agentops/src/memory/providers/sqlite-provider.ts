@@ -270,6 +270,30 @@ export class SqliteProvider implements StorageProvider {
     };
   }
 
+  async textSearch(query: string, options: QueryOptions): Promise<OpsEvent[]> {
+    const db = this.getDb();
+    const conditions: string[] = ['(title LIKE ? OR detail LIKE ?)'];
+    const likePattern = `%${query}%`;
+    const params: any[] = [likePattern, likePattern];
+
+    if (options.event_type) { conditions.push('event_type = ?'); params.push(options.event_type); }
+    if (options.severity) { conditions.push('severity = ?'); params.push(options.severity); }
+    if (options.skill) { conditions.push('skill = ?'); params.push(options.skill); }
+    if (options.since) { conditions.push('timestamp >= ?'); params.push(options.since); }
+    if (options.until) { conditions.push('timestamp <= ?'); params.push(options.until); }
+    if (options.session_id) { conditions.push('session_id = ?'); params.push(options.session_id); }
+    if (options.agent_id) { conditions.push('agent_id = ?'); params.push(options.agent_id); }
+    if (options.tag) { conditions.push("tags LIKE ?"); params.push(`%"${options.tag}"%`); }
+
+    const where = `WHERE ${conditions.join(' AND ')}`;
+    const limit = options.limit ?? 10;
+    const offset = options.offset ?? 0;
+
+    const sql = `SELECT * FROM ops_events ${where} ORDER BY timestamp DESC LIMIT ? OFFSET ?`;
+    const rows = db.prepare(sql).all(...params, limit, offset) as any[];
+    return rows.map((r: any) => this.rowToEvent(r));
+  }
+
   private buildQuery(options: QueryOptions, countOnly = false): { sql: string; params: any[] } {
     const conditions: string[] = [];
     const params: any[] = [];

@@ -14,6 +14,10 @@ export interface MemoryConfig {
   database_path: string;
   max_events: number;
   auto_prune_days: number;
+  /** Supabase project URL (overrides SUPABASE_URL env var). */
+  supabase_url?: string;
+  /** Supabase service role key (overrides SUPABASE_SERVICE_ROLE_KEY env var). */
+  supabase_service_role_key?: string;
 }
 
 const DEFAULT_CONFIG: MemoryConfig = {
@@ -42,7 +46,10 @@ export function createProvider(config?: MemoryConfig): StorageProvider {
   const cfg = config ?? loadMemoryConfig();
 
   if (cfg.provider === 'supabase') {
-    return new SupabaseProvider();
+    return new SupabaseProvider({
+      url: cfg.supabase_url,
+      serviceRoleKey: cfg.supabase_service_role_key,
+    });
   }
 
   if (cfg.provider === 'sqlite') {

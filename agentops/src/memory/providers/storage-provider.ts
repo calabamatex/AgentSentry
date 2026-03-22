@@ -34,4 +34,7 @@ export interface StorageProvider {
 
   saveChainCheckpoint?(checkpoint: { lastEventId: string; lastEventHash: string; eventsVerified: number }): Promise<void>;
   getLastChainCheckpoint?(): Promise<{ lastEventId: string; lastEventHash: string; eventsVerified: number; verifiedAt: string } | null>;
+
+  /** Optional: SQL/server-side text search on title+detail. Used as fallback when embeddings are unavailable. */
+  textSearch?(query: string, options: QueryOptions): Promise<OpsEvent[]>;
 }

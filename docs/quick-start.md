@@ -19,7 +19,7 @@ Install AgentOps into an existing project in under ten minutes. This guide walks
 | Cost Tracking | **[beta]** |
 | Plugin Architecture | **[stable]** |
 | Persistent Memory Store | **[stable]** |
-| MCP Server Interface (8 tools) | **[stable]** |
+| MCP Server Interface (9 tools) | **[stable]** |
 | Primitives Library (7 modules) | **[stable]** |
 | Progressive Enablement (5 levels) | **[stable]** |
 | Auto-Classification Enrichment | **[beta]** |
@@ -34,7 +34,6 @@ Install AgentOps into an existing project in under ten minutes. This guide walks
 | **Required** | bash | 3.2+ | All AgentOps scripts are bash-based |
 | **Required** | git | 2.x | Hooks, hygiene checks, commit tracking |
 | **Recommended** | jq | 1.6+ | Config parsing in shell scripts (falls back to defaults without it) |
-| **Optional** | python3 | 3.8+ | PII scanning, YAML parsing, glob matching |
 | **Required** | Node.js | 18+ | TypeScript runtime for MCP server, primitives, and memory store |
 | **Evals only** | yq | latest | YAML eval fixtures |
 
@@ -44,7 +43,6 @@ Verify them quickly:
 bash --version | head -1
 git --version
 jq --version        # recommended — scripts fall back to defaults without it
-python3 --version   # optional — needed for PII scanning and eval scripts
 yq --version        # optional — needed for YAML eval fixtures only
 ```
 
@@ -71,7 +69,7 @@ your-project/
     plugins/
     src/
       memory/          # Persistent memory store
-      mcp/             # MCP server (8 tools)
+      mcp/             # MCP server (9 tools)
       primitives/      # Composable TypeScript primitives
       enablement/      # Progressive skill enablement
     config/            # JSON schemas
@@ -221,13 +219,13 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
 
 ## 5b. Configure MCP Server (Optional)
 
-AgentOps exposes 8 tools via the Model Context Protocol. Register with Claude Code:
+AgentOps exposes 9 tools via the Model Context Protocol. Register with Claude Code:
 
 ```bash
 claude mcp add agentops -- node agentops/dist/src/mcp/server.js
 ```
 
-This gives Claude Code direct access to: `agentops_check_git`, `agentops_check_context`, `agentops_check_rules`, `agentops_size_task`, `agentops_scan_security`, `agentops_capture_event`, `agentops_search_history`, and `agentops_health`.
+This gives Claude Code direct access to: `agentops_check_git`, `agentops_check_context`, `agentops_check_rules`, `agentops_size_task`, `agentops_scan_security`, `agentops_capture_event`, `agentops_search_history`, `agentops_health`, and `agentops_recall_context`.
 
 For HTTP transport (team/remote access):
 
@@ -402,7 +400,7 @@ Key settings you may want to tune:
 | `budget` | `session_budget` | 10 | Per-session cost budget (USD) |
 | `budget` | `monthly_budget` | 500 | Monthly cost budget (USD) |
 | `memory` | `enabled` | `true` | Enable persistent memory store |
-| `memory` | `provider` | `"sqlite"` | Storage backend (`sqlite` supported; `supabase` planned for a future release) |
+| `memory` | `provider` | `"sqlite"` | Storage backend (`sqlite` stable; `supabase` [beta] — requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars) |
 | `memory` | `embedding_provider` | `"auto"` | Embedding provider (auto-detect, onnx, ollama, openai, noop) |
 | `enablement` | `level` | `3` | Progressive enablement level (1-5) |
 
@@ -418,7 +416,7 @@ With AgentOps installed, every Claude Code session will automatically:
 4. **After every file write** -- run post-write validations and track blast radius.
 5. **On stop** -- checkpoint session state for the next session to pick up.
 6. **On every commit** -- scan staged files for secrets (git hook) and log commit metadata.
-7. **MCP tools** -- AI clients can query git hygiene, context health, rules compliance, and event history via 8 MCP tools.
+7. **MCP tools** -- AI clients can query git hygiene, context health, rules compliance, and event history via 9 MCP tools.
 8. **Memory store** -- All operational events are captured, hash-chained, and searchable across sessions.
 9. **Auto-enrichment** -- Events are enriched with cross-cutting tags and linked to related historical events.
 

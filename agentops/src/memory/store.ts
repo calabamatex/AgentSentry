@@ -150,7 +150,20 @@ export class MemoryStore {
       }
     }
 
-    // Fallback: structured query with text matching
+    // Fallback: use provider-side text search if available, else JS filter
+    if (this.provider.textSearch) {
+      const events = await this.provider.textSearch(query, {
+        limit: options?.limit ?? 10,
+        event_type: options?.event_type,
+        severity: options?.severity,
+        skill: options?.skill,
+        since: options?.since,
+        session_id: options?.session_id,
+      });
+      return events.map((event) => ({ event, score: 1.0 }));
+    }
+
+    // Last resort: fetch recent + JS filter (may miss older events)
     const events = await this.provider.query({
       limit: options?.limit ?? 10,
       event_type: options?.event_type,

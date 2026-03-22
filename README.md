@@ -24,7 +24,7 @@ Or clone and use directly:
 
 ```bash
 git clone https://github.com/calabamatex/AgenticManagement.git
-cd AgenticManagement && npm install && npm run build
+cd AgenticManagement/agentops && npm install && npm run build
 ```
 
 **Requirements:** Node.js >= 18
@@ -55,7 +55,7 @@ What makes it different: AgentOps *remembers*. Every decision, violation, incide
 
 ### Memory & Intelligence (v4.0)
 
-- **Persistent Memory Store** -- Vector-indexed database with semantic search. Dual-backend: SQLite + sqlite-vec locally, Supabase + pgvector for teams.
+- **Persistent Memory Store** -- Vector-indexed database with semantic search. SQLite with JS cosine similarity locally, Supabase [beta] for teams.
 - **MCP Server Interface** -- All 5 core skills plus memory read/write exposed as 9 MCP tools. Works with any MCP-compatible client.
 - **Primitives Library** -- 7 reusable management patterns (checkpoint-and-branch, risk-scoring, secret-detection, rules-validation, context-estimation, scaffold-update, event-capture).
 - **Auto-Classification** -- Events enriched with tags, root cause hints, related event links, and severity context. Local pattern matching at <10ms.
@@ -81,16 +81,26 @@ npm install agentops
 ```
 
 ```typescript
-import { MemoryStore } from 'agentops';
+import { MemoryStore, createProvider } from 'agentops';
 
-const store = new MemoryStore();
-await store.init();
+const store = new MemoryStore({
+  provider: createProvider({ provider: 'sqlite', database_path: './ops.db' }),
+});
+await store.initialize();
 
 // Capture an event
-await store.captureEvent({
-  type: 'decision',
-  summary: 'Chose JWT with refresh tokens for auth',
-  tags: ['auth', 'architecture']
+await store.capture({
+  timestamp: new Date().toISOString(),
+  session_id: 'session-001',
+  agent_id: 'agent-coder',
+  event_type: 'decision',
+  severity: 'low',
+  skill: 'save_points',
+  title: 'Chose JWT with refresh tokens for auth',
+  detail: 'Selected JWT with rotating refresh tokens for session management',
+  affected_files: ['src/auth/session.ts'],
+  tags: ['auth', 'architecture'],
+  metadata: {},
 });
 
 // Search history
@@ -168,13 +178,13 @@ When running as an MCP server, AgentOps exposes 9 tools:
 
 ## Progressive Enablement
 
-| Level | Name | What You Get | Setup Time |
-|-------|------|-------------|------------|
-| 1 | Safe Ground | Git checkpoints, auto-commit, branch protection | 5 min |
-| 2 | Clear Head | + Context health monitoring, scaffold docs, session handoffs | 10 min |
-| 3 | House Rules | + Rules file creation and real-time compliance checking | 15 min |
-| 4 | Right Size | + Task risk scoring, blast radius analysis, decomposition | 15 min |
-| 5 | Full Guard | + Secret scanning, PII detection, error handling enforcement | 15 min |
+| Level | Name | What's Active | Setup Time |
+|-------|------|--------------|------------|
+| 1 | Safe Ground | save_points (full) | 5 min |
+| 2 | Clear Head | + context_health (full) | 10 min |
+| 3 | House Rules | + standing_orders (basic) | 15 min |
+| 4 | Right Size | standing_orders → full, + small_bets (basic) | 15 min |
+| 5 | Full Guard | small_bets → full, + proactive_safety (full) | 15 min |
 
 Start at Level 1. Upgrade when ready. Each level builds on the last.
 
@@ -203,17 +213,13 @@ All settings in `agentops/agentops.config.json`:
 // Solo developer (default -- zero config):
 { "memory": { "provider": "sqlite", "database_path": "agentops/data/ops.db" } }
 
-// Team setup (shared memory):
-{ "memory": { "provider": "supabase", "supabase_url": "${SUPABASE_URL}", "supabase_key": "${SUPABASE_SERVICE_ROLE_KEY}" } }
+// Team setup (shared memory) [beta]:
+// Supabase provider reads credentials from environment variables:
+//   SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+{ "memory": { "provider": "supabase" } }
 ```
 
-Migrate between providers:
-
-```bash
-node agentops/src/memory/migrate.ts \
-  --from sqlite --from-path agentops/data/ops.db \
-  --to supabase --to-url "$SUPABASE_URL" --to-key "$SUPABASE_SERVICE_ROLE_KEY"
-```
+> **Note:** Migration tooling between providers is planned for a future release.
 
 ---
 

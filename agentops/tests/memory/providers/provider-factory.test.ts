@@ -40,5 +40,20 @@ describe('ProviderFactory', () => {
       expect(provider.name).toBe('supabase');
       expect(provider.mode).toBe('remote');
     });
+
+    it('passes Supabase config to SupabaseProvider', () => {
+      const provider = createProvider({
+        enabled: true,
+        provider: 'supabase',
+        embedding_provider: 'auto',
+        database_path: '',
+        max_events: 100000,
+        auto_prune_days: 365,
+        supabase_url: 'https://test.supabase.co',
+        supabase_service_role_key: 'test-key-123',
+      });
+      expect(provider).toBeInstanceOf(SupabaseProvider);
+      expect(provider.name).toBe('supabase');
+    });
   });
 });

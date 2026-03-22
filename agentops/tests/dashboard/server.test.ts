@@ -150,4 +150,39 @@ describe('DashboardServer', () => {
     const info = await server.start();
     expect(info.url).toBe(`http://127.0.0.1:${info.port}`);
   });
+
+  it('returns memory stats when memoryStore is provided', async () => {
+    // Create a minimal mock MemoryStore with stats()
+    const mockMemoryStore = {
+      stats: async () => ({
+        total_events: 42,
+        by_type: {},
+        by_severity: {},
+        by_skill: {},
+      }),
+      initialize: async () => {},
+      close: async () => {},
+    } as any;
+
+    server = new DashboardServer({ port: 0, memoryStore: mockMemoryStore });
+    const info = await server.start();
+
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`);
+    expect(res.status).toBe(200);
+    const data = JSON.parse(res.body);
+    expect(typeof data.uptime).toBe('number');
+    expect(data.memory).toBeDefined();
+    expect(data.memory.total_events).toBe(42);
+  });
+
+  it('returns stream-only stats when memoryStore is absent', async () => {
+    server = new DashboardServer({ port: 0 });
+    const info = await server.start();
+
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`);
+    expect(res.status).toBe(200);
+    const data = JSON.parse(res.body);
+    expect(typeof data.uptime).toBe('number');
+    expect(data.memory).toBeUndefined();
+  });
 });

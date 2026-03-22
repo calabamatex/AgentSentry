@@ -19,6 +19,7 @@ import { HealthChecker, memoryUsageCheck, eventLoopCheck } from '../observabilit
 import { MetricsCollector } from '../observability/metrics';
 import { PluginRegistry } from '../plugins/registry';
 import { getDashboardHtml } from './html';
+import { MemoryStore } from '../memory/store';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,6 +38,8 @@ export interface DashboardServerOptions {
   healthChecker?: HealthChecker;
   /** PluginRegistry instance. */
   pluginRegistry?: PluginRegistry;
+  /** Optional MemoryStore for enriched /api/stats responses. */
+  memoryStore?: MemoryStore;
 }
 
 export interface DashboardServerInfo {
@@ -54,7 +57,8 @@ export class DashboardServer {
   private eventStream: EventStream;
   private healthChecker: HealthChecker;
   private pluginRegistry: PluginRegistry;
-  private options: Required<Omit<DashboardServerOptions, 'eventStream' | 'healthChecker' | 'pluginRegistry'>>;
+  private memoryStore?: MemoryStore;
+  private options: Required<Omit<DashboardServerOptions, 'eventStream' | 'healthChecker' | 'pluginRegistry' | 'memoryStore'>>;
   private startTime = 0;
 
   constructor(options?: DashboardServerOptions) {
@@ -67,6 +71,7 @@ export class DashboardServer {
     this.eventStream = options?.eventStream ?? new EventStream();
     this.healthChecker = options?.healthChecker ?? new HealthChecker({ version: '4.0.0' });
     this.pluginRegistry = options?.pluginRegistry ?? new PluginRegistry();
+    this.memoryStore = options?.memoryStore;
 
     // Register default health checks
     this.healthChecker.registerCheck('memory', memoryUsageCheck());
@@ -262,12 +267,25 @@ export class DashboardServer {
   }
 
   private async handleStats(res: http.ServerResponse): Promise<void> {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
+    const streamStats = {
       uptime: Math.round((Date.now() - this.startTime) / 1000),
       clients: this.eventStream.getClientCount(),
       eventsPublished: this.eventStream.getStats().eventsPublished,
-    }));
+    };
+
+    if (this.memoryStore) {
+      try {
+        const memoryStats = await this.memoryStore.stats();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ...streamStats, memory: memoryStats }));
+        return;
+      } catch {
+        // Fall through to stream-only stats
+      }
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(streamStats));
   }
 
   private parseFilter(url: URL): StreamFilter {
