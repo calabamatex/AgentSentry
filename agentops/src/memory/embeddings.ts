@@ -34,8 +34,8 @@ export class NoopEmbeddingProvider implements EmbeddingProvider {
 export class OnnxEmbeddingProvider implements EmbeddingProvider {
   readonly name = 'onnx-local';
   readonly dimension = 384;
-  private session: any = null;
-  private tokenizer: any = null;
+  private session: { run: (feeds: Record<string, unknown>) => Promise<Record<string, { data: Float32Array }>> } | null = null;
+  private tokenizer: { model?: { vocab?: Record<string, number> } } | null = null;
 
   async embed(text: string): Promise<number[]> {
     await this.ensureLoaded();
@@ -81,7 +81,7 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
       token_type_ids: new ort.Tensor('int64', BigInt64Array.from(tokenTypeIds.map(BigInt)), [1, inputIds.length]),
     };
 
-    const results = await this.session.run(feeds);
+    const results = await this.session!.run(feeds);
     const output = results['last_hidden_state'] || results[Object.keys(results)[0]];
     const data = Array.from(output.data as Float32Array);
 

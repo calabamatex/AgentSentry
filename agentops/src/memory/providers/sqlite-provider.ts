@@ -25,6 +25,25 @@ import {
   SKILLS,
 } from '../schema';
 
+/** Shape of a row returned from the ops_events SQLite table */
+interface OpsEventRow {
+  id: string;
+  timestamp: string;
+  session_id: string;
+  agent_id: string;
+  event_type: string;
+  severity: string;
+  skill: string;
+  title: string;
+  detail: string;
+  affected_files: string;
+  tags: string;
+  metadata: string;
+  hash: string;
+  prev_hash: string;
+  embedding?: string;
+}
+
 export class SqliteProvider implements StorageProvider {
   readonly name = 'sqlite';
   readonly mode = 'local' as const;
@@ -88,7 +107,7 @@ export class SqliteProvider implements StorageProvider {
 
   async getById(id: string): Promise<OpsEvent | null> {
     const db = this.getDb();
-    const row = db.prepare('SELECT * FROM ops_events WHERE id = ?').get(id) as any;
+    const row = db.prepare('SELECT * FROM ops_events WHERE id = ?').get(id) as OpsEventRow | undefined;
     if (!row) return null;
     return this.rowToEvent(row);
   }
@@ -96,7 +115,7 @@ export class SqliteProvider implements StorageProvider {
   async query(options: QueryOptions): Promise<OpsEvent[]> {
     const db = this.getDb();
     const { sql, params } = this.buildQuery(options);
-    const rows = db.prepare(sql).all(...params) as any[];
+    const rows = db.prepare(sql).all(...params) as OpsEventRow[];
     return rows.map((r) => this.rowToEvent(r));
   }
 
@@ -174,36 +193,44 @@ export class SqliteProvider implements StorageProvider {
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const total = db.prepare(`SELECT COUNT(*) as cnt FROM ops_events ${where}`).get(...params) as { cnt: number };
+    // Single query for total count + time range
+    const summary = db.prepare(
+      `SELECT COUNT(*) as total, MIN(timestamp) as first_ts, MAX(timestamp) as last_ts FROM ops_events ${where}`
+    ).get(...params) as { total: number; first_ts: string | null; last_ts: string | null };
 
+    // GROUP BY queries (3 instead of 19 individual COUNTs)
+    const typeRows = db.prepare(
+      `SELECT event_type, COUNT(*) as cnt FROM ops_events ${where} GROUP BY event_type`
+    ).all(...params) as { event_type: string; cnt: number }[];
+
+    const severityRows = db.prepare(
+      `SELECT severity, COUNT(*) as cnt FROM ops_events ${where} GROUP BY severity`
+    ).all(...params) as { severity: string; cnt: number }[];
+
+    const skillRows = db.prepare(
+      `SELECT skill, COUNT(*) as cnt FROM ops_events ${where} GROUP BY skill`
+    ).all(...params) as { skill: string; cnt: number }[];
+
+    // Build result maps (initialize all known values to 0, then fill from results)
     const byType: Record<EventType, number> = {} as any;
-    for (const t of EVENT_TYPES) {
-      const row = db.prepare(`SELECT COUNT(*) as cnt FROM ops_events ${where ? where + ' AND' : 'WHERE'} event_type = ?`).get(...params, t) as { cnt: number };
-      byType[t] = row.cnt;
-    }
+    for (const t of EVENT_TYPES) byType[t] = 0;
+    for (const row of typeRows) byType[row.event_type as EventType] = row.cnt;
 
     const bySeverity: Record<Severity, number> = {} as any;
-    for (const s of SEVERITIES) {
-      const row = db.prepare(`SELECT COUNT(*) as cnt FROM ops_events ${where ? where + ' AND' : 'WHERE'} severity = ?`).get(...params, s) as { cnt: number };
-      bySeverity[s] = row.cnt;
-    }
+    for (const s of SEVERITIES) bySeverity[s] = 0;
+    for (const row of severityRows) bySeverity[row.severity as Severity] = row.cnt;
 
     const bySkill: Record<Skill, number> = {} as any;
-    for (const sk of SKILLS) {
-      const row = db.prepare(`SELECT COUNT(*) as cnt FROM ops_events ${where ? where + ' AND' : 'WHERE'} skill = ?`).get(...params, sk) as { cnt: number };
-      bySkill[sk] = row.cnt;
-    }
-
-    const firstRow = db.prepare(`SELECT MIN(timestamp) as ts FROM ops_events ${where}`).get(...params) as { ts: string | null };
-    const lastRow = db.prepare(`SELECT MAX(timestamp) as ts FROM ops_events ${where}`).get(...params) as { ts: string | null };
+    for (const sk of SKILLS) bySkill[sk] = 0;
+    for (const row of skillRows) bySkill[row.skill as Skill] = row.cnt;
 
     return {
-      total_events: total.cnt,
+      total_events: summary.total,
       by_type: byType,
       by_severity: bySeverity,
       by_skill: bySkill,
-      first_event: firstRow.ts ?? undefined,
-      last_event: lastRow.ts ?? undefined,
+      first_event: summary.first_ts ?? undefined,
+      last_event: summary.last_ts ?? undefined,
     };
   }
 
@@ -216,7 +243,7 @@ export class SqliteProvider implements StorageProvider {
       params.push(since);
     }
     sql += ' ORDER BY timestamp ASC';
-    const rows = db.prepare(sql).all(...params) as any[];
+    const rows = db.prepare(sql).all(...params) as OpsEventRow[];
     return rows.map((r) => this.rowToEvent(r));
   }
 
@@ -293,8 +320,8 @@ export class SqliteProvider implements StorageProvider {
     const offset = options.offset ?? 0;
 
     const sql = `SELECT * FROM ops_events ${where} ORDER BY timestamp DESC LIMIT ? OFFSET ?`;
-    const rows = db.prepare(sql).all(...params, limit, offset) as any[];
-    return rows.map((r: any) => this.rowToEvent(r));
+    const rows = db.prepare(sql).all(...params, limit, offset) as OpsEventRow[];
+    return rows.map((r) => this.rowToEvent(r));
   }
 
   private buildQuery(options: QueryOptions, countOnly = false): { sql: string; params: any[] } {
@@ -324,15 +351,15 @@ export class SqliteProvider implements StorageProvider {
     };
   }
 
-  private rowToEvent(row: any): OpsEvent {
+  private rowToEvent(row: OpsEventRow): OpsEvent {
     const event: OpsEvent = {
       id: row.id,
       timestamp: row.timestamp,
       session_id: row.session_id,
       agent_id: row.agent_id,
-      event_type: row.event_type,
-      severity: row.severity,
-      skill: row.skill,
+      event_type: row.event_type as EventType,
+      severity: row.severity as Severity,
+      skill: row.skill as Skill,
       title: row.title,
       detail: row.detail,
       affected_files: safeJsonParse<string[]>(row.affected_files, []),

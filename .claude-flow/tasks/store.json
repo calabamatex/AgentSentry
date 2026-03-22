@@ -47,8 +47,8 @@
       "type": "refactor",
       "description": "Phase 2: Error Handling — Add logging to empty catch blocks, safe JSON.parse in rowToEvent(), document coordinator race condition",
       "priority": "high",
-      "status": "pending",
-      "progress": 0,
+      "status": "completed",
+      "progress": 100,
       "assignedTo": [],
       "tags": [
         "error-handling",
@@ -56,6 +56,28 @@
         "foundation-hardening"
       ],
       "createdAt": "2026-03-22T16:32:14.395Z",
+      "startedAt": null,
+      "completedAt": "2026-03-22T16:45:40.562Z",
+      "result": {
+        "tests_passing": 1021,
+        "files_modified": 24,
+        "catch_blocks_logged": 60
+      }
+    },
+    "task-1774197948861-djs748": {
+      "taskId": "task-1774197948861-djs748",
+      "type": "refactor",
+      "description": "Phase 3: Code Quality — Extract supabase-base.ts, consolidate aggregate() GROUP BY, type safety, split connection-pool.ts",
+      "priority": "normal",
+      "status": "pending",
+      "progress": 0,
+      "assignedTo": [],
+      "tags": [
+        "code-quality",
+        "phase-3",
+        "foundation-hardening"
+      ],
+      "createdAt": "2026-03-22T16:45:48.861Z",
       "startedAt": null,
       "completedAt": null
     }

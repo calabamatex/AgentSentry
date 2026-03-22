@@ -7,50 +7,28 @@
 
 import * as https from 'https';
 import * as http from 'http';
-import { StorageProvider } from './storage-provider';
+import { SupabaseBaseProvider, SupabaseRequestOptions } from './supabase-base';
 import { Logger } from '../../observability/logger';
+import { OpsEvent, QueryOptions } from '../schema';
 
 const logger = new Logger({ module: 'supabase-provider' });
-import {
-  OpsEvent,
-  QueryOptions,
-  VectorSearchOptions,
-  SearchResult,
-  AggregateOptions,
-  OpsStats,
-  EventType,
-  Severity,
-  Skill,
-  EVENT_TYPES,
-  SEVERITIES,
-  SKILLS,
-} from '../schema';
-
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value);
-  } catch (e) {
-    logger.debug('JSON parse failed in safeJsonParse', { error: e instanceof Error ? e.message : String(e) });
-    return fallback;
-  }
-}
 
 export interface SupabaseProviderConfig {
   url?: string;
   serviceRoleKey?: string;
 }
 
-export class SupabaseProvider implements StorageProvider {
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export class SupabaseProvider extends SupabaseBaseProvider {
   readonly name = 'supabase';
   readonly mode = 'remote' as const;
 
-  private url: string;
-  private serviceRoleKey: string;
-
   constructor(config?: SupabaseProviderConfig) {
-    this.url = config?.url ?? process.env.SUPABASE_URL ?? '';
-    this.serviceRoleKey = config?.serviceRoleKey ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+    super(
+      config?.url ?? process.env.SUPABASE_URL ?? '',
+      config?.serviceRoleKey ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+    );
   }
 
   async initialize(): Promise<void> {
@@ -76,27 +54,7 @@ export class SupabaseProvider implements StorageProvider {
   }
 
   async insert(event: OpsEvent): Promise<void> {
-    const body: Record<string, unknown> = {
-      id: event.id,
-      timestamp: event.timestamp,
-      session_id: event.session_id,
-      agent_id: event.agent_id,
-      event_type: event.event_type,
-      severity: event.severity,
-      skill: event.skill,
-      title: event.title,
-      detail: event.detail,
-      affected_files: event.affected_files,
-      tags: event.tags,
-      metadata: event.metadata,
-      hash: event.hash,
-      prev_hash: event.prev_hash,
-    };
-
-    if (event.embedding && event.embedding.length > 0) {
-      body.embedding = `[${event.embedding.join(',')}]`;
-    }
-
+    const body = this.buildInsertBody(event);
     await this.request('/rest/v1/ops_events', {
       method: 'POST',
       body,
@@ -110,195 +68,6 @@ export class SupabaseProvider implements StorageProvider {
     });
     if (!rows || rows.length === 0) return null;
     return this.rowToEvent(rows[0]);
-  }
-
-  async query(options: QueryOptions): Promise<OpsEvent[]> {
-    const params = this.buildQueryParams(options);
-    const limit = options.limit ?? 100;
-    const offset = options.offset ?? 0;
-    params.push(`order=timestamp.desc`);
-    params.push(`limit=${limit}`);
-    params.push(`offset=${offset}`);
-
-    const qs = params.length > 0 ? `?${params.join('&')}` : '';
-    const rows = await this.request<any[]>(`/rest/v1/ops_events${qs}`, { method: 'GET' });
-    return (rows || []).map((r: any) => this.rowToEvent(r));
-  }
-
-  async count(options: QueryOptions): Promise<number> {
-    const params = this.buildQueryParams(options);
-    params.push('select=id');
-    params.push('limit=0');
-
-    const qs = params.length > 0 ? `?${params.join('&')}` : '';
-    const result = await this.request<any>(`/rest/v1/ops_events${qs}`, {
-      method: 'GET',
-      headers: { 'Prefer': 'count=exact' },
-      returnHeaders: true,
-    });
-    const contentRange = result.headers?.['content-range'];
-    if (contentRange) {
-      // Format: "0-0/42" or "*/42"
-      const match = contentRange.match(/\/(\d+)$/);
-      if (match) return parseInt(match[1], 10);
-    }
-    return 0;
-  }
-
-  async vectorSearch(embedding: number[], options: VectorSearchOptions): Promise<SearchResult[]> {
-    const rpcBody: Record<string, unknown> = {
-      query_embedding: `[${embedding.join(',')}]`,
-      match_count: options.limit ?? 10,
-      match_threshold: options.threshold ?? 0.5,
-    };
-
-    if (options.event_type) rpcBody.filter_event_type = options.event_type;
-    if (options.severity) rpcBody.filter_severity = options.severity;
-    if (options.skill) rpcBody.filter_skill = options.skill;
-    if (options.session_id) rpcBody.filter_session_id = options.session_id;
-    if (options.since) rpcBody.filter_since = options.since;
-
-    const rows = await this.rpc<any[]>('match_ops_events', rpcBody);
-    return (rows || []).map((r: any) => ({
-      event: this.rowToEvent(r),
-      score: r.similarity,
-    }));
-  }
-
-  async aggregate(options: AggregateOptions): Promise<OpsStats> {
-    const baseParams = this.buildAggregateParams(options);
-
-    // Total count
-    const total = await this.countWithParams(baseParams);
-
-    // Count by type
-    const byType: Record<EventType, number> = {} as any;
-    for (const t of EVENT_TYPES) {
-      byType[t] = await this.countWithParams([...baseParams, `event_type=eq.${t}`]);
-    }
-
-    // Count by severity
-    const bySeverity: Record<Severity, number> = {} as any;
-    for (const s of SEVERITIES) {
-      bySeverity[s] = await this.countWithParams([...baseParams, `severity=eq.${s}`]);
-    }
-
-    // Count by skill
-    const bySkill: Record<Skill, number> = {} as any;
-    for (const sk of SKILLS) {
-      bySkill[sk] = await this.countWithParams([...baseParams, `skill=eq.${sk}`]);
-    }
-
-    // First and last event timestamps
-    const firstParams = [...baseParams, 'select=timestamp', 'order=timestamp.asc', 'limit=1'];
-    const lastParams = [...baseParams, 'select=timestamp', 'order=timestamp.desc', 'limit=1'];
-
-    const firstRows = await this.request<any[]>(`/rest/v1/ops_events?${firstParams.join('&')}`, { method: 'GET' });
-    const lastRows = await this.request<any[]>(`/rest/v1/ops_events?${lastParams.join('&')}`, { method: 'GET' });
-
-    return {
-      total_events: total,
-      by_type: byType,
-      by_severity: bySeverity,
-      by_skill: bySkill,
-      first_event: firstRows?.[0]?.timestamp ?? undefined,
-      last_event: lastRows?.[0]?.timestamp ?? undefined,
-    };
-  }
-
-  async getChain(since?: string): Promise<OpsEvent[]> {
-    const params: string[] = ['order=timestamp.asc'];
-    if (since) {
-      params.push(`timestamp=gte.${encodeURIComponent(since)}`);
-    }
-    const qs = params.join('&');
-    const rows = await this.request<any[]>(`/rest/v1/ops_events?${qs}`, { method: 'GET' });
-    return (rows || []).map((r: any) => this.rowToEvent(r));
-  }
-
-  async prune(options: { maxEvents?: number; maxAgeDays?: number }): Promise<{ deleted: number }> {
-    let totalDeleted = 0;
-
-    // Prune by age
-    if (options.maxAgeDays) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - options.maxAgeDays);
-      const cutoffStr = cutoff.toISOString();
-
-      const deleteResult = await this.request<any>(`/rest/v1/ops_events?timestamp=lt.${encodeURIComponent(cutoffStr)}`, {
-        method: 'DELETE',
-        headers: { 'Prefer': 'return=representation', },
-      });
-      totalDeleted += Array.isArray(deleteResult) ? deleteResult.length : 0;
-    }
-
-    // Prune by count (keep newest)
-    if (options.maxEvents) {
-      const currentCount = await this.countWithParams([]);
-      if (currentCount > options.maxEvents) {
-        const excess = currentCount - options.maxEvents;
-        // Get the oldest excess event IDs
-        const oldestRows = await this.request<any[]>(
-          `/rest/v1/ops_events?select=id&order=timestamp.asc&limit=${excess}`,
-          { method: 'GET' },
-        );
-        if (oldestRows && oldestRows.length > 0) {
-          const ids = oldestRows.map((r: any) => r.id);
-          const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          const validIds = ids.filter((id: string) => UUID_REGEX.test(id));
-          if (validIds.length === 0) {
-            return { deleted: totalDeleted };
-          }
-          const idList = validIds.map((id: string) => `"${id}"`).join(',');
-          const deleteResult = await this.request<any>(
-            `/rest/v1/ops_events?id=in.(${idList})`,
-            {
-              method: 'DELETE',
-              headers: { 'Prefer': 'return=representation' },
-            },
-          );
-          totalDeleted += Array.isArray(deleteResult) ? deleteResult.length : 0;
-        }
-      }
-    }
-
-    return { deleted: totalDeleted };
-  }
-
-  async saveChainCheckpoint(checkpoint: {
-    lastEventId: string;
-    lastEventHash: string;
-    eventsVerified: number;
-  }): Promise<void> {
-    await this.request('/rest/v1/chain_checkpoints', {
-      method: 'POST',
-      body: {
-        last_event_id: checkpoint.lastEventId,
-        last_event_hash: checkpoint.lastEventHash,
-        events_verified: checkpoint.eventsVerified,
-      },
-      headers: { 'Prefer': 'return=minimal' },
-    });
-  }
-
-  async getLastChainCheckpoint(): Promise<{
-    lastEventId: string;
-    lastEventHash: string;
-    eventsVerified: number;
-    verifiedAt: string;
-  } | null> {
-    const rows = await this.request<any[]>(
-      '/rest/v1/chain_checkpoints?order=id.desc&limit=1',
-      { method: 'GET' },
-    );
-    if (!rows || rows.length === 0) return null;
-    const row = rows[0];
-    return {
-      lastEventId: row.last_event_id,
-      lastEventHash: row.last_event_hash,
-      eventsVerified: row.events_verified,
-      verifiedAt: row.verified_at,
-    };
   }
 
   async textSearch(query: string, options: QueryOptions): Promise<OpsEvent[]> {
@@ -326,16 +95,17 @@ export class SupabaseProvider implements StorageProvider {
     return (rows || []).map((r: any) => this.rowToEvent(r));
   }
 
-  // ── Private helpers ──────────────────────────────────────────────────
+  // ── UUID validation for prune ───────────────────────────────────────────
 
-  private async request<T>(
+  protected override filterValidIds(ids: string[]): string[] {
+    return ids.filter((id: string) => UUID_REGEX.test(id));
+  }
+
+  // ── HTTP transport ──────────────────────────────────────────────────────
+
+  protected async request<T>(
     path: string,
-    options: {
-      method?: string;
-      body?: unknown;
-      headers?: Record<string, string>;
-      returnHeaders?: boolean;
-    },
+    options: SupabaseRequestOptions,
   ): Promise<T> {
     const method = options.method ?? 'GET';
     const parsed = new URL(this.url);
@@ -399,68 +169,5 @@ export class SupabaseProvider implements StorageProvider {
       }
       req.end();
     });
-  }
-
-  private async rpc<T>(functionName: string, body: Record<string, unknown>): Promise<T> {
-    return this.request<T>(`/rest/v1/rpc/${functionName}`, {
-      method: 'POST',
-      body,
-    });
-  }
-
-  private buildQueryParams(options: QueryOptions): string[] {
-    const params: string[] = [];
-    if (options.event_type) params.push(`event_type=eq.${options.event_type}`);
-    if (options.severity) params.push(`severity=eq.${options.severity}`);
-    if (options.skill) params.push(`skill=eq.${options.skill}`);
-    if (options.since) params.push(`timestamp=gte.${encodeURIComponent(options.since)}`);
-    if (options.until) params.push(`timestamp=lte.${encodeURIComponent(options.until)}`);
-    if (options.session_id) params.push(`session_id=eq.${encodeURIComponent(options.session_id)}`);
-    if (options.agent_id) params.push(`agent_id=eq.${encodeURIComponent(options.agent_id)}`);
-    if (options.tag) params.push(`tags=cs.["${options.tag}"]`);
-    return params;
-  }
-
-  private buildAggregateParams(options: AggregateOptions): string[] {
-    const params: string[] = [];
-    if (options.since) params.push(`timestamp=gte.${encodeURIComponent(options.since)}`);
-    if (options.until) params.push(`timestamp=lte.${encodeURIComponent(options.until)}`);
-    if (options.session_id) params.push(`session_id=eq.${encodeURIComponent(options.session_id)}`);
-    return params;
-  }
-
-  private async countWithParams(params: string[]): Promise<number> {
-    const allParams = [...params, 'select=id', 'limit=0'];
-    const qs = allParams.join('&');
-    const result = await this.request<any>(`/rest/v1/ops_events?${qs}`, {
-      method: 'GET',
-      headers: { 'Prefer': 'count=exact' },
-      returnHeaders: true,
-    });
-    const contentRange = result.headers?.['content-range'];
-    if (contentRange) {
-      const match = contentRange.match(/\/(\d+)$/);
-      if (match) return parseInt(match[1], 10);
-    }
-    return 0;
-  }
-
-  private rowToEvent(row: any): OpsEvent {
-    return {
-      id: row.id,
-      timestamp: row.timestamp,
-      session_id: row.session_id,
-      agent_id: row.agent_id,
-      event_type: row.event_type,
-      severity: row.severity,
-      skill: row.skill,
-      title: row.title,
-      detail: row.detail,
-      affected_files: typeof row.affected_files === 'string' ? safeJsonParse<string[]>(row.affected_files, []) : row.affected_files,
-      tags: typeof row.tags === 'string' ? safeJsonParse<string[]>(row.tags, []) : row.tags,
-      metadata: typeof row.metadata === 'string' ? safeJsonParse<Record<string, unknown>>(row.metadata, {}) : row.metadata,
-      hash: row.hash,
-      prev_hash: row.prev_hash,
-    };
   }
 }
