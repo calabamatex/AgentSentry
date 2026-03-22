@@ -16,6 +16,9 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { scanErrorHandling } from '../../analyzers/error-handling';
 import { scanPiiLogging } from '../../analyzers/pii-scanner';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'hook-post-write' });
 
 const PREFIX = '[AgentOps]';
 
@@ -31,7 +34,8 @@ function getConfigPath(): string {
 function readConfig(): Record<string, any> {
   try {
     return JSON.parse(fs.readFileSync(getConfigPath(), 'utf-8'));
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
     return {};
   }
 }
@@ -49,7 +53,8 @@ function checkBlastRadius(filePath: string): void {
   let lines: string[];
   try {
     lines = fs.readFileSync(trackingFile, 'utf-8').split('\n').filter(Boolean);
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to read blast-radius tracking file', { error: e instanceof Error ? e.message : String(e) });
     return;
   }
   const uniqueFiles = [...new Set(lines)];
@@ -69,8 +74,8 @@ function checkBlastRadius(filePath: string): void {
         stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       if (recentCommits) needsCheckpoint = false;
-    } catch {
-      // git not available or not in a repo
+    } catch (e) {
+      logger.debug('Git log check failed, git may not be available', { error: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -85,8 +90,8 @@ function checkBlastRadius(filePath: string): void {
       try {
         execSync(`git add "${f}"`, { stdio: 'pipe' });
         anyAdded = true;
-      } catch {
-        // skip
+      } catch (e) {
+        logger.debug('Failed to git add file', { error: e instanceof Error ? e.message : String(e), file: f });
       }
     }
   }
@@ -99,16 +104,16 @@ function checkBlastRadius(filePath: string): void {
   if (!autoEnabled) {
     try {
       execSync('git reset HEAD', { stdio: 'pipe' });
-    } catch {
-      // ignore
+    } catch (e) {
+      logger.debug('Failed to reset staged files', { error: e instanceof Error ? e.message : String(e) });
     }
     console.log(`${PREFIX} ADVISORY: Auto-checkpoint would fire (blast radius ${uniqueCount} files) but auto_commit_enabled=false.`);
   } else {
     try {
       execSync(`git commit -m "chore(agentops): auto-checkpoint — blast radius ${uniqueCount} files"`, { stdio: 'pipe' });
       console.log(`${PREFIX} Auto-checkpoint commit created.`);
-    } catch {
-      // commit may fail if nothing staged
+    } catch (e) {
+      logger.debug('Auto-checkpoint commit failed', { error: e instanceof Error ? e.message : String(e) });
     }
   }
 }
@@ -124,7 +129,8 @@ async function main(): Promise<void> {
   let input: HookInput;
   try {
     input = JSON.parse(raw);
-  } catch {
+  } catch (e) {
+    logger.warn('Failed to parse hook input from stdin', { error: e instanceof Error ? e.message : String(e) });
     process.exit(0);
   }
 
