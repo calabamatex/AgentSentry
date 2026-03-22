@@ -117,8 +117,8 @@ export async function handler(
       if (raw.enablement?.level && typeof raw.enablement.level === 'number') {
         enablementLevel = raw.enablement.level;
       }
-    } catch {
-      // Use default level
+    } catch (e) {
+      logger.debug('Failed to read enablement level from config', { error: e instanceof Error ? e.message : String(e) });
     }
     const enablementConfig = generateConfigForLevel(enablementLevel);
     const enablementInfo = {
