@@ -8,6 +8,9 @@
 import * as https from 'https';
 import * as http from 'http';
 import { StorageProvider } from './storage-provider';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'supabase-provider' });
 import {
   OpsEvent,
   QueryOptions,
@@ -372,7 +375,8 @@ export class SupabaseProvider implements StorageProvider {
               try {
                 const data = body ? JSON.parse(body) : null;
                 resolve({ data, headers: res.headers } as unknown as T);
-              } catch {
+              } catch (e) {
+                logger.debug('Failed to parse response body with headers', { error: e instanceof Error ? e.message : String(e) });
                 resolve({ data: null, headers: res.headers } as unknown as T);
               }
               return;
@@ -380,7 +384,8 @@ export class SupabaseProvider implements StorageProvider {
 
             try {
               resolve(body ? JSON.parse(body) : (null as unknown as T));
-            } catch {
+            } catch (e) {
+              logger.debug('Failed to parse response body', { error: e instanceof Error ? e.message : String(e) });
               resolve(null as unknown as T);
             }
           });

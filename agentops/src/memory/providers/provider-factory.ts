@@ -7,6 +7,9 @@ import * as path from 'path';
 import { StorageProvider } from './storage-provider';
 import { SqliteProvider } from './sqlite-provider';
 import { SupabaseProvider } from './supabase-provider';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'provider-factory' });
 export interface MemoryConfig {
   enabled: boolean;
   provider: 'sqlite' | 'supabase';
@@ -36,8 +39,8 @@ export function loadMemoryConfig(configPath?: string): MemoryConfig {
     if (raw.memory) {
       return { ...DEFAULT_CONFIG, ...raw.memory };
     }
-  } catch {
-    // Config file not found or invalid — use defaults
+  } catch (e) {
+    logger.debug('Config file not found or invalid, using defaults', { error: e instanceof Error ? e.message : String(e) });
   }
   return { ...DEFAULT_CONFIG };
 }

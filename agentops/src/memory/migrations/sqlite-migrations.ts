@@ -92,7 +92,8 @@ export function getCurrentVersion(db: Database.Database): number {
   try {
     const row = db.prepare('SELECT MAX(version) as v FROM schema_version').get() as { v: number | null };
     return row?.v ?? 0;
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to get current schema version', { error: e instanceof Error ? e.message : String(e) });
     return 0;
   }
 }
