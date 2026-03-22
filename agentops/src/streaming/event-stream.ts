@@ -11,6 +11,9 @@
 
 import { EventEmitter } from 'events';
 import { getEventBus, EventType as BusEventType, EventPayload } from '../../core/event-bus';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'event-stream' });
 
 // ---------------------------------------------------------------------------
 // Types
