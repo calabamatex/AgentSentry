@@ -78,6 +78,12 @@ export class AgentCoordinator {
   private started = false;
 
   constructor(options: CoordinatorOptions) {
+    if (typeof process !== 'undefined' && process.env.AGENTOPS_SUPPRESS_EXPERIMENTAL_WARN !== '1') {
+      logger.warn(
+        'AgentCoordinator is experimental. API may change without notice. ' +
+        'Set AGENTOPS_SUPPRESS_EXPERIMENTAL_WARN=1 to suppress this warning.',
+      );
+    }
     this.agentId = options.agentId;
     this.agentName = options.agentName;
     this.role = options.role ?? 'default';
