@@ -103,7 +103,8 @@ export const configCommand: CommandDefinition = {
 function loadFullConfig(): Record<string, unknown> {
   try {
     return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-  } catch {
+  } catch (e) {
+    logger.debug('Failed to load config file', { error: e instanceof Error ? e.message : String(e) });
     return { memory: {} };
   }
 }
