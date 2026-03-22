@@ -380,7 +380,13 @@ describe('SupabaseProvider', () => {
 
     it('sends DELETE for maxEvents keeping newest', async () => {
       const countResponse = { statusCode: 200, body: '[]', headers: { 'content-range': '*/15' } };
-      const oldRows = [{ id: 'old-1' }, { id: 'old-2' }, { id: 'old-3' }, { id: 'old-4' }, { id: 'old-5' }];
+      const oldRows = [
+        { id: '00000000-0000-0000-0000-000000000001' },
+        { id: '00000000-0000-0000-0000-000000000002' },
+        { id: '00000000-0000-0000-0000-000000000003' },
+        { id: '00000000-0000-0000-0000-000000000004' },
+        { id: '00000000-0000-0000-0000-000000000005' },
+      ];
       setupMockRequest([
         { statusCode: 200, body: 'null' },                     // initialize
         countResponse,                                           // count

@@ -7,10 +7,24 @@ import * as childProcess from 'child_process';
 import { handler } from '../../../src/mcp/tools/check-git';
 
 vi.mock('child_process', () => ({
-  execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
-const mockExecSync = childProcess.execSync as unknown as ReturnType<typeof vi.fn>;
+const mockExecFileSync = childProcess.execFileSync as unknown as ReturnType<typeof vi.fn>;
+
+/**
+ * The source now uses execFileSync('git', args, opts).
+ * The mock matches on the args array (second argument).
+ */
+function setupGitMock(responses: Record<string, string>) {
+  mockExecFileSync.mockImplementation((_cmd: string, args: string[]) => {
+    const joined = args.join(' ');
+    for (const [pattern, value] of Object.entries(responses)) {
+      if (joined.includes(pattern)) return value;
+    }
+    return '';
+  });
+}
 
 describe('agentops_check_git', () => {
   beforeEach(() => {
@@ -18,12 +32,11 @@ describe('agentops_check_git', () => {
   });
 
   it('should return clean state for clean repo', () => {
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd.includes('status --porcelain')) return '';
-      if (cmd.includes('--format=%cr')) return '5 minutes ago';
-      if (cmd.includes('--show-current')) return 'feature/test';
-      if (cmd.includes('--format=%ct')) return String(Math.floor(Date.now() / 1000));
-      return '';
+    setupGitMock({
+      'status --porcelain': '',
+      '--format=%cr': '5 minutes ago',
+      '--show-current': 'feature/test',
+      '--format=%ct': String(Math.floor(Date.now() / 1000)),
     });
 
     return handler({}).then((result) => {
@@ -37,12 +50,11 @@ describe('agentops_check_git', () => {
   });
 
   it('should detect uncommitted files and add risk', () => {
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd.includes('status --porcelain')) return ' M src/file.ts\n?? new-file.ts';
-      if (cmd.includes('--format=%cr')) return '30 minutes ago';
-      if (cmd.includes('--show-current')) return 'feature/test';
-      if (cmd.includes('--format=%ct')) return String(Math.floor(Date.now() / 1000));
-      return '';
+    setupGitMock({
+      'status --porcelain': ' M src/file.ts\n?? new-file.ts',
+      '--format=%cr': '30 minutes ago',
+      '--show-current': 'feature/test',
+      '--format=%ct': String(Math.floor(Date.now() / 1000)),
     });
 
     return handler({}).then((result) => {
@@ -53,12 +65,11 @@ describe('agentops_check_git', () => {
   });
 
   it('should add risk for main branch', () => {
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd.includes('status --porcelain')) return '';
-      if (cmd.includes('--format=%cr')) return '5 minutes ago';
-      if (cmd.includes('--show-current')) return 'main';
-      if (cmd.includes('--format=%ct')) return String(Math.floor(Date.now() / 1000));
-      return '';
+    setupGitMock({
+      'status --porcelain': '',
+      '--format=%cr': '5 minutes ago',
+      '--show-current': 'main',
+      '--format=%ct': String(Math.floor(Date.now() / 1000)),
     });
 
     return handler({}).then((result) => {
@@ -69,12 +80,11 @@ describe('agentops_check_git', () => {
   });
 
   it('should add risk for master branch', () => {
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd.includes('status --porcelain')) return '';
-      if (cmd.includes('--format=%cr')) return '5 minutes ago';
-      if (cmd.includes('--show-current')) return 'master';
-      if (cmd.includes('--format=%ct')) return String(Math.floor(Date.now() / 1000));
-      return '';
+    setupGitMock({
+      'status --porcelain': '',
+      '--format=%cr': '5 minutes ago',
+      '--show-current': 'master',
+      '--format=%ct': String(Math.floor(Date.now() / 1000)),
     });
 
     return handler({}).then((result) => {
@@ -85,12 +95,11 @@ describe('agentops_check_git', () => {
 
   it('should add risk for old commits', () => {
     const twoHoursAgo = Math.floor((Date.now() - 7200000) / 1000);
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd.includes('status --porcelain')) return '';
-      if (cmd.includes('--format=%cr')) return '2 hours ago';
-      if (cmd.includes('--show-current')) return 'feature/test';
-      if (cmd.includes('--format=%ct')) return String(twoHoursAgo);
-      return '';
+    setupGitMock({
+      'status --porcelain': '',
+      '--format=%cr': '2 hours ago',
+      '--show-current': 'feature/test',
+      '--format=%ct': String(twoHoursAgo),
     });
 
     return handler({}).then((result) => {
@@ -101,12 +110,11 @@ describe('agentops_check_git', () => {
 
   it('should accumulate multiple risks', () => {
     const twoHoursAgo = Math.floor((Date.now() - 7200000) / 1000);
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd.includes('status --porcelain')) return ' M file.ts';
-      if (cmd.includes('--format=%cr')) return '2 hours ago';
-      if (cmd.includes('--show-current')) return 'main';
-      if (cmd.includes('--format=%ct')) return String(twoHoursAgo);
-      return '';
+    setupGitMock({
+      'status --porcelain': ' M file.ts',
+      '--format=%cr': '2 hours ago',
+      '--show-current': 'main',
+      '--format=%ct': String(twoHoursAgo),
     });
 
     return handler({}).then((result) => {
@@ -117,7 +125,7 @@ describe('agentops_check_git', () => {
   });
 
   it('should handle git command failures gracefully', () => {
-    mockExecSync.mockImplementation(() => {
+    mockExecFileSync.mockImplementation(() => {
       throw new Error('not a git repository');
     });
 
