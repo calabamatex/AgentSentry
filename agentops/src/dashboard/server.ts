@@ -73,7 +73,7 @@ export class DashboardServer {
     };
 
     this.eventStream = options?.eventStream ?? new EventStream();
-    this.healthChecker = options?.healthChecker ?? new HealthChecker({ version: '4.0.0' });
+    this.healthChecker = options?.healthChecker ?? new HealthChecker({ version: VERSION });
     this.pluginRegistry = options?.pluginRegistry ?? new PluginRegistry();
     this.memoryStore = options?.memoryStore;
 

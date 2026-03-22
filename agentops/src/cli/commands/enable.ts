@@ -177,7 +177,9 @@ function saveEnablementLevel(level: number): void {
   if (!config.enablement || typeof config.enablement !== 'object') {
     config.enablement = {};
   }
+  const canonical = generateConfigForLevel(level);
   (config.enablement as Record<string, unknown>).level = level;
+  (config.enablement as Record<string, unknown>).skills = canonical.skills;
   (config.enablement as Record<string, unknown>).updated_at = new Date().toISOString();
 
   const dir = path.dirname(cfgPath);

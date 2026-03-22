@@ -253,5 +253,47 @@ export function validateEnablementConfig(config: unknown): { valid: boolean; err
     }
   }
 
+  // Cross-check level vs skills consistency
+  if (typeof obj.level === 'number' && obj.level >= 1 && obj.level <= 5 && typeof obj.skills === 'object' && obj.skills !== null) {
+    const drift = validateLevelMatchesSkills(obj.level, obj.skills as EnablementConfig['skills']);
+    if (!drift.valid) {
+      for (const name of drift.drifted) {
+        errors.push(`Skill '${name}' does not match canonical config for level ${obj.level}`);
+      }
+    }
+  }
+
   return { valid: errors.length === 0, errors };
+}
+
+// ---------------------------------------------------------------------------
+// Level-skills consistency check
+// ---------------------------------------------------------------------------
+
+/**
+ * Compare a skills object against the canonical config for the given level.
+ * Returns the list of skill names where `enabled` or `mode` differ.
+ */
+export function validateLevelMatchesSkills(
+  level: number,
+  skills: EnablementConfig['skills'],
+): { valid: boolean; drifted: string[] } {
+  const canonical = generateConfigForLevel(level);
+  const drifted: string[] = [];
+
+  for (const skill of ALL_SKILLS) {
+    const actual = skills[skill];
+    const expected = canonical.skills[skill];
+
+    if (!actual) {
+      drifted.push(skill);
+      continue;
+    }
+
+    if (actual.enabled !== expected.enabled || actual.mode !== expected.mode) {
+      drifted.push(skill);
+    }
+  }
+
+  return { valid: drifted.length === 0, drifted };
 }

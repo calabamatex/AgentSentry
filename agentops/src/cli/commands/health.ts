@@ -6,6 +6,7 @@
 
 import { CommandDefinition, ParsedArgs, output, isJson, table } from '../parser';
 import { HealthChecker, memoryUsageCheck, eventLoopCheck } from '../../observability/health';
+import { VERSION } from '../../version';
 
 export const healthCommand: CommandDefinition = {
   name: 'health',
@@ -26,7 +27,7 @@ export const healthCommand: CommandDefinition = {
     const sub = args.positionals[0] ?? 'ready';
     const json = isJson(args.flags);
 
-    const checker = new HealthChecker({ version: '4.0.0' });
+    const checker = new HealthChecker({ version: VERSION });
     checker.registerCheck('memory', memoryUsageCheck());
     checker.registerCheck('event_loop', eventLoopCheck());
 

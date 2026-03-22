@@ -5,6 +5,9 @@
  * This barrel file prepares the codebase for future npm packaging.
  */
 
+// Version
+export { VERSION } from './version';
+
 // Config Resolution
 export { resolveConfigPath, resolveDatabasePath } from './config/resolve';
 
@@ -24,7 +27,7 @@ export { validateRules } from './primitives/rules-validation';
 export { scanForSecrets } from './primitives/secret-detection';
 
 // Enablement
-export { generateConfigForLevel, isSkillEnabled, getActiveSkills, getNextLevel, validateEnablementConfig, LEVEL_NAMES } from './enablement/engine';
+export { generateConfigForLevel, isSkillEnabled, getActiveSkills, getNextLevel, validateEnablementConfig, validateLevelMatchesSkills, LEVEL_NAMES } from './enablement/engine';
 
 // Enrichment
 export { EventEnricher, LocalPatternMatcher } from './memory/enrichment';
