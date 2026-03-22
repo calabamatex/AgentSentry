@@ -226,8 +226,8 @@ export class EventStream extends EventEmitter {
           // Decrement after send succeeds (approximation — real backpressure
           // would need async acknowledgement, but this prevents runaway queues)
           this.clientBacklog.set(client.id, Math.max((this.clientBacklog.get(client.id) ?? 1) - 1, 0));
-        } catch {
-          // Transport-level failures are non-fatal.
+        } catch (e) {
+          logger.debug('Failed to send event to client', { error: e instanceof Error ? e.message : String(e), clientId: client.id });
         }
       }
     }
