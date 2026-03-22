@@ -15,6 +15,9 @@
 import * as http from 'http';
 import * as crypto from 'crypto';
 import { EventStream, StreamClient, StreamEvent, StreamFilter } from '../streaming/event-stream';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'dashboard-server' });
 import { HealthChecker, memoryUsageCheck, eventLoopCheck } from '../observability/health';
 import { MetricsCollector } from '../observability/metrics';
 import { PluginRegistry } from '../plugins/registry';
