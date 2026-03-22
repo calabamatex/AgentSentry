@@ -10,6 +10,9 @@ import * as http from 'http';
 import * as net from 'net';
 import * as crypto from 'crypto';
 import { EventStream, StreamClient, StreamEvent, StreamFilter } from './event-stream';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'ws-transport' });
 
 // ---------------------------------------------------------------------------
 // Constants
