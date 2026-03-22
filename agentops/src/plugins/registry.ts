@@ -8,6 +8,9 @@
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'fs';
 import { join, resolve, basename } from 'path';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'plugin-registry' });
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,7 +110,8 @@ export class PluginRegistry {
         entries = readdirSync(dir, { withFileTypes: true })
           .filter((d) => d.isDirectory())
           .map((d) => d.name);
-      } catch {
+      } catch (e) {
+        logger.warn('Failed to read plugin directory', { error: e instanceof Error ? e.message : String(e), dir });
         continue;
       }
 
@@ -134,8 +138,8 @@ export class PluginRegistry {
           };
 
           this.plugins.set(manifest.name, installed);
-        } catch {
-          // Skip plugins with invalid metadata
+        } catch (e) {
+          logger.warn('Failed to parse plugin metadata', { error: e instanceof Error ? e.message : String(e), path: metadataPath });
         }
       }
     }
@@ -314,7 +318,8 @@ export class PluginRegistry {
     let manifest: unknown;
     try {
       manifest = JSON.parse(readFileSync(metadataPath, 'utf-8'));
-    } catch {
+    } catch (e) {
+      logger.warn('Plugin metadata.json is not valid JSON', { error: e instanceof Error ? e.message : String(e) });
       return { valid: false, errors: ['metadata.json is not valid JSON'] };
     }
 
@@ -454,8 +459,8 @@ export class PluginRegistry {
       const state = JSON.parse(raw) as RegistryState;
       // State is applied during scan() via getSavedPluginState
       this._loadedState = state;
-    } catch {
-      // Ignore corrupt state file
+    } catch (e) {
+      logger.warn('Failed to load plugin registry state file', { error: e instanceof Error ? e.message : String(e) });
     }
 
     this.stateLoaded = true;

@@ -332,13 +332,22 @@ export class SqliteProvider implements StorageProvider {
       skill: row.skill,
       title: row.title,
       detail: row.detail,
-      affected_files: JSON.parse(row.affected_files),
-      tags: JSON.parse(row.tags),
-      metadata: JSON.parse(row.metadata),
+      affected_files: safeJsonParse<string[]>(row.affected_files, []),
+      tags: safeJsonParse<string[]>(row.tags, []),
+      metadata: safeJsonParse<Record<string, unknown>>(row.metadata, {}),
       hash: row.hash,
       prev_hash: row.prev_hash,
     };
     return event;
+  }
+}
+
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
   }
 }
 

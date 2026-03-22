@@ -15,7 +15,10 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { MemoryStore } from '../memory/store';
+import { Logger } from '../observability/logger';
 import type { OpsEventInput } from '../memory/schema';
+
+const logger = new Logger({ module: 'coordinator' });
 
 export interface AgentInfo {
   id: string;
@@ -191,6 +194,18 @@ export class AgentCoordinator {
     await this.store.capture(this.buildRegistryEvent(info));
   }
 
+  /**
+   * Attempts to acquire a lock on a resource.
+   *
+   * WARNING: This implementation uses check-then-act without atomicity guarantees.
+   * Two agents calling acquireLock() concurrently may both succeed, as there is no
+   * compare-and-swap (CAS) mechanism. For correctness-critical coordination,
+   * use LeaseManager which provides fencing tokens.
+   *
+   * @param resource - The resource identifier to lock
+   * @param ttlMs - Optional time-to-live in milliseconds
+   * @returns true if the lock was acquired (or re-entered), false if held by another agent
+   */
   async acquireLock(resource: string, ttlMs?: number): Promise<boolean> {
     await this.cleanExpiredLocks();
 
@@ -212,6 +227,7 @@ export class AgentCoordinator {
     };
 
     await this.store.capture(this.buildLockEvent(lockInfo, 'acquire'));
+    logger.debug('Lock acquired (non-atomic)', { resource, holder: this.agentId });
     return true;
   }
 

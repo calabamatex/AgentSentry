@@ -23,6 +23,15 @@ import {
   SKILLS,
 } from '../schema';
 
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 export interface SupabaseProviderConfig {
   url?: string;
   serviceRoleKey?: string;
@@ -441,9 +450,9 @@ export class SupabaseProvider implements StorageProvider {
       skill: row.skill,
       title: row.title,
       detail: row.detail,
-      affected_files: typeof row.affected_files === 'string' ? JSON.parse(row.affected_files) : row.affected_files,
-      tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
+      affected_files: typeof row.affected_files === 'string' ? safeJsonParse<string[]>(row.affected_files, []) : row.affected_files,
+      tags: typeof row.tags === 'string' ? safeJsonParse<string[]>(row.tags, []) : row.tags,
+      metadata: typeof row.metadata === 'string' ? safeJsonParse<Record<string, unknown>>(row.metadata, {}) : row.metadata,
       hash: row.hash,
       prev_hash: row.prev_hash,
     };

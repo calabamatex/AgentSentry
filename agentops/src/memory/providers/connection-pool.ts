@@ -24,6 +24,15 @@ import {
   SKILLS,
 } from '../schema';
 
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 // ── Interfaces ───────────────────────────────────────────────────────────────
 
 export interface ConnectionPoolOptions {
@@ -671,13 +680,13 @@ export class PooledSupabaseProvider implements StorageProvider {
       detail: row.detail,
       affected_files:
         typeof row.affected_files === 'string'
-          ? JSON.parse(row.affected_files)
+          ? safeJsonParse<string[]>(row.affected_files, [])
           : row.affected_files,
       tags:
-        typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+        typeof row.tags === 'string' ? safeJsonParse<string[]>(row.tags, []) : row.tags,
       metadata:
         typeof row.metadata === 'string'
-          ? JSON.parse(row.metadata)
+          ? safeJsonParse<Record<string, unknown>>(row.metadata, {})
           : row.metadata,
       hash: row.hash,
       prev_hash: row.prev_hash,

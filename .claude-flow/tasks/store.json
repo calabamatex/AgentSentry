@@ -24,8 +24,8 @@
       "type": "bugfix",
       "description": "Phase 1: Security Fixes — Fix command injection (checkpoint-and-branch.ts, check-git.ts), CORS restriction (transport.ts), UUID validation (supabase-provider.ts), rate limiter bound (auth.ts), add security tests",
       "priority": "critical",
-      "status": "pending",
-      "progress": 0,
+      "status": "completed",
+      "progress": 100,
       "assignedTo": [],
       "tags": [
         "security",
@@ -33,6 +33,29 @@
         "foundation-hardening"
       ],
       "createdAt": "2026-03-22T16:08:35.979Z",
+      "startedAt": null,
+      "completedAt": "2026-03-22T16:32:07.132Z",
+      "result": {
+        "tests_passing": 1021,
+        "new_tests": 14,
+        "files_modified": 6,
+        "vulnerabilities_fixed": 5
+      }
+    },
+    "task-1774197134394-b2suwx": {
+      "taskId": "task-1774197134394-b2suwx",
+      "type": "refactor",
+      "description": "Phase 2: Error Handling — Add logging to empty catch blocks, safe JSON.parse in rowToEvent(), document coordinator race condition",
+      "priority": "high",
+      "status": "pending",
+      "progress": 0,
+      "assignedTo": [],
+      "tags": [
+        "error-handling",
+        "phase-2",
+        "foundation-hardening"
+      ],
+      "createdAt": "2026-03-22T16:32:14.395Z",
       "startedAt": null,
       "completedAt": null
     }
