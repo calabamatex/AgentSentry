@@ -5,6 +5,9 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'rules-validation' });
 
 export interface RuleViolation {
   rule: string;
