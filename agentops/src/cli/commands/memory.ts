@@ -6,6 +6,7 @@
 
 import { CommandDefinition, ParsedArgs, output, isJson, table } from '../parser';
 import { MemoryStore } from '../../memory/store';
+import type { EventType, Severity } from '../../memory/schema';
 
 async function getStore(): Promise<MemoryStore> {
   const store = new MemoryStore();
@@ -53,8 +54,8 @@ export const memoryCommand: CommandDefinition = {
       }
 
       const limit = typeof args.flags['limit'] === 'string' ? parseInt(args.flags['limit'], 10) : 10;
-      const event_type = typeof args.flags['type'] === 'string' ? args.flags['type'] as any : undefined;
-      const severity = typeof args.flags['severity'] === 'string' ? args.flags['severity'] as any : undefined;
+      const event_type = typeof args.flags['type'] === 'string' ? args.flags['type'] as EventType : undefined;
+      const severity = typeof args.flags['severity'] === 'string' ? args.flags['severity'] as Severity : undefined;
 
       const results = await store.search(query, { limit, event_type, severity });
 
@@ -76,8 +77,8 @@ export const memoryCommand: CommandDefinition = {
 
     if (sub === 'list') {
       const limit = typeof args.flags['limit'] === 'string' ? parseInt(args.flags['limit'], 10) : 20;
-      const event_type = typeof args.flags['type'] === 'string' ? args.flags['type'] as any : undefined;
-      const severity = typeof args.flags['severity'] === 'string' ? args.flags['severity'] as any : undefined;
+      const event_type = typeof args.flags['type'] === 'string' ? args.flags['type'] as EventType : undefined;
+      const severity = typeof args.flags['severity'] === 'string' ? args.flags['severity'] as Severity : undefined;
 
       const events = await store.list({ limit, event_type, severity });
 

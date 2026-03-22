@@ -110,10 +110,10 @@ export async function handler(
     // Check enablement
     let enablementLevel = 3; // default
     try {
-      const fs = require('fs');
-      const path = require('path');
-      const cfgPath = path.resolve('agentops/agentops.config.json');
-      const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      const fsModule = await import('fs');
+      const pathModule = await import('path');
+      const cfgPath = pathModule.resolve('agentops/agentops.config.json');
+      const raw = JSON.parse(fsModule.readFileSync(cfgPath, 'utf8'));
       if (raw.enablement?.level && typeof raw.enablement.level === 'number') {
         enablementLevel = raw.enablement.level;
       }

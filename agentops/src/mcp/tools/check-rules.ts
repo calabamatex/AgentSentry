@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { validateRules, RuleViolation as PrimitiveViolation } from '../../primitives/rules-validation';
+import { validateRules } from '../../primitives/rules-validation';
 
 export const name = 'agentops_check_rules';
 export const description =

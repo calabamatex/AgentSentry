@@ -5,7 +5,7 @@
  * Handles stdout backpressure and clean SIGINT teardown.
  */
 
-import { CommandDefinition, ParsedArgs, isJson } from '../parser';
+import { CommandDefinition, ParsedArgs } from '../parser';
 import { EventStream, StreamFilter, StreamEvent } from '../../streaming/event-stream';
 
 export const streamCommand: CommandDefinition = {

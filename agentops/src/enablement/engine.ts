@@ -155,7 +155,6 @@ export function getNextLevel(
   }
 
   const next = config.level + 1;
-  const currentActive = new Set(getActiveSkills(config));
   const nextConfig = generateConfigForLevel(next);
 
   const unlocks: string[] = [];

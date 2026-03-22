@@ -10,7 +10,7 @@
  */
 
 import { MemoryStore } from './store';
-import type { OpsEvent, OpsEventInput, EventType, Severity } from './schema';
+import type { OpsEvent } from './schema';
 
 // ---------------------------------------------------------------------------
 // Types

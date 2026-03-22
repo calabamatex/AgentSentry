@@ -245,7 +245,7 @@ export class DashboardServer {
       const code = result.status === 'healthy' ? 200 : result.status === 'degraded' ? 200 : 503;
       res.writeHead(code, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
-    } catch (err) {
+    } catch {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Health check failed' }));
     }

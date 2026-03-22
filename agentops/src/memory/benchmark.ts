@@ -8,7 +8,6 @@ import { performance } from 'perf_hooks';
 import * as os from 'os';
 import { MemoryStore } from './store';
 import { BatchProcessor } from './batch';
-import { CachedStorageProvider } from './cache';
 import {
   OpsEventInput,
   EVENT_TYPES,

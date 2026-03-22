@@ -133,7 +133,7 @@ export class SqliteProvider implements StorageProvider {
 
     // Pre-filter embeddings by timestamp if 'since' is provided
     let embQuery = 'SELECT e.id, e.embedding FROM ops_embeddings e';
-    const embParams: any[] = [];
+    const embParams: (string | number)[] = [];
 
     if (options.since) {
       embQuery += ' WHERE e.timestamp >= ?';
@@ -185,7 +185,7 @@ export class SqliteProvider implements StorageProvider {
   async aggregate(options: AggregateOptions): Promise<OpsStats> {
     const db = this.getDb();
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (options.since) { conditions.push('timestamp >= ?'); params.push(options.since); }
     if (options.until) { conditions.push('timestamp <= ?'); params.push(options.until); }
@@ -212,15 +212,15 @@ export class SqliteProvider implements StorageProvider {
     ).all(...params) as { skill: string; cnt: number }[];
 
     // Build result maps (initialize all known values to 0, then fill from results)
-    const byType: Record<EventType, number> = {} as any;
+    const byType = {} as Record<EventType, number>;
     for (const t of EVENT_TYPES) byType[t] = 0;
     for (const row of typeRows) byType[row.event_type as EventType] = row.cnt;
 
-    const bySeverity: Record<Severity, number> = {} as any;
+    const bySeverity = {} as Record<Severity, number>;
     for (const s of SEVERITIES) bySeverity[s] = 0;
     for (const row of severityRows) bySeverity[row.severity as Severity] = row.cnt;
 
-    const bySkill: Record<Skill, number> = {} as any;
+    const bySkill = {} as Record<Skill, number>;
     for (const sk of SKILLS) bySkill[sk] = 0;
     for (const row of skillRows) bySkill[row.skill as Skill] = row.cnt;
 
@@ -237,7 +237,7 @@ export class SqliteProvider implements StorageProvider {
   async getChain(since?: string): Promise<OpsEvent[]> {
     const db = this.getDb();
     let sql = 'SELECT * FROM ops_events';
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     if (since) {
       sql += ' WHERE timestamp >= ?';
       params.push(since);
@@ -290,7 +290,7 @@ export class SqliteProvider implements StorageProvider {
 
   async getLastChainCheckpoint(): Promise<{ lastEventId: string; lastEventHash: string; eventsVerified: number; verifiedAt: string } | null> {
     const db = this.getDb();
-    const row = db.prepare('SELECT * FROM chain_checkpoints ORDER BY id DESC LIMIT 1').get() as any;
+    const row = db.prepare('SELECT * FROM chain_checkpoints ORDER BY id DESC LIMIT 1').get() as { last_event_id: string; last_event_hash: string; events_verified: number; verified_at: string } | undefined;
     if (!row) return null;
     return {
       lastEventId: row.last_event_id,
@@ -304,7 +304,7 @@ export class SqliteProvider implements StorageProvider {
     const db = this.getDb();
     const conditions: string[] = ['(title LIKE ? OR detail LIKE ?)'];
     const likePattern = `%${query}%`;
-    const params: any[] = [likePattern, likePattern];
+    const params: (string | number)[] = [likePattern, likePattern];
 
     if (options.event_type) { conditions.push('event_type = ?'); params.push(options.event_type); }
     if (options.severity) { conditions.push('severity = ?'); params.push(options.severity); }
@@ -324,9 +324,9 @@ export class SqliteProvider implements StorageProvider {
     return rows.map((r) => this.rowToEvent(r));
   }
 
-  private buildQuery(options: QueryOptions, countOnly = false): { sql: string; params: any[] } {
+  private buildQuery(options: QueryOptions, countOnly = false): { sql: string; params: (string | number)[] } {
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (options.event_type) { conditions.push('event_type = ?'); params.push(options.event_type); }
     if (options.severity) { conditions.push('severity = ?'); params.push(options.severity); }

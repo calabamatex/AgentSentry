@@ -31,7 +31,7 @@ export class QueryOptimizer {
     `);
   }
 
-  explain(sql: string, params?: any[]): QueryPlan {
+  explain(sql: string, params?: (string | number)[]): QueryPlan {
     const stmt = this.db.prepare(`EXPLAIN QUERY PLAN ${sql}`);
     const rows = (params ? stmt.all(...params) : stmt.all()) as Array<{
       id: number;

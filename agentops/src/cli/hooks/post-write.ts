@@ -31,7 +31,7 @@ function getConfigPath(): string {
   return path.join(__dirname, '..', '..', '..', 'agentops.config.json');
 }
 
-function readConfig(): Record<string, any> {
+function readConfig(): Record<string, unknown> {
   try {
     return JSON.parse(fs.readFileSync(getConfigPath(), 'utf-8'));
   } catch (e) {
@@ -102,7 +102,8 @@ function checkBlastRadius(filePath: string): void {
   if (!anyAdded) return;
 
   const config = readConfig();
-  const autoEnabled = config?.save_points?.auto_commit_enabled ?? true;
+  const savePoints = config?.save_points as Record<string, unknown> | undefined;
+  const autoEnabled = savePoints?.auto_commit_enabled ?? true;
 
   if (!autoEnabled) {
     try {

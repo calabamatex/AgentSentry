@@ -21,7 +21,7 @@ function getConfigPath(): string {
   return path.join(__dirname, '..', '..', '..', 'agentops.config.json');
 }
 
-function readConfig(): Record<string, any> {
+function readConfig(): Record<string, unknown> {
   try {
     return JSON.parse(fs.readFileSync(getConfigPath(), 'utf-8'));
   } catch (e) {
@@ -46,7 +46,7 @@ function logEvent(sessionLog: string, msg: string, severity = 'info'): void {
   fs.appendFileSync(sessionLog, entry + '\n');
 }
 
-function autoCommit(config: Record<string, any>): string {
+function autoCommit(config: Record<string, unknown>): string {
   if (!isGitRepo()) {
     console.log(`${PREFIX} Not inside a git repository — skipping auto-commit.`);
     return '';
@@ -68,7 +68,8 @@ function autoCommit(config: Record<string, any>): string {
 
   const summary = `${changedFiles} file(s) changed`;
   const commitMsg = `[agentops] session-end checkpoint — ${summary}`;
-  const autoEnabled = config?.save_points?.auto_commit_enabled ?? true;
+  const savePoints = config?.save_points as Record<string, unknown> | undefined;
+  const autoEnabled = savePoints?.auto_commit_enabled ?? true;
 
   if (!autoEnabled) {
     console.log(`${PREFIX} Uncommitted changes detected (${summary}). Auto-commit disabled — skipping.`);

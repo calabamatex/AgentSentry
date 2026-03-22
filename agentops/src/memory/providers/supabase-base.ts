@@ -99,8 +99,8 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     params.push(`offset=${offset}`);
 
     const qs = params.length > 0 ? `?${params.join('&')}` : '';
-    const rows = await this.request<any[]>(`/rest/v1/ops_events${qs}`, { method: 'GET' });
-    return (rows || []).map((r: any) => this.rowToEvent(r));
+    const rows = await this.request<Record<string, unknown>[]>(`/rest/v1/ops_events${qs}`, { method: 'GET' });
+    return (rows || []).map((r) => this.rowToEvent(r));
   }
 
   async count(options: QueryOptions): Promise<number> {
@@ -109,7 +109,7 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     params.push('limit=0');
 
     const qs = params.length > 0 ? `?${params.join('&')}` : '';
-    const result = await this.request<any>(`/rest/v1/ops_events${qs}`, {
+    const result = await this.request<{ data: unknown; headers?: Record<string, string> }>(`/rest/v1/ops_events${qs}`, {
       method: 'GET',
       headers: { 'Prefer': 'count=exact' },
       returnHeaders: true,
@@ -135,8 +135,8 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     if (options.session_id) rpcBody.filter_session_id = options.session_id;
     if (options.since) rpcBody.filter_since = options.since;
 
-    const rows = await this.rpc<any[]>('match_ops_events', rpcBody);
-    return (rows || []).map((r: any) => ({
+    const rows = await this.rpc<Array<Record<string, unknown> & { similarity: number }>>('match_ops_events', rpcBody);
+    return (rows || []).map((r) => ({
       event: this.rowToEvent(r),
       score: r.similarity,
     }));
@@ -149,19 +149,19 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     const total = await this.countWithParams(baseParams);
 
     // Count by type
-    const byType: Record<EventType, number> = {} as any;
+    const byType = {} as Record<EventType, number>;
     for (const t of EVENT_TYPES) {
       byType[t] = await this.countWithParams([...baseParams, `event_type=eq.${t}`]);
     }
 
     // Count by severity
-    const bySeverity: Record<Severity, number> = {} as any;
+    const bySeverity = {} as Record<Severity, number>;
     for (const s of SEVERITIES) {
       bySeverity[s] = await this.countWithParams([...baseParams, `severity=eq.${s}`]);
     }
 
     // Count by skill
-    const bySkill: Record<Skill, number> = {} as any;
+    const bySkill = {} as Record<Skill, number>;
     for (const sk of SKILLS) {
       bySkill[sk] = await this.countWithParams([...baseParams, `skill=eq.${sk}`]);
     }
@@ -170,8 +170,8 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     const firstParams = [...baseParams, 'select=timestamp', 'order=timestamp.asc', 'limit=1'];
     const lastParams = [...baseParams, 'select=timestamp', 'order=timestamp.desc', 'limit=1'];
 
-    const firstRows = await this.request<any[]>(`/rest/v1/ops_events?${firstParams.join('&')}`, { method: 'GET' });
-    const lastRows = await this.request<any[]>(`/rest/v1/ops_events?${lastParams.join('&')}`, { method: 'GET' });
+    const firstRows = await this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${firstParams.join('&')}`, { method: 'GET' });
+    const lastRows = await this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${lastParams.join('&')}`, { method: 'GET' });
 
     return {
       total_events: total,
@@ -189,8 +189,8 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
       params.push(`timestamp=gte.${encodeURIComponent(since)}`);
     }
     const qs = params.join('&');
-    const rows = await this.request<any[]>(`/rest/v1/ops_events?${qs}`, { method: 'GET' });
-    return (rows || []).map((r: any) => this.rowToEvent(r));
+    const rows = await this.request<Record<string, unknown>[]>(`/rest/v1/ops_events?${qs}`, { method: 'GET' });
+    return (rows || []).map((r) => this.rowToEvent(r));
   }
 
   async prune(options: { maxEvents?: number; maxAgeDays?: number }): Promise<{ deleted: number }> {
@@ -202,7 +202,7 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
       cutoff.setDate(cutoff.getDate() - options.maxAgeDays);
       const cutoffStr = cutoff.toISOString();
 
-      const deleteResult = await this.request<any>(
+      const deleteResult = await this.request<unknown[]>(
         `/rest/v1/ops_events?timestamp=lt.${encodeURIComponent(cutoffStr)}`,
         {
           method: 'DELETE',
@@ -218,18 +218,18 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
       if (currentCount > options.maxEvents) {
         const excess = currentCount - options.maxEvents;
         // Get the oldest excess event IDs
-        const oldestRows = await this.request<any[]>(
+        const oldestRows = await this.request<Array<{ id: string }>>(
           `/rest/v1/ops_events?select=id&order=timestamp.asc&limit=${excess}`,
           { method: 'GET' },
         );
         if (oldestRows && oldestRows.length > 0) {
-          const ids = oldestRows.map((r: any) => r.id);
+          const ids = oldestRows.map((r) => r.id);
           const validIds = this.filterValidIds(ids);
           if (validIds.length === 0) {
             return { deleted: totalDeleted };
           }
-          const idList = validIds.map((id: string) => `"${id}"`).join(',');
-          const deleteResult = await this.request<any>(
+          const idList = validIds.map((id) => `"${id}"`).join(',');
+          const deleteResult = await this.request<unknown[]>(
             `/rest/v1/ops_events?id=in.(${idList})`,
             {
               method: 'DELETE',
@@ -274,7 +274,7 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     eventsVerified: number;
     verifiedAt: string;
   } | null> {
-    const rows = await this.request<any[]>(
+    const rows = await this.request<Array<{ last_event_id: string; last_event_hash: string; events_verified: number; verified_at: string }>>(
       '/rest/v1/chain_checkpoints?order=id.desc&limit=1',
       { method: 'GET' },
     );
@@ -314,7 +314,7 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
   protected async countWithParams(params: string[]): Promise<number> {
     const allParams = [...params, 'select=id', 'limit=0'];
     const qs = allParams.join('&');
-    const result = await this.request<any>(`/rest/v1/ops_events?${qs}`, {
+    const result = await this.request<{ data: unknown; headers?: Record<string, string> }>(`/rest/v1/ops_events?${qs}`, {
       method: 'GET',
       headers: { 'Prefer': 'count=exact' },
       returnHeaders: true,
@@ -327,31 +327,31 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     return 0;
   }
 
-  protected rowToEvent(row: any): OpsEvent {
+  protected rowToEvent(row: Record<string, unknown>): OpsEvent {
     return {
-      id: row.id,
-      timestamp: row.timestamp,
-      session_id: row.session_id,
-      agent_id: row.agent_id,
-      event_type: row.event_type,
-      severity: row.severity,
-      skill: row.skill,
-      title: row.title,
-      detail: row.detail,
+      id: row.id as string,
+      timestamp: row.timestamp as string,
+      session_id: row.session_id as string,
+      agent_id: row.agent_id as string,
+      event_type: row.event_type as EventType,
+      severity: row.severity as Severity,
+      skill: row.skill as Skill,
+      title: row.title as string,
+      detail: row.detail as string,
       affected_files:
         typeof row.affected_files === 'string'
           ? safeJsonParse<string[]>(row.affected_files, [])
-          : row.affected_files,
+          : (row.affected_files as string[]),
       tags:
         typeof row.tags === 'string'
           ? safeJsonParse<string[]>(row.tags, [])
-          : row.tags,
+          : (row.tags as string[]),
       metadata:
         typeof row.metadata === 'string'
           ? safeJsonParse<Record<string, unknown>>(row.metadata, {})
-          : row.metadata,
-      hash: row.hash,
-      prev_hash: row.prev_hash,
+          : (row.metadata as Record<string, unknown>),
+      hash: row.hash as string,
+      prev_hash: row.prev_hash as string,
     };
   }
 

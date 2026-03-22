@@ -79,7 +79,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
   }
 
   async getById(id: string): Promise<OpsEvent | null> {
-    const rows = await this.request<any[]>(
+    const rows = await this.request<Record<string, unknown>[]>(
       `/rest/v1/ops_events?id=eq.${encodeURIComponent(id)}&limit=1`,
       { method: 'GET' },
     );

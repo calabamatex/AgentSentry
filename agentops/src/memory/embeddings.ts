@@ -59,7 +59,8 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     }
 
     try {
-      const ort = require('onnxruntime-node');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- onnxruntime-node is an optional peer dependency loaded dynamically
+      const ort = require('onnxruntime-node') as { InferenceSession: { create(path: string): Promise<{ run(feeds: Record<string, unknown>): Promise<Record<string, { data: Float32Array }>> }> }; Tensor: new (type: string, data: BigInt64Array, shape: number[]) => unknown };
       this.session = await ort.InferenceSession.create(modelPath);
       const tokenizerData = JSON.parse(fs.readFileSync(tokenizerPath, 'utf8'));
       this.tokenizer = tokenizerData;
@@ -70,12 +71,13 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
   }
 
   private async runInference(text: string): Promise<number[]> {
-    const ort = require('onnxruntime-node');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- onnxruntime-node is an optional peer dependency loaded dynamically
+    const ort = require('onnxruntime-node') as { Tensor: new (type: string, data: BigInt64Array, shape: number[]) => unknown };
     const inputIds = this.tokenize(text);
     const attentionMask = new Array(inputIds.length).fill(1);
     const tokenTypeIds = new Array(inputIds.length).fill(0);
 
-    const feeds: Record<string, any> = {
+    const feeds: Record<string, unknown> = {
       input_ids: new ort.Tensor('int64', BigInt64Array.from(inputIds.map(BigInt)), [1, inputIds.length]),
       attention_mask: new ort.Tensor('int64', BigInt64Array.from(attentionMask.map(BigInt)), [1, inputIds.length]),
       token_type_ids: new ort.Tensor('int64', BigInt64Array.from(tokenTypeIds.map(BigInt)), [1, inputIds.length]),

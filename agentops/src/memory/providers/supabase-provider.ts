@@ -63,7 +63,7 @@ export class SupabaseProvider extends SupabaseBaseProvider {
   }
 
   async getById(id: string): Promise<OpsEvent | null> {
-    const rows = await this.request<any[]>(`/rest/v1/ops_events?id=eq.${encodeURIComponent(id)}&limit=1`, {
+    const rows = await this.request<Record<string, unknown>[]>(`/rest/v1/ops_events?id=eq.${encodeURIComponent(id)}&limit=1`, {
       method: 'GET',
     });
     if (!rows || rows.length === 0) return null;
@@ -91,8 +91,8 @@ export class SupabaseProvider extends SupabaseBaseProvider {
     params.push(`offset=${offset}`);
 
     const qs = params.join('&');
-    const rows = await this.request<any[]>(`/rest/v1/ops_events?${qs}`, { method: 'GET' });
-    return (rows || []).map((r: any) => this.rowToEvent(r));
+    const rows = await this.request<Record<string, unknown>[]>(`/rest/v1/ops_events?${qs}`, { method: 'GET' });
+    return (rows || []).map((r) => this.rowToEvent(r));
   }
 
   // ── UUID validation for prune ───────────────────────────────────────────

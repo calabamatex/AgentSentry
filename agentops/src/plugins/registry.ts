@@ -7,7 +7,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'fs';
-import { join, resolve, basename } from 'path';
+import { join, resolve } from 'path';
 import { Logger } from '../observability/logger';
 
 const logger = new Logger({ module: 'plugin-registry' });
@@ -303,7 +303,6 @@ export class PluginRegistry {
 
   /** Validate a plugin directory for correctness. */
   async validate(pluginPath: string): Promise<{ valid: boolean; errors: string[] }> {
-    const errors: string[] = [];
     const resolvedPath = resolve(pluginPath);
 
     if (!existsSync(resolvedPath)) {
@@ -323,8 +322,7 @@ export class PluginRegistry {
       return { valid: false, errors: ['metadata.json is not valid JSON'] };
     }
 
-    const manifestErrors = this.validateManifest(manifest);
-    return manifestErrors;
+    return this.validateManifest(manifest);
   }
 
   /** Validate a manifest object against the plugin schema. */

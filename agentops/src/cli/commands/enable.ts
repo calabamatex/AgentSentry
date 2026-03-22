@@ -17,7 +17,6 @@ import {
   getNextLevel,
   LEVEL_NAMES,
   ALL_SKILLS,
-  type EnablementConfig,
 } from '../../enablement/engine';
 
 const CONFIG_PATH = path.resolve('agentops/agentops.config.json');

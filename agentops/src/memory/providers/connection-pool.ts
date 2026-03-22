@@ -100,7 +100,8 @@ export class ConnectionPool {
       if (!agent) continue;
 
       // Count active sockets (in-use)
-      const sockets = (agent as any).sockets ?? {};
+      const agentWithInternals = agent as unknown as { sockets?: Record<string, unknown[]>; freeSockets?: Record<string, unknown[]>; destroyed?: boolean };
+      const sockets = agentWithInternals.sockets ?? {};
       for (const key of Object.keys(sockets)) {
         const count = sockets[key]?.length ?? 0;
         activeConnections += count;
@@ -108,7 +109,7 @@ export class ConnectionPool {
       }
 
       // Count free sockets (idle, kept alive)
-      const freeSockets = (agent as any).freeSockets ?? {};
+      const freeSockets = agentWithInternals.freeSockets ?? {};
       for (const key of Object.keys(freeSockets)) {
         const count = freeSockets[key]?.length ?? 0;
         idleConnections += count;
@@ -149,9 +150,9 @@ export class ConnectionPool {
     if (this.destroyed) return false;
 
     // Pool is healthy if at least one agent exists and is not destroyed
-    const httpOk = this.httpAgent ? !(this.httpAgent as any).destroyed : true;
+    const httpOk = this.httpAgent ? !(this.httpAgent as unknown as { destroyed?: boolean }).destroyed : true;
     const httpsOk = this.httpsAgent
-      ? !(this.httpsAgent as any).destroyed
+      ? !(this.httpsAgent as unknown as { destroyed?: boolean }).destroyed
       : true;
 
     return httpOk && httpsOk;

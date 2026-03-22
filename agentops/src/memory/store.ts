@@ -12,9 +12,7 @@ const logger = new Logger({ module: 'memory-store' });
 import {
   OpsEvent,
   OpsEventInput,
-  QueryOptions,
   SearchResult,
-  AggregateOptions,
   OpsStats,
   ChainVerification,
   computeHash,
