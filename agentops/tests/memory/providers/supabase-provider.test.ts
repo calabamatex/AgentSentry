@@ -479,8 +479,8 @@ describe('SupabaseProvider', () => {
       setupMockRequest([{ statusCode: 200, body: 'null' }]);
       await provider.initialize();
 
-      // Override for network error
-      mockRequestFn.mockImplementationOnce((_opts: any, _callback: any) => {
+      // Override for network error — use mockImplementation (not Once) so retries also fail
+      mockRequestFn.mockImplementation((_opts: any, _callback: any) => {
         const req = {
           write: mockWriteFn,
           end: mockEndFn,

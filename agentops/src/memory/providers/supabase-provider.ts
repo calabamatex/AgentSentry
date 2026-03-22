@@ -9,6 +9,7 @@ import * as https from 'https';
 import * as http from 'http';
 import { SupabaseBaseProvider, SupabaseRequestOptions } from './supabase-base';
 import { Logger } from '../../observability/logger';
+import { retry } from '../../observability/circuit-breaker';
 import { OpsEvent, QueryOptions } from '../schema';
 
 const logger = new Logger({ module: 'supabase-provider' });
@@ -104,6 +105,37 @@ export class SupabaseProvider extends SupabaseBaseProvider {
   // ── HTTP transport ──────────────────────────────────────────────────────
 
   protected async request<T>(
+    path: string,
+    options: SupabaseRequestOptions,
+  ): Promise<T> {
+    return retry(
+      () => this.doRequest<T>(path, options),
+      {
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 10_000,
+        retryOn: (err) => {
+          // Only retry on 5xx server errors and network errors.
+          // 4xx client errors (400, 401, 404, 409) are not retryable.
+          const msg = err.message;
+          if (msg.includes('Supabase API error')) {
+            const statusMatch = msg.match(/error (\d+)/);
+            if (statusMatch) {
+              const status = parseInt(statusMatch[1], 10);
+              return status >= 500;
+            }
+          }
+          // Network errors (ECONNREFUSED, ETIMEDOUT, etc.) are retryable
+          return true;
+        },
+        onRetry: (attempt, err, delayMs) => {
+          logger.warn('Retrying Supabase request', { attempt, error: err.message, delayMs, path });
+        },
+      },
+    );
+  }
+
+  private doRequest<T>(
     path: string,
     options: SupabaseRequestOptions,
   ): Promise<T> {

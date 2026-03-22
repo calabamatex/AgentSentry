@@ -34,7 +34,6 @@ jobs:
           cache-dependency-path: agentops/package-lock.json
       - run: cd agentops && npm ci
       - run: cd agentops && npm run lint
-        continue-on-error: true
 
   smoke-test-install:
     runs-on: ubuntu-latest
@@ -81,16 +80,29 @@ jobs:
                    agentops/docs/memory-schema.md agentops/docs/plugin-tutorial.md \
                    agentops/docs/ROADMAP.md; do
             if [ ! -f "$f" ]; then
-              echo "WARNING: $f referenced in README but missing"
+              echo "ERROR: $f referenced in README but missing"
+              errors=$((errors + 1))
             fi
           done
-          # Check architecture docs exist
           for f in docs/architecture/memory-model.md docs/architecture/enablement-model.md \
                    docs/architecture/mcp-integration.md; do
             if [ ! -f "agentops/$f" ]; then
-              echo "WARNING: agentops/$f missing"
+              echo "ERROR: agentops/$f missing"
+              errors=$((errors + 1))
             fi
           done
+          if [ "$errors" -gt 0 ]; then
+            echo "Found $errors missing documentation files"
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agentops/package-lock.json
+      - run: cd agentops && npm ci && npm run build
+      - name: Run documentation contract tests
+        run: cd agentops && npx vitest run tests/contracts/doc-contracts.test.ts --reporter=verbose
 
   benchmark:
     runs-on: ubuntu-latest
