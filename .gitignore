@@ -27,6 +27,12 @@ Thumbs.db
 .idea/
 .vscode/settings.json
 
+# SQLite databases (runtime data, not source)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # RuFlo runtime data
 .claude-flow/data/
 .claude-flow/logs/

@@ -23,6 +23,19 @@ jobs:
       - run: cd agentops && npm run build
       - run: cd agentops && npm test
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agentops/package-lock.json
+      - run: cd agentops && npm ci
+      - run: cd agentops && npm run lint
+        continue-on-error: true
+
   benchmark:
     runs-on: ubuntu-latest
     needs: build-and-test
