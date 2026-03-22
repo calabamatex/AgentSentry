@@ -289,7 +289,8 @@ export class EventStream extends EventEmitter {
     for (const event of events) {
       try {
         client.send(event);
-      } catch {
+      } catch (e) {
+        logger.debug('Replay send failed for client', { error: e instanceof Error ? e.message : String(e), clientId });
         break;
       }
     }
