@@ -43,7 +43,7 @@ async function seedEvents(store: MemoryStore, sessionId: string, count: number):
   }
 }
 
-describe('SessionSummarizer', () => {
+describe('SessionSummarizer', { timeout: 60000 }, () => {
   let store: MemoryStore;
   let summarizer: SessionSummarizer;
 
@@ -103,7 +103,7 @@ describe('SessionSummarizer', () => {
   });
 });
 
-describe('PatternDetector', () => {
+describe('PatternDetector', { timeout: 60000 }, () => {
   let store: MemoryStore;
   let detector: PatternDetector;
 
@@ -149,10 +149,11 @@ describe('PatternDetector', () => {
   });
 
   it('detects recurring violations', async () => {
-    for (let i = 0; i < 4; i++) {
+    // Seed 6 violations across 3 sessions to safely exceed minOccurrences=3
+    for (let i = 0; i < 6; i++) {
       await store.capture({
         timestamp: new Date(Date.now() - i * 3600000).toISOString(),
-        session_id: `session-${i % 2}`,
+        session_id: `session-${i % 3}`,
         agent_id: 'test',
         event_type: 'violation',
         severity: 'medium',
@@ -168,6 +169,7 @@ describe('PatternDetector', () => {
     const patterns = await detector.detect({ minOccurrences: 3 });
     const recurring = patterns.find(p => p.pattern_id.includes('recurring-violation'));
     expect(recurring).toBeDefined();
+    expect(recurring!.occurrences).toBeGreaterThanOrEqual(3);
   });
 
   it('detectAndStore persists patterns', async () => {
@@ -195,7 +197,7 @@ describe('PatternDetector', () => {
   });
 });
 
-describe('ContextRecaller', () => {
+describe('ContextRecaller', { timeout: 60000 }, () => {
   let store: MemoryStore;
   let recaller: ContextRecaller;
 

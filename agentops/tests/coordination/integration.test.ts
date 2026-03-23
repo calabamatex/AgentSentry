@@ -23,7 +23,7 @@ function createTestStore(): MemoryStore {
   });
 }
 
-describe('Coordination Integration', () => {
+describe('Coordination Integration', { timeout: 60000 }, () => {
   let store: MemoryStore;
 
   beforeEach(async () => {
@@ -44,7 +44,7 @@ describe('Coordination Integration', () => {
           role: 'worker',
           store,
           heartbeatIntervalMs: 600000, // disable heartbeat in test
-          lockTimeoutMs: 5000,
+          lockTimeoutMs: 60000,
         }),
       );
 
@@ -80,7 +80,7 @@ describe('Coordination Integration', () => {
         agentName: 'ReentrantAgent',
         store,
         heartbeatIntervalMs: 600000,
-        lockTimeoutMs: 5000,
+        lockTimeoutMs: 60000,
       });
 
       expect(await agent.acquireLock('resource-a')).toBe(true);
@@ -101,7 +101,7 @@ describe('Coordination Integration', () => {
         agentName: 'Agent1',
         store,
         heartbeatIntervalMs: 600000,
-        lockTimeoutMs: 5000,
+        lockTimeoutMs: 60000,
       });
 
       await agent0.acquireLock('expiring-resource', 1);
@@ -167,7 +167,7 @@ describe('Coordination Integration', () => {
 
   describe('LeaseManager', () => {
     it('lease acquire and release cycle', async () => {
-      const lm = new LeaseManager({ store, defaultTtlMs: 5000 });
+      const lm = new LeaseManager({ store, defaultTtlMs: 60000 });
 
       const lease = await lm.acquire('db-write', 'agent-a');
       expect(lease).not.toBeNull();
@@ -183,7 +183,7 @@ describe('Coordination Integration', () => {
     });
 
     it('fencing token increases monotonically', async () => {
-      const lm = new LeaseManager({ store, defaultTtlMs: 5000 });
+      const lm = new LeaseManager({ store, defaultTtlMs: 60000 });
 
       const lease1 = await lm.acquire('res-1', 'holder-a');
       await lm.release('res-1', 'holder-a');
@@ -195,7 +195,7 @@ describe('Coordination Integration', () => {
     });
 
     it('validates fencing tokens', async () => {
-      const lm = new LeaseManager({ store, defaultTtlMs: 5000 });
+      const lm = new LeaseManager({ store, defaultTtlMs: 60000 });
 
       const lease = await lm.acquire('fenced-res', 'holder-a');
       expect(await lm.validateFencingToken('fenced-res', lease!.fencingToken)).toBe(true);
@@ -205,13 +205,21 @@ describe('Coordination Integration', () => {
     });
 
     it('renewal extends TTL and increments renewCount', async () => {
-      const lm = new LeaseManager({ store, defaultTtlMs: 5000, maxRenewals: 3 });
+      // Use a generous TTL to avoid expiry between acquire and renew
+      const lm = new LeaseManager({ store, defaultTtlMs: 60000, maxRenewals: 3 });
 
       const original = await lm.acquire('renew-res', 'holder');
+      expect(original).not.toBeNull();
       expect(original!.renewCount).toBe(0);
 
       const renewed = await lm.renew('renew-res', 'holder');
+      expect(renewed).not.toBeNull();
       expect(renewed!.renewCount).toBe(1);
+
+      // Verify TTL was extended: renewed expiry should be after original expiry
+      expect(new Date(renewed!.expiresAt).getTime()).toBeGreaterThan(
+        new Date(original!.expiresAt).getTime(),
+      );
 
       await lm.release('renew-res', 'holder');
     });

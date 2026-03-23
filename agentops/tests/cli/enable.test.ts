@@ -5,12 +5,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { enableCommand } from '../../src/cli/commands/enable';
-import { resolveConfigPath } from '../../src/config/resolve';
 import type { ParsedArgs } from '../../src/cli/parser';
 
-const CONFIG_PATH = resolveConfigPath() ?? path.resolve('agentops.config.json');
-let originalConfig: string | null = null;
+let tmpDir: string;
+let tmpConfigPath: string;
 
 function makeArgs(overrides: Partial<ParsedArgs> = {}): ParsedArgs {
   return {
@@ -26,34 +26,29 @@ describe('enableCommand', () => {
   let stderrSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    // Save original config if it exists
-    try {
-      originalConfig = fs.readFileSync(CONFIG_PATH, 'utf8');
-    } catch {
-      originalConfig = null;
-    }
+    // Create a temp directory with its own config path to avoid contention
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentops-enable-test-'));
+    tmpConfigPath = path.join(tmpDir, 'agentops.config.json');
+
+    // Mock resolveConfigPath to return our temp path
+    vi.mock('../../src/config/resolve', () => ({
+      resolveConfigPath: () => tmpConfigPath,
+    }));
+
     stdoutSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
     stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
   });
 
   afterEach(() => {
-    // Restore original config
-    if (originalConfig !== null) {
-      fs.writeFileSync(CONFIG_PATH, originalConfig, 'utf8');
-    } else {
-      try {
-        // Read the current config to see if enablement was added, and clean it up
-        const current = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-        if (current.enablement) {
-          delete current.enablement;
-          fs.writeFileSync(CONFIG_PATH, JSON.stringify(current, null, 2) + '\n', 'utf8');
-        }
-      } catch {
-        // Ignore cleanup errors
-      }
+    // Clean up temp dir
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
     }
     stdoutSpy.mockRestore();
     stderrSpy.mockRestore();
+    vi.restoreAllMocks();
     process.exitCode = undefined;
   });
 
@@ -119,7 +114,7 @@ describe('enableCommand', () => {
 
   it('persists level to config file', async () => {
     await enableCommand.run(makeArgs({ flags: { level: '2' } }));
-    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    const config = JSON.parse(fs.readFileSync(tmpConfigPath, 'utf8'));
     expect(config.enablement.level).toBe(2);
   });
 
