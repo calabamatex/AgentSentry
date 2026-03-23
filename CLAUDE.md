@@ -81,6 +81,14 @@ npm run lint
 - ALWAYS run tests after making code changes
 - ALWAYS verify build succeeds before committing
 
+## Error Handling
+
+- Every API/tool call needs try/catch with a user-friendly message
+- Never show blank screens — always provide a fallback state
+- Agent failures must be caught and reported, not swallowed
+- Use circuit breaker patterns for external service calls
+- Log errors with structured context (module, operation, error type)
+
 ## Security Rules
 
 - NEVER hardcode API keys, secrets, or credentials in source files

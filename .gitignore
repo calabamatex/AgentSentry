@@ -37,3 +37,13 @@ Thumbs.db
 .claude-flow/data/
 .claude-flow/logs/
 .claude-flow/sessions/
+
+# Swarm runtime state
+.swarm/
+.ruflo-state/
+
+# Vendored tarballs
+vendor/
+
+# SQLite memory files (runtime)
+:memory:

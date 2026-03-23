@@ -1,1 +1,7 @@
 agentops/tests/performance/.benchmark-regression-temp.db*
+
+# Runtime state (not source)
+.swarm/
+.ruflo-state/
+:memory:
+agentops/
