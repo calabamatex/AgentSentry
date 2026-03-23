@@ -1,0 +1,156 @@
+{
+  "description": "Semantic recall quality fixtures for embedding benchmark tests. Each fixture defines seed events and queries with expected results. Queries use single keywords or phrases that appear in event title/detail for keyword-fallback compatibility.",
+  "fixtures": [
+    {
+      "name": "security-domain",
+      "events": [
+        {
+          "event_type": "incident",
+          "severity": "critical",
+          "skill": "proactive_safety",
+          "title": "SQL injection detected in user login endpoint",
+          "detail": "Parameterized query bypass found in /api/auth/login via crafted username field. WAF rule added."
+        },
+        {
+          "event_type": "decision",
+          "severity": "medium",
+          "skill": "proactive_safety",
+          "title": "API key rotation policy implemented",
+          "detail": "All service API keys now rotate every 90 days. Secrets manager integration deployed."
+        },
+        {
+          "event_type": "pattern",
+          "severity": "low",
+          "skill": "save_points",
+          "title": "Database migration rollback strategy",
+          "detail": "Always create a checkpoint before running schema migrations. Use reversible migrations only."
+        }
+      ],
+      "queries": [
+        {
+          "query": "SQL injection",
+          "expected_title": "SQL injection detected in user login endpoint",
+          "expected_rank": 1,
+          "description": "Should find the SQL injection incident as top result"
+        },
+        {
+          "query": "key rotation",
+          "expected_title": "API key rotation policy implemented",
+          "expected_rank": 1,
+          "description": "Should find the key rotation decision"
+        },
+        {
+          "query": "rollback strategy",
+          "expected_title": "Database migration rollback strategy",
+          "expected_rank": 1,
+          "description": "Should find the migration rollback pattern"
+        }
+      ]
+    },
+    {
+      "name": "performance-domain",
+      "events": [
+        {
+          "event_type": "incident",
+          "severity": "high",
+          "skill": "context_health",
+          "title": "Context window overflow caused truncated response",
+          "detail": "Session exceeded 180k tokens, causing critical context loss. Conversation should have been refreshed at 60% threshold."
+        },
+        {
+          "event_type": "pattern",
+          "severity": "low",
+          "skill": "small_bets",
+          "title": "Task decomposition reduces error rate",
+          "detail": "Breaking tasks into subtasks of 3-5 files each reduced agent errors by 40%. Prefer small bets over monolithic changes."
+        },
+        {
+          "event_type": "decision",
+          "severity": "medium",
+          "skill": "system",
+          "title": "Switched to hierarchical swarm topology",
+          "detail": "Mesh topology caused message storms with 10+ agents. Hierarchical with max 8 agents and raft consensus is more stable."
+        }
+      ],
+      "queries": [
+        {
+          "query": "context window overflow",
+          "expected_title": "Context window overflow caused truncated response",
+          "expected_rank": 1,
+          "description": "Should find the context overflow incident"
+        },
+        {
+          "query": "hierarchical swarm",
+          "expected_title": "Switched to hierarchical swarm topology",
+          "expected_rank": 1,
+          "description": "Should find the topology decision"
+        },
+        {
+          "query": "task decomposition",
+          "expected_title": "Task decomposition reduces error rate",
+          "expected_rank": 1,
+          "description": "Should find the decomposition pattern"
+        }
+      ]
+    },
+    {
+      "name": "workflow-domain",
+      "events": [
+        {
+          "event_type": "decision",
+          "severity": "low",
+          "skill": "standing_orders",
+          "title": "Always run tests before committing",
+          "detail": "Standing order: npm test must pass before any git commit. Pre-commit hook enforces this."
+        },
+        {
+          "event_type": "violation",
+          "severity": "high",
+          "skill": "standing_orders",
+          "title": "Committed without running linter",
+          "detail": "Agent bypassed lint check using --no-verify flag. Standing order violation detected and logged."
+        },
+        {
+          "event_type": "handoff",
+          "severity": "low",
+          "skill": "system",
+          "title": "Session handoff: auth refactor phase 2",
+          "detail": "Completed JWT middleware. Next session should implement refresh token rotation and update integration tests."
+        },
+        {
+          "event_type": "pattern",
+          "severity": "low",
+          "skill": "save_points",
+          "title": "Auto-checkpoint before risky operations",
+          "detail": "Creating automatic save points before file deletions, config changes, and dependency upgrades reduces recovery time."
+        }
+      ],
+      "queries": [
+        {
+          "query": "bypassed lint",
+          "expected_title": "Committed without running linter",
+          "expected_rank": 1,
+          "description": "Should find the lint violation"
+        },
+        {
+          "query": "auth refactor",
+          "expected_title": "Session handoff: auth refactor phase 2",
+          "expected_rank": 1,
+          "description": "Should find the auth handoff"
+        },
+        {
+          "query": "auto-checkpoint",
+          "expected_title": "Auto-checkpoint before risky operations",
+          "expected_rank": 1,
+          "description": "Should find the checkpoint pattern"
+        },
+        {
+          "query": "pre-commit hook",
+          "expected_title": "Always run tests before committing",
+          "expected_rank": 1,
+          "description": "Should find the testing standing order"
+        }
+      ]
+    }
+  ]
+}
