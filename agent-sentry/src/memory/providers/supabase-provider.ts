@@ -46,7 +46,7 @@ export class SupabaseProvider extends SupabaseBaseProvider {
       await this.rpc('ensure_ops_schema', {});
     } catch (err) {
       // Tables may already exist or RPC may not be deployed yet — warn but don't throw
-      console.warn('SupabaseProvider: ensure_ops_schema RPC call failed (tables may already exist):', err);
+      logger.warn('SupabaseProvider: ensure_ops_schema RPC call failed (tables may already exist)', { error: err instanceof Error ? err.message : String(err) });
     }
   }
 

@@ -24,13 +24,13 @@ compliance, scored a task's risk, and queried your audit trail.
 From the repository root:
 
 ```bash
-cd agentops
+cd agent-sentry
 npm install
 npm run build
 ```
 
 The build compiles TypeScript into `dist/`. The MCP server entry point lands at
-`agentops/dist/src/mcp/server.js`.
+`agent-sentry/dist/src/mcp/server.js`.
 
 ---
 
@@ -39,7 +39,7 @@ The build compiles TypeScript into `dist/`. The MCP server entry point lands at
 Register AgentOps as an MCP server so your client can call its tools:
 
 ```bash
-claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 Verify it registered:
@@ -71,7 +71,7 @@ It is a config generator only; it does not install hooks or register MCP
 servers.
 
 ```bash
-bash agentops/scripts/setup-wizard.sh --level 3
+bash agent-sentry/scripts/setup-wizard.sh --level 3
 ```
 
 The five levels are:
@@ -90,7 +90,7 @@ checking. It is a good starting point.
 To preview without writing the file:
 
 ```bash
-bash agentops/scripts/setup-wizard.sh --level 3 --dry-run
+bash agent-sentry/scripts/setup-wizard.sh --level 3 --dry-run
 ```
 
 ---
@@ -229,7 +229,7 @@ A top-level `status` field reads `healthy`, `degraded`, or `error`. The
 ## Step 9: Activate a Plugin (optional, 2 min)
 
 AgentOps has a plugin system. The `commit-monitor` plugin ships as an example
-at `agentops/plugins/core/commit-monitor/`.
+at `agent-sentry/plugins/core/commit-monitor/`.
 
 Its `metadata.json` declares:
 
@@ -258,7 +258,7 @@ Key fields:
 Validate the plugin before activating:
 
 ```bash
-bash agentops/scripts/validate-plugin.sh agentops/plugins/core/commit-monitor
+bash agent-sentry/scripts/validate-plugin.sh agent-sentry/plugins/core/commit-monitor
 ```
 
 This runs 11 checks: directory structure, valid JSON, required fields, semver
@@ -272,14 +272,14 @@ compliance, and source file existence.
 (incremental change sizing) and proactive safety:
 
 ```bash
-bash agentops/scripts/setup-wizard.sh --level 5
+bash agent-sentry/scripts/setup-wizard.sh --level 5
 ```
 
 **Try HTTP transport.** The MCP server supports HTTP for remote or multi-client
 setups:
 
 ```bash
-node agentops/dist/src/mcp/server.js --http --port 3100
+node agent-sentry/dist/src/mcp/server.js --http --port 3100
 ```
 
 This starts a Streamable HTTP server with CORS support. Set the
@@ -287,7 +287,7 @@ This starts a Streamable HTTP server with CORS support. Set the
 and rate limiting.
 
 **Build a custom plugin.** Plugin templates live in
-`agentops/plugins/_templates/`. Four categories are available: monitor,
+`agent-sentry/plugins/_templates/`. Four categories are available: monitor,
 auditor, dashboard, and integration. Copy a template, edit `metadata.json`,
 and implement your logic in `src/index.ts`.
 
@@ -308,6 +308,6 @@ future release. The current default is SQLite (local, zero-config).
 | Git hygiene | `agentops_check_git` |
 | Context health | `agentops_check_context` |
 | Security scan | `agentops_scan_security` |
-| Setup wizard | `bash agentops/scripts/setup-wizard.sh --level N` |
-| Validate plugin | `bash agentops/scripts/validate-plugin.sh <path>` |
-| HTTP server | `node agentops/dist/src/mcp/server.js --http --port 3100` |
+| Setup wizard | `bash agent-sentry/scripts/setup-wizard.sh --level N` |
+| Validate plugin | `bash agent-sentry/scripts/validate-plugin.sh <path>` |
+| HTTP server | `node agent-sentry/dist/src/mcp/server.js --http --port 3100` |

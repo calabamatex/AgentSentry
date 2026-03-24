@@ -89,7 +89,7 @@ The existing Claude Code hooks remain (they're faster and can block operations).
 
 **What AgentOps currently does:** The 5 core skills are implemented as independent modules. Shared concepts (like "checkpoint before risky operation" or "validate against rules file") are duplicated across skills rather than extracted.
 
-**The update:** Create an `agentops/primitives/` directory with reusable management patterns:
+**The update:** Create an `agent-sentry/primitives/` directory with reusable management patterns:
 
 | Primitive | Used By | What It Teaches |
 |---|---|---|

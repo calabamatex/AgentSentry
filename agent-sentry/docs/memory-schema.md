@@ -23,6 +23,7 @@ Every record in the AgentSentry memory store is an `OpsEvent`. Events are hash-c
 | `embedding` | `number[]` | no | Vector embedding for semantic search (auto-generated if embeddings enabled) |
 | `hash` | `string` | auto | SHA-256 hash of the event content + `prev_hash` |
 | `prev_hash` | `string` | auto | Hash of the previous event in the chain |
+| `schema_version` | `number` | auto | Event schema version (default: 1). Not included in hash computation. |
 
 ## Enums
 
@@ -56,6 +57,8 @@ Every record in the AgentSentry memory store is an `OpsEvent`. Events are hash-c
 | `small_bets` | Task sizing and incremental delivery |
 | `proactive_safety` | Security scanning and PII detection |
 | `system` | Internal system events |
+
+> **Extensibility**: As of v4.0, `EventType`, `Severity`, and `Skill` accept custom string values in addition to the built-in values above. Plugins can define their own types without schema changes.
 
 ## OpsEventInput
 

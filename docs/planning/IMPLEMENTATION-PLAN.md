@@ -10,21 +10,21 @@
 
 Priority: P0 — These are the minimum viable safety layer.
 
-### 1.1 Secret Scanner (`agentops/scripts/secret-scanner.sh`) — 3h
+### 1.1 Secret Scanner (`agent-sentry/scripts/secret-scanner.sh`) — 3h
 - Scan for standard patterns: `sk_live_*`, `sk_test_*`, `AKIA*`, `ghp_*`, `glpat-*`, JWT (`eyJ*`), private keys
 - Scan for RuFlo-specific patterns: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `COHERE_API_KEY`, `OLLAMA_*` credentials, RuVector connection strings, MCP server tokens, ONNX auth tokens, Stripe keys
 - Registered as `PreToolUse` hook matching `Write|Edit`
 - Exits with code 2 (BLOCK) on detection
 - Shows redacted match location and recommends `ruflo/.env.example` pattern
 
-### 1.2 Git Hygiene Check (`agentops/scripts/git-hygiene-check.sh`) — 2h
+### 1.2 Git Hygiene Check (`agent-sentry/scripts/git-hygiene-check.sh`) — 2h
 - `--pre-write` mode: checks git initialized, uncommitted change count, last commit age
 - Blocks if no git repo (exit 2)
 - Warns and auto-commits if >5 uncommitted files or >30 min since last commit
 - Warns and auto-branches if on `main` with risk score >= 7
 - Registered as `PreToolUse` hook matching `Write|Edit|Bash`
 
-### 1.3 Session Start Validation (`agentops/scripts/session-start-checks.sh`) — 2h
+### 1.3 Session Start Validation (`agent-sentry/scripts/session-start-checks.sh`) — 2h
 - Checks CLAUDE.md exists (critical if missing)
 - Checks AGENTS.md exists (warn if missing)
 - Checks for AgentOps rules section in CLAUDE.md
@@ -53,13 +53,13 @@ Priority: P0 — These are the minimum viable safety layer.
 - Setup instruction: `git config core.hooksPath .githooks`
 
 ### 1.7 `/agentops check` Basic Command — 2h
-- File: `.claude/commands/agentops/check.md`
+- File: `.claude/commands/agent-sentry/check.md`
 - Reports: git status, rules file status
 - Basic output format (full version in Phase 2)
 
 ### Phase 1 Deliverables
 ```
-agentops/
+agent-sentry/
 ├── scripts/
 │   ├── secret-scanner.sh
 │   ├── git-hygiene-check.sh
@@ -69,7 +69,7 @@ agentops/
 ├── pre-commit
 .claude/
 ├── commands/
-│   └── agentops/
+│   └── agent-sentry/
 │       ├── check.md
 │       └── README.md
 ```
@@ -81,13 +81,13 @@ Plus modifications to: CLAUDE.md, AGENTS.md, .claude/settings.json
 
 Priority: P0-P1 — Real-time monitoring of context, task risk, and blast radius.
 
-### 2.1 Context Estimator (`agentops/scripts/context-estimator.sh`) — 3h
+### 2.1 Context Estimator (`agent-sentry/scripts/context-estimator.sh`) — 3h
 - Estimates token usage: user messages + agent responses + files read + CLAUDE.md + AGENTS.md + skill content
 - Adds swarm overhead: `agent_count * ~2000 tokens` when swarm active
 - Thresholds: 60% notify, 80% warn (standard); 50% warn (swarm active)
 - Registered as `UserPromptSubmit` hook
 
-### 2.2 Task Sizer (`agentops/scripts/task-sizer.sh`) — 4h
+### 2.2 Task Sizer (`agent-sentry/scripts/task-sizer.sh`) — 4h
 - Implements full risk scoring model from spec §5.2
 - Base scoring: file count estimate (1-5 points)
 - Database changes: new tables (+2), modify existing (+4), delete/drop (+5)
@@ -97,14 +97,14 @@ Priority: P0-P1 — Real-time monitoring of context, task risk, and blast radius
 - Actions: auto-commit checkpoint at MEDIUM+, require decomposition at HIGH+, require branch + step-by-step approval at CRITICAL
 - Registered as `UserPromptSubmit` hook
 
-### 2.3 Swarm Blast Radius Monitor (`agentops/scripts/swarm-blast-radius.sh`) — 4h
+### 2.3 Swarm Blast Radius Monitor (`agent-sentry/scripts/swarm-blast-radius.sh`) — 4h
 - Tracks each agent's file modifications separately during swarm deploys
 - Computes `total_blast_radius` = union of all agent modifications
 - Warns if total > 15 files, or single agent > 8 files
 - Detects overlapping file modifications between agents (conflict warning)
 - Registered as `PostToolUse` hook matching `Bash`
 
-### 2.4 Post-Write Checks (`agentops/scripts/post-write-checks.sh`) — 3h
+### 2.4 Post-Write Checks (`agent-sentry/scripts/post-write-checks.sh`) — 3h
 - Error handling enforcer: scans for unhandled fetch/axios/MCP/RuVector/ONNX/LLM/consensus calls
 - PII logging scanner: checks console.log/warn/error for email, password, card, SSN, phone
 - RuFlo-specific: agent memory writes with PII, vector embeddings of PII, swarm message passing with unmasked data
@@ -116,7 +116,7 @@ Priority: P0-P1 — Real-time monitoring of context, task risk, and blast radius
 - Standard warning at 20 messages, critical at 30
 - Lower thresholds when swarm is active
 
-### 2.6 Session End Auto-Commit (`agentops/scripts/session-checkpoint.sh`) — 2h
+### 2.6 Session End Auto-Commit (`agent-sentry/scripts/session-checkpoint.sh`) — 2h
 - Auto-commits uncommitted changes with `[agentops] session-end checkpoint`
 - Updates WORKFLOW.md with session summary
 - Updates CONTEXT.md with current state
@@ -133,7 +133,7 @@ Priority: P0-P1 — Real-time monitoring of context, task risk, and blast radius
 
 ### Phase 2 Deliverables
 ```
-agentops/
+agent-sentry/
 ├── scripts/
 │   ├── context-estimator.sh
 │   ├── task-sizer.sh
@@ -141,7 +141,7 @@ agentops/
 │   ├── post-write-checks.sh
 │   └── session-checkpoint.sh
 ```
-Plus updates to: .claude/settings.json (new hooks), .claude/commands/agentops/check.md
+Plus updates to: .claude/settings.json (new hooks), .claude/commands/agent-sentry/check.md
 
 ---
 
@@ -150,12 +150,12 @@ Plus updates to: .claude/settings.json (new hooks), .claude/commands/agentops/ch
 Priority: P0-P1 — Document management for context continuity across sessions.
 
 ### 3.1 Scaffold Templates — 3h
-- `agentops/templates/PLANNING.md.template`: Pre-populated with RuFlo tech stack (TS, WASM, PG, SQLite, ONNX), architecture layers, swarm topologies, agent categories
-- `agentops/templates/TASKS.md.template`: Structured with feature areas from `.claude/commands/`, `.claude/skills/`, `ruflo/src/`
-- `agentops/templates/CONTEXT.md.template`: Branch, recent commits, swarm state, key decisions, known issues, "DO NOT CHANGE" section
-- `agentops/templates/WORKFLOW.md.template`: Session log format
-- `agentops/templates/rules-file-starter.md`: Starter rules for new projects
-- `agentops/templates/handoff-message.md`: RuFlo-specific handoff with swarm state fields
+- `agent-sentry/templates/PLANNING.md.template`: Pre-populated with RuFlo tech stack (TS, WASM, PG, SQLite, ONNX), architecture layers, swarm topologies, agent categories
+- `agent-sentry/templates/TASKS.md.template`: Structured with feature areas from `.claude/commands/`, `.claude/skills/`, `ruflo/src/`
+- `agent-sentry/templates/CONTEXT.md.template`: Branch, recent commits, swarm state, key decisions, known issues, "DO NOT CHANGE" section
+- `agent-sentry/templates/WORKFLOW.md.template`: Session log format
+- `agent-sentry/templates/rules-file-starter.md`: Starter rules for new projects
+- `agent-sentry/templates/handoff-message.md`: RuFlo-specific handoff with swarm state fields
 
 ### 3.2 Scaffold Subagent (`agentops-scaffold`) — 4h
 - File: `.claude/agents/agentops-scaffold.md`
@@ -165,11 +165,11 @@ Priority: P0-P1 — Document management for context continuity across sessions.
 - Generates handoff message with swarm topology, queen agent state, memory system status
 
 ### 3.3 `/agentops scaffold` Command — 2h
-- File: `.claude/commands/agentops/scaffold.md`
+- File: `.claude/commands/agent-sentry/scaffold.md`
 - Invokes agentops-scaffold subagent
 - Creates or updates PLANNING.md, TASKS.md, CONTEXT.md, WORKFLOW.md
 
-### 3.4 Scaffold Validator (`agentops/scripts/scaffold-validator.sh`) — 2h
+### 3.4 Scaffold Validator (`agent-sentry/scripts/scaffold-validator.sh`) — 2h
 - Validates scaffold docs exist and have required sections
 - Checks freshness (updated within 7 days of last commit)
 - Verifies CONTEXT.md has "Last Session" section
@@ -185,7 +185,7 @@ Priority: P0-P1 — Document management for context continuity across sessions.
 
 ### Phase 3 Deliverables
 ```
-agentops/
+agent-sentry/
 ├── templates/
 │   ├── PLANNING.md.template
 │   ├── TASKS.md.template
@@ -199,7 +199,7 @@ agentops/
 ├── agents/
 │   └── agentops-scaffold.md
 ├── commands/
-│   └── agentops/
+│   └── agent-sentry/
 │       └── scaffold.md
 PLANNING.md
 TASKS.md
@@ -213,7 +213,7 @@ WORKFLOW.md
 
 Priority: P0-P2 — Comprehensive security and compliance auditing.
 
-### 4.1 Security Audit (`agentops/scripts/security-audit.sh`) — 8h
+### 4.1 Security Audit (`agent-sentry/scripts/security-audit.sh`) — 8h
 Full RuFlo-adapted audit covering 7 areas:
 1. **Secrets in code**: All TS/JS files, `.env.example` placeholders, `.env` in `.gitignore`, git history, `.claude/mcp.json`
 2. **LLM provider security**: API keys as env vars, failover error messages don't expose keys, ONNX model files clean, cost routing doesn't log full responses
@@ -229,12 +229,12 @@ Full RuFlo-adapted audit covering 7 areas:
 - Checks for timeout configuration on LLM provider calls
 - Reports coverage percentage (target: ≥80%)
 
-### 4.3 Rules File Linter (`agentops/scripts/rules-file-linter.sh`) — 3h
+### 4.3 Rules File Linter (`agent-sentry/scripts/rules-file-linter.sh`) — 3h
 - CLAUDE.md checks: structure (Identity, Security, Error Handling, Swarm Safety), size (<300 lines), RuFlo coverage (MCP, swarm, agent, consensus, vector/memory), clarity (flag vague language)
 - AGENTS.md checks: cross-tool compatibility (no Claude-specific syntax), consistency with CLAUDE.md security rules, size (<150 lines)
 - Cross-file: no contradictions between CLAUDE.md and AGENTS.md
 
-### 4.4 Agent Drift Detector (`agentops/scripts/agent-drift-detector.sh`) — 4h
+### 4.4 Agent Drift Detector (`agent-sentry/scripts/agent-drift-detector.sh`) — 4h
 - Compares agent output against: original task description, TASKS.md scope, agent's defined role
 - Flags: files modified outside scope, unrelated dependency installs, unauthorized agent definition changes, swarm topology/consensus parameter changes, MCP config modifications
 - Hooks into RuFlo's hierarchical coordinator for drift signals
@@ -249,21 +249,21 @@ Full RuFlo-adapted audit covering 7 areas:
 - Output: risk report prioritized by likelihood of failure at target scale
 
 ### 4.6 `/agentops audit` Full Report — 4h
-- File: `.claude/commands/agentops/audit.md`
+- File: `.claude/commands/agent-sentry/audit.md`
 - Runs all audit checks from all 5 skills
 - Output grouped by severity (Critical → Warning → Advisory → Pass)
 - Includes all RuFlo-specific checks
 
 ### Phase 4 Deliverables
 ```
-agentops/
+agent-sentry/
 ├── scripts/
 │   ├── security-audit.sh
 │   ├── rules-file-linter.sh
 │   └── agent-drift-detector.sh
 .claude/
 ├── commands/
-│   └── agentops/
+│   └── agent-sentry/
 │       └── audit.md
 ```
 
@@ -291,7 +291,7 @@ Priority: P1-P2 — Refinement, integration, and cross-tool parity.
 
 ### 5.4 Codex CLI Sync Automation — 3h
 - When CLAUDE.md or AGENTS.md is updated, extract universal rules
-- Update `.agents/skills/agentops/SKILL.md` with equivalent instructions
+- Update `.agents/skills/agent-sentry/SKILL.md` with equivalent instructions
 - Maintain parity between `.claude/` and `.agents/` configurations
 
 ### 5.5 Integration Tests with Existing Skills — 4h
@@ -303,7 +303,7 @@ Priority: P1-P2 — Refinement, integration, and cross-tool parity.
 ```
 .agents/
 ├── skills/
-│   └── agentops/
+│   └── agent-sentry/
 │       └── SKILL.md
 ```
 Plus refinements to all existing scripts and hooks.
@@ -315,11 +315,11 @@ Plus refinements to all existing scripts and hooks.
 Priority: P0-P2 — Visual monitoring interface.
 
 ### 6.1 Dashboard HTML Shell — 4h
-- Single self-contained HTML file (`agentops/dashboard/agentops-dashboard.html`)
+- Single self-contained HTML file (`agent-sentry/dashboard/agentops-dashboard.html`)
 - Zero dependencies: inline CSS + vanilla JS
 - CSS custom properties for theming, CSS Grid for responsive layout
 - Sidebar navigation between pages
-- Open via `file://` or `npx serve agentops/dashboard`
+- Open via `file://` or `npx serve agent-sentry/dashboard`
 
 ### 6.2 Overview Page — 4h
 - Overall health score (0-100) as ring gauge (inline SVG)
@@ -330,7 +330,7 @@ Priority: P0-P2 — Visual monitoring interface.
 - Time range selector: 24h / 7d / 30d
 
 ### 6.3 Hook Data Writers — 4h
-- All scripts output NDJSON to `agentops/dashboard/data/` files
+- All scripts output NDJSON to `agent-sentry/dashboard/data/` files
 - Files: session-log.json, audit-results.json, health-history.json, commit-history.json, swarm-state.json
 - Each hook appends to the appropriate file (see spec §10.5 mapping)
 
@@ -367,7 +367,7 @@ Priority: P0-P2 — Visual monitoring interface.
 
 ### Phase 6 Deliverables
 ```
-agentops/
+agent-sentry/
 ├── dashboard/
 │   ├── agentops-dashboard.html
 │   ├── data/
@@ -390,7 +390,7 @@ These are defined in the spec (§14-20) but are not part of the core 6-phase rol
 - Trace ID propagation across agent boundaries
 - Span logging per agent action with token/cost attribution
 - Dashboard Trace Viewer page with waterfall visualization
-- Files: `agentops/tracing/trace-context.ts`, `span-logger.ts`, `traces.json`
+- Files: `agent-sentry/tracing/trace-context.ts`, `span-logger.ts`, `traces.json`
 
 ### B. Agent Identity & Permissions (§15)
 - 3-layer model: Agent Identity Registry → Runtime Permission Enforcement → Delegation Scope Narrowing
@@ -421,7 +421,7 @@ These are defined in the spec (§14-20) but are not part of the core 6-phase rol
 - Tier 1: Golden datasets per module (YAML test cases with fixtures and expected results)
 - Tier 2: Regression suite (production bugs become test cases, blocks merge on regressions)
 - Tier 3: Behavioral benchmarks (periodic full-system tests)
-- Files: `agentops/evals/` directory, `run-evals.sh`, CI integration
+- Files: `agent-sentry/evals/` directory, `run-evals.sh`, CI integration
 
 ### G. Compliance & Immutable Audit Trail (§20)
 - EU AI Act compliance (Article 12 — fully enforceable August 2, 2026)
@@ -433,7 +433,7 @@ These are defined in the spec (§14-20) but are not part of the core 6-phase rol
 
 ## Configuration Reference
 
-All thresholds are configurable in `agentops/agentops.config.json`:
+All thresholds are configurable in `agent-sentry/agentops.config.json`:
 
 | Section | Key Settings |
 |---|---|

@@ -8,6 +8,9 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 import type { AddressInfo } from 'net';
 import { randomUUID } from 'crypto';
 import { validateAccessKey, createRateLimiter } from './auth';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'mcp-transport' });
 
 /**
  * Creates a stdio transport for the MCP server.
@@ -90,7 +93,7 @@ export function createHttpTransport(
           res.end(JSON.stringify({ error: 'Internal server error' }));
         }
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error('MCP transport error:', errorMessage);
+        logger.error('MCP transport error', { error: errorMessage });
       });
     });
   });

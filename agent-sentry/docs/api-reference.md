@@ -954,3 +954,48 @@ interface BenchmarkReport {
   totalTimeMs: number;
 }
 ```
+
+---
+
+## CLI Commands
+
+### `agent-sentry prune`
+
+Manually trigger event pruning based on count or age limits.
+
+```
+agent-sentry prune [--max-events N] [--max-age-days N] [--dry-run]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--max-events` | `100000` | Keep only the N most recent events |
+| `--max-age-days` | `365` | Delete events older than N days |
+| `--dry-run` | — | Show what would be deleted without deleting |
+
+### `agent-sentry export`
+
+Export events to a file or stdout.
+
+```
+agent-sentry export [--format json|ndjson] [--since ISO] [--until ISO] [--output file]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--format` | `json` | Output format: `json` (array) or `ndjson` (one event per line) |
+| `--since` | — | ISO 8601 lower bound |
+| `--until` | — | ISO 8601 upper bound |
+| `--output` | stdout | Write to file instead of stdout |
+
+### `agent-sentry import`
+
+Import events from a JSON or NDJSON file.
+
+```
+agent-sentry import <file> [--format json|ndjson]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--format` | `json` | Input format: `json` or `ndjson` |

@@ -42,6 +42,7 @@ interface OpsEventRow {
   hash: string;
   prev_hash: string;
   embedding?: string;
+  schema_version?: number;
 }
 
 export class SqliteProvider implements StorageProvider {
@@ -78,8 +79,8 @@ export class SqliteProvider implements StorageProvider {
   async insert(event: OpsEvent): Promise<void> {
     const db = this.getDb();
     const stmt = db.prepare(`
-      INSERT INTO ops_events (id, timestamp, session_id, agent_id, event_type, severity, skill, title, detail, affected_files, tags, metadata, hash, prev_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO ops_events (id, timestamp, session_id, agent_id, event_type, severity, skill, title, detail, affected_files, tags, metadata, hash, prev_hash, schema_version)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       event.id,
@@ -96,6 +97,7 @@ export class SqliteProvider implements StorageProvider {
       JSON.stringify(event.metadata),
       event.hash,
       event.prev_hash,
+      event.schema_version ?? 1,
     );
 
     if (event.embedding && event.embedding.length > 0) {
@@ -126,24 +128,44 @@ export class SqliteProvider implements StorageProvider {
     return row.cnt;
   }
 
+  /**
+   * Vector search using cosine similarity.
+   * This is a linear scan (O(n)) bounded to the most recent MAX_VECTOR_SCAN
+   * embeddings. For datasets exceeding 50,000 events, consider an external
+   * vector database with ANN indexing.
+   */
   async vectorSearch(embedding: number[], options: VectorSearchOptions): Promise<SearchResult[]> {
     const db = this.getDb();
     const limit = options.limit ?? 10;
     const threshold = options.threshold ?? 0.5;
+    const MAX_VECTOR_SCAN = 10000;
 
-    // Pre-filter embeddings by timestamp if 'since' is provided
-    let embQuery = 'SELECT e.id, e.embedding FROM ops_embeddings e';
+    // Pre-filter with JOIN: apply metadata filters in SQL before similarity computation
+    let embQuery = 'SELECT e.id, e.embedding FROM ops_embeddings e INNER JOIN ops_events ev ON e.id = ev.id';
+    const embConditions: string[] = [];
     const embParams: (string | number)[] = [];
 
-    if (options.since) {
-      embQuery += ' WHERE e.timestamp >= ?';
-      embParams.push(options.since);
+    if (options.since) { embConditions.push('e.timestamp >= ?'); embParams.push(options.since); }
+    if (options.event_type) { embConditions.push('ev.event_type = ?'); embParams.push(options.event_type); }
+    if (options.severity) { embConditions.push('ev.severity = ?'); embParams.push(options.severity); }
+    if (options.skill) { embConditions.push('ev.skill = ?'); embParams.push(options.skill); }
+    if (options.session_id) { embConditions.push('ev.session_id = ?'); embParams.push(options.session_id); }
+
+    if (embConditions.length > 0) {
+      embQuery += ' WHERE ' + embConditions.join(' AND ');
+    }
+
+    // Cap scan window: when no 'since' filter, limit to most recent embeddings
+    if (!options.since) {
+      embQuery = `SELECT * FROM (${embQuery} ORDER BY e.timestamp DESC LIMIT ${MAX_VECTOR_SCAN})`;
     }
 
     // Process in chunks of 1000 to avoid loading all into memory
     const CHUNK_SIZE = 1000;
     let offset = 0;
+    const topN = limit;
     const topScores: { id: string; score: number }[] = [];
+    let minScore = threshold;
 
     while (true) {
       const chunk = db.prepare(`${embQuery} LIMIT ? OFFSET ?`).all(...embParams, CHUNK_SIZE, offset) as { id: string; embedding: Buffer }[];
@@ -152,31 +174,33 @@ export class SqliteProvider implements StorageProvider {
       for (const row of chunk) {
         const stored = Array.from(new Float32Array(row.embedding.buffer, row.embedding.byteOffset, row.embedding.byteLength / 4));
         const score = cosineSimilarity(embedding, stored);
-        if (score >= threshold) {
-          // Maintain a sorted top-N list
-          if (topScores.length < limit * 2) {
-            topScores.push({ id: row.id, score });
+        if (score < minScore) continue;
+
+        if (topScores.length < topN) {
+          topScores.push({ id: row.id, score });
+          if (topScores.length === topN) {
             topScores.sort((a, b) => b.score - a.score);
-          } else if (score > topScores[topScores.length - 1].score) {
-            topScores[topScores.length - 1] = { id: row.id, score };
-            topScores.sort((a, b) => b.score - a.score);
+            minScore = topScores[topN - 1].score;
           }
+        } else if (score > minScore) {
+          topScores[topN - 1] = { id: row.id, score };
+          topScores.sort((a, b) => b.score - a.score);
+          minScore = topScores[topN - 1].score;
         }
       }
 
       offset += CHUNK_SIZE;
     }
 
-    // Fetch full events and apply remaining filters
+    // Final sort to ensure descending order before fetching events
+    topScores.sort((a, b) => b.score - a.score);
+
+    // Fetch full events (metadata already filtered via SQL JOIN)
     const results: SearchResult[] = [];
     for (const { id, score } of topScores) {
       if (results.length >= limit) break;
       const event = await this.getById(id);
       if (!event) continue;
-      if (options.event_type && event.event_type !== options.event_type) continue;
-      if (options.severity && event.severity !== options.severity) continue;
-      if (options.skill && event.skill !== options.skill) continue;
-      if (options.session_id && event.session_id !== options.session_id) continue;
       results.push({ event, score });
     }
     return results;
@@ -313,7 +337,7 @@ export class SqliteProvider implements StorageProvider {
     if (options.until) { conditions.push('timestamp <= ?'); params.push(options.until); }
     if (options.session_id) { conditions.push('session_id = ?'); params.push(options.session_id); }
     if (options.agent_id) { conditions.push('agent_id = ?'); params.push(options.agent_id); }
-    if (options.tag) { conditions.push("tags LIKE ?"); params.push(`%"${options.tag}"%`); }
+    if (options.tag) { conditions.push("EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value = ?)"); params.push(options.tag); }
 
     const where = `WHERE ${conditions.join(' AND ')}`;
     const limit = options.limit ?? 10;
@@ -322,6 +346,60 @@ export class SqliteProvider implements StorageProvider {
     const sql = `SELECT * FROM ops_events ${where} ORDER BY timestamp DESC LIMIT ? OFFSET ?`;
     const rows = db.prepare(sql).all(...params, limit, offset) as OpsEventRow[];
     return rows.map((r) => this.rowToEvent(r));
+  }
+
+  async getLatestHash(): Promise<string | null> {
+    const db = this.getDb();
+    const row = db.prepare('SELECT hash FROM ops_events ORDER BY timestamp DESC, rowid DESC LIMIT 1').get() as { hash: string } | undefined;
+    return row?.hash ?? null;
+  }
+
+  async atomicLockAcquire(resource: string, holder: string, fencingToken: number, expiresAt: string): Promise<boolean> {
+    const db = this.getDb();
+    const now = new Date().toISOString();
+
+    // Clean expired locks first
+    db.prepare('DELETE FROM coordination_locks WHERE expires_at < ?').run(now);
+
+    // Attempt atomic insert — fails silently if resource already locked
+    const result = db.prepare(
+      'INSERT OR IGNORE INTO coordination_locks (resource, holder, fencing_token, acquired_at, expires_at) VALUES (?, ?, ?, ?, ?)'
+    ).run(resource, holder, fencingToken, now, expiresAt);
+
+    if (result.changes > 0) {
+      return true; // Lock acquired
+    }
+
+    // Check if we already hold this lock (re-entrant)
+    const existing = db.prepare('SELECT holder FROM coordination_locks WHERE resource = ?').get(resource) as { holder: string } | undefined;
+    return existing?.holder === holder;
+  }
+
+  async atomicLockRelease(resource: string, holder: string): Promise<boolean> {
+    const db = this.getDb();
+    const result = db.prepare('DELETE FROM coordination_locks WHERE resource = ? AND holder = ?').run(resource, holder);
+    return result.changes > 0;
+  }
+
+  async atomicLockGet(resource: string): Promise<{ resource: string; holder: string; fencingToken: number; acquiredAt: string; expiresAt: string } | null> {
+    const db = this.getDb();
+    const now = new Date().toISOString();
+
+    // Clean expired first
+    db.prepare('DELETE FROM coordination_locks WHERE expires_at < ?').run(now);
+
+    const row = db.prepare('SELECT * FROM coordination_locks WHERE resource = ?').get(resource) as {
+      resource: string; holder: string; fencing_token: number; acquired_at: string; expires_at: string;
+    } | undefined;
+
+    if (!row) return null;
+    return {
+      resource: row.resource,
+      holder: row.holder,
+      fencingToken: row.fencing_token,
+      acquiredAt: row.acquired_at,
+      expiresAt: row.expires_at,
+    };
   }
 
   private buildQuery(options: QueryOptions, countOnly = false): { sql: string; params: (string | number)[] } {
@@ -335,7 +413,7 @@ export class SqliteProvider implements StorageProvider {
     if (options.until) { conditions.push('timestamp <= ?'); params.push(options.until); }
     if (options.session_id) { conditions.push('session_id = ?'); params.push(options.session_id); }
     if (options.agent_id) { conditions.push('agent_id = ?'); params.push(options.agent_id); }
-    if (options.tag) { conditions.push("tags LIKE ?"); params.push(`%"${options.tag}"%`); }
+    if (options.tag) { conditions.push("EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value = ?)"); params.push(options.tag); }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -367,6 +445,7 @@ export class SqliteProvider implements StorageProvider {
       metadata: safeJsonParse<Record<string, unknown>>(row.metadata, {}),
       hash: row.hash,
       prev_hash: row.prev_hash,
+      schema_version: row.schema_version ?? 1,
     };
     return event;
   }

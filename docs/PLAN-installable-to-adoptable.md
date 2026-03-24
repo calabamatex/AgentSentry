@@ -14,15 +14,15 @@ The objective is: a stranger runs `npm install agentops`, wires up the MCP serve
 
 ### 1.1 — Fix Config Resolution (BLOCKING)
 
-**Problem**: Config loading uses 5 different path strategies across the codebase. The primary one (`path.resolve('agentops/agentops.config.json')`) assumes CWD is the repo root. An npm-installed user has the config at `node_modules/agentops/agentops.config.json` — the CWD-relative path will fail silently and fall back to defaults, which may or may not be what the user expects.
+**Problem**: Config loading uses 5 different path strategies across the codebase. The primary one (`path.resolve('agent-sentry/agentops.config.json')`) assumes CWD is the repo root. An npm-installed user has the config at `node_modules/agent-sentry/agentops.config.json` — the CWD-relative path will fail silently and fall back to defaults, which may or may not be what the user expects.
 
 **Affected files** (verified):
 | File | Line | Strategy |
 |------|------|----------|
-| `src/memory/providers/provider-factory.ts` | 36 | `path.resolve('agentops/agentops.config.json')` |
-| `src/mcp/tools/health.ts` | 115 | `pathModule.resolve('agentops/agentops.config.json')` |
-| `src/cli/commands/config.ts` | 15 | `path.resolve('agentops/agentops.config.json')` |
-| `src/cli/commands/enable.ts` | 22 | `path.resolve('agentops/agentops.config.json')` |
+| `src/memory/providers/provider-factory.ts` | 36 | `path.resolve('agent-sentry/agentops.config.json')` |
+| `src/mcp/tools/health.ts` | 115 | `pathModule.resolve('agent-sentry/agentops.config.json')` |
+| `src/cli/commands/config.ts` | 15 | `path.resolve('agent-sentry/agentops.config.json')` |
+| `src/cli/commands/enable.ts` | 22 | `path.resolve('agent-sentry/agentops.config.json')` |
 | `src/cli/hooks/session-start.ts` | 44 | `path.join(__dirname, '..', '..', '..', 'agentops.config.json')` |
 | `src/cli/hooks/session-checkpoint.ts` | 21 | `path.join(__dirname, '..', '..', '..', 'agentops.config.json')` |
 | `src/cli/hooks/post-write.ts` | 31 | `path.join(__dirname, '..', '..', '..', 'agentops.config.json')` |
@@ -32,7 +32,7 @@ The objective is: a stranger runs `npm install agentops`, wires up the MCP serve
 1. Explicit `configPath` argument (already supported by `loadMemoryConfig`)
 2. `AGENTOPS_CONFIG` environment variable
 3. `./agentops.config.json` (CWD — for repo-clone users)
-4. `./agentops/agentops.config.json` (CWD/agentops — current behavior)
+4. `./agent-sentry/agentops.config.json` (CWD/agentops — current behavior)
 5. Package-relative fallback: `path.join(__dirname, '..', '..', 'agentops.config.json')` (from dist/src/)
 6. Built-in defaults (current `DEFAULT_CONFIG` — already works)
 
@@ -48,12 +48,12 @@ The objective is: a stranger runs `npm install agentops`, wires up the MCP serve
 
 ### 1.2 — Fix the `database_path` Problem
 
-**Problem**: `DEFAULT_CONFIG` sets `database_path: 'agentops/data/ops.db'` — also CWD-relative. Even if config resolution is fixed, the database will be created at a path that doesn't exist for npm-install users.
+**Problem**: `DEFAULT_CONFIG` sets `database_path: 'agent-sentry/data/ops.db'` — also CWD-relative. Even if config resolution is fixed, the database will be created at a path that doesn't exist for npm-install users.
 
 **Solution**: Apply the same resolution strategy:
 1. Explicit config value (if absolute path, use as-is)
 2. If relative, resolve relative to the config file's directory (not CWD)
-3. Fallback: `~/.agentops/data/ops.db` (user home directory — standard for local-first tools)
+3. Fallback: `~/.agent-sentry/data/ops.db` (user home directory — standard for local-first tools)
 
 **Implementation**: Add path resolution logic to `createProvider()` in `provider-factory.ts`. ~15 lines.
 
@@ -102,7 +102,7 @@ The objective is: a stranger runs `npm install agentops`, wires up the MCP serve
 
 ### 1.5 — Fix the Broken Command Path in Docs
 
-**Problem**: The root README references `agentops/.claude/commands/agentops/` for install instructions. This path does not exist.
+**Problem**: The root README references `agent-sentry/.claude/commands/agent-sentry/` for install instructions. This path does not exist.
 
 **Solution**: Either:
 - (a) Create the path and populate it with the actual command files, or
@@ -131,7 +131,7 @@ smoke-test-install:
         mkdir /tmp/test-install
         cd /tmp/test-install
         npm init -y
-        npm install $GITHUB_WORKSPACE/agentops/agentops-*.tgz
+        npm install $GITHUB_WORKSPACE/agent-sentry/agentops-*.tgz
         node -e "const a = require('agentops'); console.log('Import OK:', Object.keys(a).length, 'exports')"
     - run: |
         cd /tmp/test-install
@@ -167,13 +167,13 @@ smoke-test-install:
 
 All of these must pass before moving to Phase 2:
 
-- [ ] `npm pack` in `agentops/` produces a clean tarball
+- [ ] `npm pack` in `agent-sentry/` produces a clean tarball
 - [ ] Fresh `npm install <tarball>` in an empty directory succeeds
 - [ ] `node -e "require('agentops')"` works without errors
-- [ ] `node node_modules/agentops/dist/src/mcp/server.js` starts the MCP server
+- [ ] `node node_modules/agent-sentry/dist/src/mcp/server.js` starts the MCP server
 - [ ] Config resolution finds the packaged config OR uses sensible defaults
 - [ ] SQLite database is created at a writable location automatically
-- [ ] Root directory contains only README.md, CLAUDE.md, AGENTS.md, agentops/, docs/
+- [ ] Root directory contains only README.md, CLAUDE.md, AGENTS.md, agent-sentry/, docs/
 - [ ] CI includes the install smoke test and it passes
 
 ---
@@ -184,7 +184,7 @@ The objective is: a new user understands why they should use AgentOps, sees valu
 
 ### 2.1 — Rewrite the README Lead
 
-**Current lead** (agentops/README.md line 1-3):
+**Current lead** (agent-sentry/README.md line 1-3):
 > Memory-aware agent management for Claude Code. Captures every agent action as a hash-chained, searchable event — giving you a tamper-evident audit trail, risk scoring, and progressive safety controls.
 
 **Problem**: This describes architecture ("hash-chained, searchable event"), not user value. A new user doesn't know why they want a "tamper-evident audit trail."
@@ -243,7 +243,7 @@ Set `"enabled": false` in agentops.config.json. All hooks become no-ops.
 
 ### Remove completely
 1. `claude mcp remove agentops`
-2. `rm -rf agentops/data/` (deletes the SQLite database)
+2. `rm -rf agent-sentry/data/` (deletes the SQLite database)
 3. Remove the agentops entry from your settings if added manually
 
 Your code, git history, and Claude Code configuration are unchanged.
@@ -305,7 +305,7 @@ Your code, git history, and Claude Code configuration are unchanged.
 **After Phase 1 cleanup and Phase 2 rewrites, the root README should**:
 
 1. Lead with 1-2 sentences on what AgentOps does (user value)
-2. Point to `agentops/README.md` for install and usage
+2. Point to `agent-sentry/README.md` for install and usage
 3. Point to `docs/` for architecture and planning
 4. Remove duplicated feature tables (they belong in the package README)
 5. Remove or update any references to paths/features that don't exist
@@ -329,8 +329,8 @@ doc-validation:
     - name: Verify documented paths exist
       run: |
         # Extract file paths from README and verify they exist
-        grep -oP '`[^`]+\.(ts|js|json)`' agentops/README.md | tr -d '`' | while read f; do
-          if [ ! -f "agentops/$f" ] && [ ! -f "$f" ]; then
+        grep -oP '`[^`]+\.(ts|js|json)`' agent-sentry/README.md | tr -d '`' | while read f; do
+          if [ ! -f "agent-sentry/$f" ] && [ ! -f "$f" ]; then
             echo "MISSING: $f referenced in README"
             exit 1
           fi

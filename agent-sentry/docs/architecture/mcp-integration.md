@@ -40,6 +40,8 @@ Uses `StdioServerTransport` from the MCP SDK. Communication happens over stdin/s
 
 Use stdio when: running locally, single-user, no network exposure needed.
 
+**Security note**: Stdio transport is inherently authenticated by OS-level process isolation. Only the parent process (e.g., Claude Code) can write to the server's stdin. No additional authentication is needed or supported for stdio mode. For deployments where untrusted processes share the same machine, use HTTP transport with access-key authentication instead.
+
 ### HTTP
 
 ```bash

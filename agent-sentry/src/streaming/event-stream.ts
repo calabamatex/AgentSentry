@@ -33,7 +33,7 @@ export interface StreamClient {
   connectedAt: string;
   filter: StreamFilter;
   transport: 'sse' | 'websocket' | 'callback';
-  send(event: StreamEvent): void;
+  send(event: StreamEvent): void | Promise<void>;
   close(): void;
 }
 
@@ -213,7 +213,6 @@ export class EventStream extends EventEmitter {
 
     for (const client of this.clients.values()) {
       if (this.matchesFilter(event, client.filter)) {
-        // Backpressure: track pending events per client
         const backlog = this.clientBacklog.get(client.id) ?? 0;
         if (backlog >= this.maxClientBacklog) {
           this.eventsDropped++;
@@ -222,11 +221,19 @@ export class EventStream extends EventEmitter {
         }
         try {
           this.clientBacklog.set(client.id, backlog + 1);
-          client.send(event);
-          // Decrement after send succeeds (approximation — real backpressure
-          // would need async acknowledgement, but this prevents runaway queues)
-          this.clientBacklog.set(client.id, Math.max((this.clientBacklog.get(client.id) ?? 1) - 1, 0));
+          const sendResult = client.send(event);
+          if (sendResult && typeof (sendResult as Promise<void>).then === 'function') {
+            // Async send — decrement when complete
+            (sendResult as Promise<void>).then(
+              () => { this.clientBacklog.set(client.id, Math.max((this.clientBacklog.get(client.id) ?? 1) - 1, 0)); },
+              () => { this.clientBacklog.set(client.id, Math.max((this.clientBacklog.get(client.id) ?? 1) - 1, 0)); }
+            );
+          } else {
+            // Synchronous send — decrement immediately
+            this.clientBacklog.set(client.id, Math.max((this.clientBacklog.get(client.id) ?? 1) - 1, 0));
+          }
         } catch (e) {
+          this.clientBacklog.set(client.id, Math.max((this.clientBacklog.get(client.id) ?? 1) - 1, 0));
           logger.debug('Failed to send event to client', { error: e instanceof Error ? e.message : String(e), clientId: client.id });
         }
       }

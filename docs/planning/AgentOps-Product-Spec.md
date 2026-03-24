@@ -44,7 +44,7 @@ AgentOps is installed as a directory in your project root. Your project stays yo
 
 ```
 your-project/
-├── agentops/                  # ← AgentOps installation
+├── agent-sentry/                  # ← AgentOps installation
 │   ├── scripts/
 │   │   ├── git-hygiene-check.sh
 │   │   ├── scaffold-validator.sh
@@ -87,7 +87,7 @@ your-project/
 
 3. **Generic, not opinionated.** AgentOps knows nothing about your tech stack, agent architecture, or deployment model. It watches for universal safety issues.
 
-4. **Installable, not magical.** Install AgentOps from an npm package, a GitHub release, or a simple copy-paste. Remove it by deleting the `agentops/` directory and the appended rules sections. No permanent magic.
+4. **Installable, not magical.** Install AgentOps from an npm package, a GitHub release, or a simple copy-paste. Remove it by deleting the `agent-sentry/` directory and the appended rules sections. No permanent magic.
 
 5. **Memory-aware** — every agent event is captured, indexed, and searchable by meaning. Events form a hash chain for tamper detection.
 
@@ -117,7 +117,7 @@ IF uncommitted_changes > 5 files OR last_commit_age > 30 minutes:
 
 IF current_branch = "main" AND risk_score >= 7 (see §5.2):
   WARN: "High-risk change on main branch."
-  ACTION: Create branch "agentops/auto-branch-{timestamp}"
+  ACTION: Create branch "agent-sentry/auto-branch-{timestamp}"
 ```
 
 #### 2.2.2 Multi-Agent Commit Strategy
@@ -716,41 +716,41 @@ AgentOps integrates with your AI tool's hook system by adding entries to your ex
     "PreToolUse": [
       {
         "matcher": "Write|Edit",
-        "command": "bash agentops/scripts/secret-scanner.sh",
+        "command": "bash agent-sentry/scripts/secret-scanner.sh",
         "description": "[AgentOps] Scan for hardcoded secrets before file writes"
       },
       {
         "matcher": "Write|Edit|Bash",
-        "command": "bash agentops/scripts/git-hygiene-check.sh --pre-write",
+        "command": "bash agent-sentry/scripts/git-hygiene-check.sh --pre-write",
         "description": "[AgentOps] Check git state before modifications"
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "command": "bash agentops/scripts/post-write-checks.sh",
+        "command": "bash agent-sentry/scripts/post-write-checks.sh",
         "description": "[AgentOps] Error handling, PII, blast radius checks"
       }
     ],
     "UserPromptSubmit": [
       {
-        "command": "bash agentops/scripts/task-sizer.sh",
+        "command": "bash agent-sentry/scripts/task-sizer.sh",
         "description": "[AgentOps] Analyze task risk score"
       },
       {
-        "command": "bash agentops/scripts/context-estimator.sh",
+        "command": "bash agent-sentry/scripts/context-estimator.sh",
         "description": "[AgentOps] Update context usage estimate"
       }
     ],
     "Stop": [
       {
-        "command": "bash agentops/scripts/session-checkpoint.sh",
+        "command": "bash agent-sentry/scripts/session-checkpoint.sh",
         "description": "[AgentOps] Auto-commit and scaffold update if needed"
       }
     ],
     "SessionStart": [
       {
-        "command": "bash agentops/scripts/session-start-checks.sh",
+        "command": "bash agent-sentry/scripts/session-start-checks.sh",
         "description": "[AgentOps] Validate rules files, scaffold docs, git state"
       }
     ]
@@ -797,7 +797,7 @@ AgentOps includes a local HTML dashboard (`agentops-dashboard.html`) that provid
 ### 9.2 Architecture
 
 ```
-agentops/
+agent-sentry/
 ├── dashboard/
 │   ├── agentops-dashboard.html    # Main dashboard (single file, self-contained)
 │   ├── data/                      # Log files written by hooks and scripts
@@ -808,7 +808,7 @@ agentops/
 │   └── README.md
 ```
 
-**Data flow:** AgentOps hooks write JSON to `agentops/dashboard/data/`. The HTML dashboard reads these files via `fetch()` on load. No server required.
+**Data flow:** AgentOps hooks write JSON to `agent-sentry/dashboard/data/`. The HTML dashboard reads these files via `fetch()` on load. No server required.
 
 ### 9.3 Pages
 
@@ -880,7 +880,7 @@ AgentOps v4.0 implementation:
 
 ## 11. Configuration
 
-### 11.1 `agentops/agentops.config.json`
+### 11.1 `agent-sentry/agentops.config.json`
 
 ```json
 {
@@ -919,7 +919,7 @@ AgentOps v4.0 implementation:
     "enabled": true,
     "provider": "sqlite",
     "embedding_provider": "auto",
-    "database_path": "agentops/data/ops.db",
+    "database_path": "agent-sentry/data/ops.db",
     "max_events": 100000,
     "auto_prune_days": 365
   },
@@ -1241,7 +1241,7 @@ When agent definitions or rules change, verify behavior didn't break. Golden dat
 Each script gets test cases:
 
 ```yaml
-# agentops/evals/secret-scanner/cases.yaml
+# agent-sentry/evals/secret-scanner/cases.yaml
 - name: "Detects hardcoded API key"
   input_file: "fixtures/hardcoded-api-key.ts"
   expected: { blocked: true, pattern: "API_KEY" }
@@ -1256,7 +1256,7 @@ Each script gets test cases:
 Run all golden datasets on every change:
 
 ```bash
-agentops/scripts/run-evals.sh
+agent-sentry/scripts/run-evals.sh
 ```
 
 **Tier 3 — Behavioral Benchmarks**
@@ -1389,7 +1389,7 @@ Agents identify patterns and want to improve their own rules. A proposal system 
 ```
 1. Agent identifies pattern: "I keep forgetting to import X"
 2. Agent proposes rule: "Always import X from the monorepo alias"
-3. Proposal stored in agentops/proposals/pending/
+3. Proposal stored in agent-sentry/proposals/pending/
 4. Developer reviews in dashboard
 5. On approval: Rule appended to AGENTS.md
 6. On rejection: Proposal archived
@@ -1403,7 +1403,7 @@ Only developers can remove rules.
 Extend AgentOps without forking:
 
 ```
-agentops/
+agent-sentry/
 ├── plugins/
 │   ├── core/                      # Built-in
 │   │   ├── secret-scanner/
@@ -1554,19 +1554,19 @@ interface StorageProvider {
 }
 ```
 
-**Backend A — SQLite + sqlite-vec (default):** Local, zero-dependency, offline-capable. Uses `sqlite-vec` extension for 384-dimensional vector search. Chosen when no config is specified or `"provider": "sqlite"`. Data stored in `agentops/data/ops.db`.
+**Backend A — SQLite + sqlite-vec (default):** Local, zero-dependency, offline-capable. Uses `sqlite-vec` extension for 384-dimensional vector search. Chosen when no config is specified or `"provider": "sqlite"`. Data stored in `agent-sentry/data/ops.db`.
 
 **Backend B — Supabase + pgvector (opt-in for teams):** Cloud-hosted, shared across developers, RLS-isolated. Each developer's events are isolated via Row-Level Security; team dashboards use a service role for cross-developer reads. Requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` environment variables.
 
 **Provider factory logic:** Explicit config takes priority. If no config, auto-detects Supabase env vars. Falls back to SQLite. Validates prerequisites (sqlite-vec loads, Supabase connection healthy) before returning.
 
-**Migration path:** `node agentops/src/memory/migrate.ts --from sqlite --to supabase` exports all events with embeddings and hash chain intact.
+**Migration path:** `node agent-sentry/src/memory/migrate.ts --from sqlite --to supabase` exports all events with embeddings and hash chain intact.
 
 ### 25.4 Embedding Provider Chain
 
 AgentOps is local-first. Embeddings must work offline with optional cloud upgrade:
 
-1. **Local ONNX** — `all-MiniLM-L6-v2` (~23MB bundled in `agentops/models/`), ~50ms/embed, zero network
+1. **Local ONNX** — `all-MiniLM-L6-v2` (~23MB bundled in `agent-sentry/models/`), ~50ms/embed, zero network
 2. **Ollama** — local API if running, ~100ms/embed
 3. **OpenAI API** — if `OPENAI_API_KEY` set, ~200ms/embed
 4. **Anthropic API** — if `ANTHROPIC_API_KEY` set, ~200ms/embed
@@ -1629,14 +1629,14 @@ AgentOps exposes its full management layer via the Model Context Protocol (MCP),
 
 ```bash
 # Start
-node agentops/dist/src/mcp/server.js
+node agent-sentry/dist/src/mcp/server.js
 ```
 
 **HTTP (optional):** For remote or team access. Requires an access key (generated on install, stored in `.env`). Rate limited to 100 req/min by default.
 
 ```bash
 # Start
-node agentops/dist/src/mcp/server.js --http --port 3100
+node agent-sentry/dist/src/mcp/server.js --http --port 3100
 # Auth: x-agentops-key header or ?key= query param
 ```
 
@@ -1644,7 +1644,7 @@ node agentops/dist/src/mcp/server.js --http --port 3100
 
 **Claude Code:**
 ```bash
-claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 **Cursor (`.cursor/mcp.json`):**
@@ -1653,7 +1653,7 @@ claude mcp add agentops -- node agentops/dist/src/mcp/server.js
   "mcpServers": {
     "agentops": {
       "command": "node",
-      "args": ["agentops/dist/src/mcp/server.js"]
+      "args": ["agent-sentry/dist/src/mcp/server.js"]
     }
   }
 }
@@ -1749,10 +1749,10 @@ The interactive CLI wizard (`scripts/setup-wizard.sh`) prompts for the user's pr
 
 ```bash
 # Quick start — Level 1
-bash agentops/scripts/setup-wizard.sh --level 1
+bash agent-sentry/scripts/setup-wizard.sh --level 1
 
 # Or interactive
-bash agentops/scripts/setup-wizard.sh
+bash agent-sentry/scripts/setup-wizard.sh
 ```
 
 ### 28.4 Dashboard Adaptation
@@ -1801,39 +1801,39 @@ The hash-chained audit trail (§19) gains optional vector indexing. When an audi
 
 | File | Purpose |
 |---|---|
-| `agentops/scripts/*.sh` | Monitoring and audit scripts |
-| `agentops/scripts/setup-wizard.sh` | Enablement configuration generator (config-only; does not install hooks or MCP) |
-| `agentops/templates/*.md` | Scaffold document templates |
-| `agentops/agentops.config.json` | Configuration |
-| `agentops/dashboard/agentops-dashboard.html` | Web dashboard |
-| `agentops/dashboard/data/*.json` | Dashboard data files |
-| `agentops/src/memory/store.ts` | MemoryStore class — CRUD + vector search |
-| `agentops/src/memory/schema.ts` | OpsEvent record types and validation |
-| `agentops/src/memory/embeddings.ts` | Embedding provider abstraction (ONNX → Ollama → Cloud → No-op) |
-| `agentops/src/memory/enrichment.ts` | Auto-classification enrichment engine |
-| `agentops/src/memory/providers/storage-provider.ts` | StorageProvider interface |
-| `agentops/src/memory/providers/sqlite-provider.ts` | SQLite + sqlite-vec backend (default) |
-| `agentops/src/memory/providers/supabase-provider.ts` | Supabase + pgvector backend (opt-in) |
-| `agentops/src/memory/providers/provider-factory.ts` | Auto-detect or config-driven provider selection |
-| `agentops/src/memory/migrations/*.ts` | Schema creation and versioning for both backends |
-| `agentops/src/memory/migrate.ts` | SQLite → Supabase migration tool |
-| `agentops/src/memory/cli-capture.js` | CLI bridge for shell hooks to capture events |
-| `agentops/src/mcp/server.ts` | MCP server setup and tool registration |
-| `agentops/src/mcp/tools/*.ts` | 8 MCP tool implementations |
-| `agentops/src/mcp/transport.ts` | Stdio + HTTP transport options |
-| `agentops/src/mcp/auth.ts` | Access key validation and rate limiting |
-| `agentops/src/primitives/*.ts` | 7 composable TypeScript primitives |
-| `agentops/src/enablement/config.ts` | Progressive enablement level management |
-| `agentops/models/all-MiniLM-L6-v2/` | Bundled ONNX embedding model (~23MB) |
-| `agentops/data/ops.db` | SQLite database (created at runtime) |
-| `agentops/plugins/_templates/*/` | 4 plugin category templates (monitor, auditor, dashboard, integration) |
-| `agentops/plugins/core/` | Built-in plugins |
-| `agentops/plugins/community/` | User-installed plugins |
-| `agentops/tracing/trace-context.ts` | Trace ID generation |
-| `agentops/audit/audit-logger.ts` | Audit logging |
-| `agentops/audit/audit-trail.jsonl` | Immutable audit log |
-| `agentops/core/event-bus.ts` | Event system |
-| `agentops/evals/` | Test fixtures and golden datasets |
+| `agent-sentry/scripts/*.sh` | Monitoring and audit scripts |
+| `agent-sentry/scripts/setup-wizard.sh` | Enablement configuration generator (config-only; does not install hooks or MCP) |
+| `agent-sentry/templates/*.md` | Scaffold document templates |
+| `agent-sentry/agentops.config.json` | Configuration |
+| `agent-sentry/dashboard/agentops-dashboard.html` | Web dashboard |
+| `agent-sentry/dashboard/data/*.json` | Dashboard data files |
+| `agent-sentry/src/memory/store.ts` | MemoryStore class — CRUD + vector search |
+| `agent-sentry/src/memory/schema.ts` | OpsEvent record types and validation |
+| `agent-sentry/src/memory/embeddings.ts` | Embedding provider abstraction (ONNX → Ollama → Cloud → No-op) |
+| `agent-sentry/src/memory/enrichment.ts` | Auto-classification enrichment engine |
+| `agent-sentry/src/memory/providers/storage-provider.ts` | StorageProvider interface |
+| `agent-sentry/src/memory/providers/sqlite-provider.ts` | SQLite + sqlite-vec backend (default) |
+| `agent-sentry/src/memory/providers/supabase-provider.ts` | Supabase + pgvector backend (opt-in) |
+| `agent-sentry/src/memory/providers/provider-factory.ts` | Auto-detect or config-driven provider selection |
+| `agent-sentry/src/memory/migrations/*.ts` | Schema creation and versioning for both backends |
+| `agent-sentry/src/memory/migrate.ts` | SQLite → Supabase migration tool |
+| `agent-sentry/src/memory/cli-capture.js` | CLI bridge for shell hooks to capture events |
+| `agent-sentry/src/mcp/server.ts` | MCP server setup and tool registration |
+| `agent-sentry/src/mcp/tools/*.ts` | 8 MCP tool implementations |
+| `agent-sentry/src/mcp/transport.ts` | Stdio + HTTP transport options |
+| `agent-sentry/src/mcp/auth.ts` | Access key validation and rate limiting |
+| `agent-sentry/src/primitives/*.ts` | 7 composable TypeScript primitives |
+| `agent-sentry/src/enablement/config.ts` | Progressive enablement level management |
+| `agent-sentry/models/all-MiniLM-L6-v2/` | Bundled ONNX embedding model (~23MB) |
+| `agent-sentry/data/ops.db` | SQLite database (created at runtime) |
+| `agent-sentry/plugins/_templates/*/` | 4 plugin category templates (monitor, auditor, dashboard, integration) |
+| `agent-sentry/plugins/core/` | Built-in plugins |
+| `agent-sentry/plugins/community/` | User-installed plugins |
+| `agent-sentry/tracing/trace-context.ts` | Trace ID generation |
+| `agent-sentry/audit/audit-logger.ts` | Audit logging |
+| `agent-sentry/audit/audit-trail.jsonl` | Immutable audit log |
+| `agent-sentry/core/event-bus.ts` | Event system |
+| `agent-sentry/evals/` | Test fixtures and golden datasets |
 | `config/plugin.schema.json` | Plugin metadata validation schema |
 | `config/agentops.config.schema.json` | Config file JSON Schema |
 | `PLANNING.md` | Scaffold document |
@@ -1871,7 +1871,7 @@ The hash-chained audit trail (§19) gains optional vector indexing. When an audi
 npm install agentops
 
 # Run the interactive setup wizard
-node agentops/scripts/setup-wizard.js
+node agent-sentry/scripts/setup-wizard.js
 ```
 
 The wizard prompts for your preferred enablement level (1-5) and generates the corresponding enablement configuration in `agentops.config.json`. It does not install hooks or register MCP servers -- see Option B below for those steps.
@@ -1879,7 +1879,7 @@ The wizard prompts for your preferred enablement level (1-5) and generates the c
 ### Option B: Manual Setup
 
 1. **Install AgentOps:**
-   - Download or clone the agentops/ directory to your project root
+   - Download or clone the agent-sentry/ directory to your project root
    - Copy `agentops.config.json` and adjust thresholds
 
 2. **Hook into your tool:**
@@ -1888,7 +1888,7 @@ The wizard prompts for your preferred enablement level (1-5) and generates the c
    - For others: Create equivalent hook integrations
 
 3. **Add MCP integration (optional):**
-   - Claude Code: `claude mcp add agentops -- node agentops/dist/src/mcp/server.js`
+   - Claude Code: `claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js`
    - Cursor: Add to `.cursor/mcp.json` (see §26.4)
 
 4. **Create rules files:**
@@ -1904,7 +1904,7 @@ The wizard prompts for your preferred enablement level (1-5) and generates the c
    - Teams: Set `"provider": "supabase"` in config with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars
 
 7. **View the dashboard:**
-   - Open `agentops/dashboard/agentops-dashboard.html` in your browser
+   - Open `agent-sentry/dashboard/agentops-dashboard.html` in your browser
 
 8. **Start your session:**
    - Run `/agentops check` to verify everything is working

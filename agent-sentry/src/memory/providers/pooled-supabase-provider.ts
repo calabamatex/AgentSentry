@@ -56,10 +56,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
     try {
       await this.rpc('ensure_ops_schema', {});
     } catch (err) {
-      console.warn(
-        'PooledSupabaseProvider: ensure_ops_schema RPC call failed (tables may already exist):',
-        err,
-      );
+      logger.warn('PooledSupabaseProvider: ensure_ops_schema RPC call failed (tables may already exist)', { error: err instanceof Error ? err.message : String(err) });
     }
   }
 

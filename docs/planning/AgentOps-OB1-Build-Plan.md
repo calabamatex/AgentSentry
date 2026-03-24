@@ -48,7 +48,7 @@ This plan upgrades AgentOps from a stateless, session-scoped monitoring system t
 **Implementation:**
 
 ```
-agentops/
+agent-sentry/
 ├── src/
 │   ├── memory/
 │   │   ├── store.ts               # MemoryStore class — CRUD + vector search (provider-agnostic)
@@ -286,7 +286,7 @@ interface EmbeddingProvider {
 ```
 
 **Implementation notes:**
-- Bundle `all-MiniLM-L6-v2` ONNX model (~23MB) in `agentops/models/`
+- Bundle `all-MiniLM-L6-v2` ONNX model (~23MB) in `agent-sentry/models/`
 - Use `onnxruntime-node` for inference (works offline, no Python required)
 - Fallback gracefully: if no embedding available, `search()` returns structured-query results only
 - Configuration in `agentops.config.json`:
@@ -298,7 +298,7 @@ interface EmbeddingProvider {
     "enabled": true,
     "provider": "sqlite",
     "embedding_provider": "auto",
-    "database_path": "agentops/data/ops.db",
+    "database_path": "agent-sentry/data/ops.db",
     "max_events": 100000,
     "auto_prune_days": 365
   }
@@ -324,8 +324,8 @@ interface EmbeddingProvider {
 
 ```bash
 # Export all events from SQLite → import into Supabase
-node agentops/src/memory/migrate.ts \
-  --from sqlite --from-path agentops/data/ops.db \
+node agent-sentry/src/memory/migrate.ts \
+  --from sqlite --from-path agent-sentry/data/ops.db \
   --to supabase --to-url "$SUPABASE_URL" --to-key "$SUPABASE_SERVICE_ROLE_KEY"
 ```
 
@@ -349,7 +349,7 @@ node agentops/src/memory/migrate.ts \
 ```bash
 # At the end of every hook script, append:
 capture_event() {
-  node agentops/src/memory/cli-capture.js \
+  node agent-sentry/src/memory/cli-capture.js \
     --type "$1" \
     --severity "$2" \
     --skill "$3" \
@@ -433,7 +433,7 @@ npm test && npm run build && npm run lint
 ### 2.1 MCP Server Core (`src/mcp/server.ts`) — MCP Engineer
 
 ```
-agentops/
+agent-sentry/
 ├── src/
 │   ├── mcp/
 │   │   ├── server.ts          # MCP server setup, tool registration
@@ -531,16 +531,16 @@ server.registerTool("agentops_health", {
 
 ```typescript
 // Stdio transport (default — for Claude Code, Cursor MCP config)
-// Start: node agentops/dist/src/mcp/server.js
+// Start: node agent-sentry/dist/src/mcp/server.js
 
 // HTTP transport (optional — for remote/team access)
-// Start: node agentops/dist/src/mcp/server.js --http --port 3100
+// Start: node agent-sentry/dist/src/mcp/server.js --http --port 3100
 // Auth: x-agentops-key header or ?key= query param
 ```
 
 **Claude Code integration (`claude mcp add`):**
 ```bash
-claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 **Cursor integration (`.cursor/mcp.json`):**
@@ -549,7 +549,7 @@ claude mcp add agentops -- node agentops/dist/src/mcp/server.js
   "mcpServers": {
     "agentops": {
       "command": "node",
-      "args": ["agentops/dist/src/mcp/server.js"]
+      "args": ["agent-sentry/dist/src/mcp/server.js"]
     }
   }
 }
@@ -602,7 +602,7 @@ tests/
 Extract shared patterns from the 5 core skills into composable modules:
 
 ```
-agentops/
+agent-sentry/
 ├── src/
 │   ├── primitives/
 │   │   ├── checkpoint-and-branch.ts    # Used by: Skills 1, 4
@@ -651,7 +651,7 @@ export function assessRisk(params: {
 ### 3.2 Plugin Contribution Model — Plugin Architect
 
 ```
-agentops/
+agent-sentry/
 ├── plugins/
 │   ├── _templates/
 │   │   ├── monitor/
@@ -860,7 +860,7 @@ Update `AgentOps-Product-Spec.md` to v4.0:
 |------------|---------|-------------|
 | Progressive config | `config/agentops.config.schema.json` | All 5 levels generate valid configs |
 | Setup wizard | `scripts/setup-wizard.sh` | Interactive flow works for each level |
-| Dashboard adaptation | `agentops/dashboard/*.html` | Disabled skills show upgrade prompt |
+| Dashboard adaptation | `agent-sentry/dashboard/*.html` | Disabled skills show upgrade prompt |
 | Auto-enrichment | `src/memory/enrichment.ts` | Local patterns run <10ms, enrichments are accurate |
 | Semantic audit | `src/memory/audit-index.ts` | Natural language audit queries return ranked results |
 | Spec v4.0 | `docs/AgentOps-Product-Spec.md` | All new sections present, version bumped |
@@ -931,12 +931,12 @@ Phases 2 and 3 can run in parallel after Phase 1 completes. Phase 4 requires all
 npm test                                               # All tests pass (including provider parity)
 npm run build                                          # Build succeeds
 npm run lint                                           # No lint errors
-node agentops/dist/src/mcp/server.js --self-test            # MCP server responds to all 8 tools
+node agent-sentry/dist/src/mcp/server.js --self-test            # MCP server responds to all 8 tools
 npm test -- --grep "provider-parity"                   # Both backends produce identical results
 npm test -- --grep "migrate"                           # SQLite → Supabase migration preserves integrity
-bash agentops/scripts/validate-plugin.sh plugins/_templates/*  # All templates valid
-bash agentops/scripts/setup-wizard.sh --dry-run --level 1      # Level 1 config valid
-bash agentops/scripts/setup-wizard.sh --dry-run --level 5      # Level 5 config valid
+bash agent-sentry/scripts/validate-plugin.sh plugins/_templates/*  # All templates valid
+bash agent-sentry/scripts/setup-wizard.sh --dry-run --level 1      # Level 1 config valid
+bash agent-sentry/scripts/setup-wizard.sh --dry-run --level 5      # Level 5 config valid
 ```
 
 ### Spec Diff Summary

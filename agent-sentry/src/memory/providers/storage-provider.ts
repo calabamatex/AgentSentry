@@ -37,4 +37,14 @@ export interface StorageProvider {
 
   /** Optional: SQL/server-side text search on title+detail. Used as fallback when embeddings are unavailable. */
   textSearch?(query: string, options: QueryOptions): Promise<OpsEvent[]>;
+
+  /** Optional: Get the hash of the most recent event. Used for thread-safe chain linking. */
+  getLatestHash?(): Promise<string | null>;
+
+  /** Optional: Atomic lock acquisition using database-level constraints. */
+  atomicLockAcquire?(resource: string, holder: string, fencingToken: number, expiresAt: string): Promise<boolean>;
+  /** Optional: Atomic lock release. Only releases if holder matches. */
+  atomicLockRelease?(resource: string, holder: string): Promise<boolean>;
+  /** Optional: Get active lock for a resource. Returns null if no lock or expired. */
+  atomicLockGet?(resource: string): Promise<{ resource: string; holder: string; fencingToken: number; acquiredAt: string; expiresAt: string } | null>;
 }

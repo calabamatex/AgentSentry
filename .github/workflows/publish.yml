@@ -16,10 +16,10 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
           cache: npm
-          cache-dependency-path: agentops/package-lock.json
-      - run: cd agentops && npm ci
-      - run: cd agentops && npm run build
-      - run: cd agentops && npm test
-      - run: cd agentops && npm publish
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci
+      - run: cd agent-sentry && npm run build
+      - run: cd agent-sentry && npm test
+      - run: cd agent-sentry && npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

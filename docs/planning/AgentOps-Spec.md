@@ -29,7 +29,7 @@ AgentOps treats the human operator as the general contractor and the AI agent as
 ### 1.3 Architecture
 
 ```
-agentops/
+agent-sentry/
 ├── AGENTS.md                    # Universal rules (cross-tool)
 ├── CLAUDE.md                    # Claude Code-specific rules
 ├── .cursorrules                 # Cursor-specific rules (symlinked content)
@@ -90,7 +90,7 @@ IF tool = Write OR tool = Edit OR (tool = Bash AND command modifies files):
 
   IF current_branch = "main" AND change_is_risky (see §5.2 for risk scoring):
     WARN: "Making risky changes directly on main. Recommend creating a branch."
-    ACTION: Create branch "agentops/auto-branch-{timestamp}" and switch to it
+    ACTION: Create branch "agent-sentry/auto-branch-{timestamp}" and switch to it
 ```
 
 #### 2.2.2 Hook: Post-Tool Commit Reminder
@@ -250,7 +250,7 @@ maxTurns: 15
 ## On invocation, perform these steps:
 
 1. Check which scaffold documents exist (PLANNING.md, TASKS.md, CONTEXT.md, WORKFLOW.md)
-2. For missing documents, create from templates in agentops/templates/
+2. For missing documents, create from templates in agent-sentry/templates/
 3. For existing documents, read current state and update:
    - TASKS.md: Scan codebase for completed features, update checklist
    - CONTEXT.md: Write summary of current session, list recently modified files
@@ -273,7 +273,7 @@ maxTurns: 15
 
 ### 3.5 Templates
 
-Each template lives in `agentops/templates/` and is used by the scaffold subagent when creating new documents. Templates should be pre-populated with section headers and inline guidance comments that the agent fills in based on project analysis.
+Each template lives in `agent-sentry/templates/` and is used by the scaffold subagent when creating new documents. Templates should be pre-populated with section headers and inline guidance comments that the agent fills in based on project analysis.
 
 ---
 
@@ -296,7 +296,7 @@ rules_files = scan for: CLAUDE.md, .cursorrules, AGENTS.md
 IF no rules_files found:
   WARN: "No rules file detected. Your agent has no standing orders."
   RECOMMEND: "Create a rules file. Run /agentops-scaffold to generate a starter."
-  ACTION: Offer to create from agentops/templates/rules-file-starter.md
+  ACTION: Offer to create from agent-sentry/templates/rules-file-starter.md
 
 IF rules_file_line_count > 200:
   WARN: "Rules file is {n} lines. Recommended max is 200. Large rules files consume context."
@@ -738,41 +738,41 @@ description: >
     "PreToolUse": [
       {
         "matcher": "Write|Edit",
-        "command": "bash agentops/scripts/secret-scanner.sh",
+        "command": "bash agent-sentry/scripts/secret-scanner.sh",
         "description": "Scan for hardcoded secrets before file writes"
       },
       {
         "matcher": "Write|Edit|Bash",
-        "command": "bash agentops/scripts/git-hygiene-check.sh --pre-write",
+        "command": "bash agent-sentry/scripts/git-hygiene-check.sh --pre-write",
         "description": "Check git state before modifications"
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "command": "bash agentops/scripts/post-write-checks.sh",
+        "command": "bash agent-sentry/scripts/post-write-checks.sh",
         "description": "Check error handling, PII logging, blast radius after writes"
       }
     ],
     "UserPromptSubmit": [
       {
-        "command": "bash agentops/scripts/task-sizer.sh",
+        "command": "bash agent-sentry/scripts/task-sizer.sh",
         "description": "Analyze task sizing and risk score"
       },
       {
-        "command": "bash agentops/scripts/context-estimator.sh",
+        "command": "bash agent-sentry/scripts/context-estimator.sh",
         "description": "Update context usage estimate"
       }
     ],
     "Stop": [
       {
-        "command": "bash agentops/scripts/session-checkpoint.sh",
+        "command": "bash agent-sentry/scripts/session-checkpoint.sh",
         "description": "Auto-commit and update scaffold docs if needed"
       }
     ],
     "SessionStart": [
       {
-        "command": "bash agentops/scripts/session-start-checks.sh",
+        "command": "bash agent-sentry/scripts/session-start-checks.sh",
         "description": "Verify rules file, scaffold docs, and git state"
       }
     ]

@@ -62,7 +62,7 @@ RuFlo (https://github.com/ruvnet/ruflo/) is the REQUIRED orchestration layer for
 - **Topology**: hierarchical-mesh
 - **Max Agents**: 15
 - **Memory**: hybrid
-- **HNSW**: Enabled
+- **Vector Search**: Linear scan with cosine similarity (bounded to 10k most recent embeddings)
 - **Neural**: Enabled
 
 ## Build & Test

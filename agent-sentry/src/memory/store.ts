@@ -31,13 +31,14 @@ export interface MemoryStoreOptions {
 export class MemoryStore {
   private provider: StorageProvider;
   private embeddingProvider: EmbeddingProvider;
+  private config: MemoryConfig;
   private lastHash: string = '0'.repeat(64);
   private initialized = false;
   private autoDetectEmbedding: boolean;
 
   constructor(options: MemoryStoreOptions = {}) {
-    const config = options.config ?? loadMemoryConfig();
-    this.provider = options.provider ?? createProvider(config);
+    this.config = options.config ?? loadMemoryConfig();
+    this.provider = options.provider ?? createProvider(this.config);
     this.embeddingProvider = options.embeddingProvider ?? new NoopEmbeddingProvider();
     this.autoDetectEmbedding = !options.embeddingProvider;
   }
@@ -49,7 +50,7 @@ export class MemoryStore {
     // Only auto-detect if no embedding provider was explicitly provided
     if (this.autoDetectEmbedding && this.embeddingProvider instanceof NoopEmbeddingProvider) {
       try {
-        const config = loadMemoryConfig();
+        const config = this.config;
         this.embeddingProvider = await detectEmbeddingProvider(config.embedding_provider);
       } catch (e) {
         logger.debug('Embedding provider auto-detection failed, keeping noop', { error: e instanceof Error ? e.message : String(e) });
@@ -66,7 +67,7 @@ export class MemoryStore {
 
     // Auto-prune if configured
     try {
-      const config = loadMemoryConfig();
+      const config = this.config;
       if (config.max_events || config.auto_prune_days) {
         await this.provider.prune({
           maxEvents: config.max_events,
@@ -87,6 +88,15 @@ export class MemoryStore {
     }
 
     const id = uuidv4();
+
+    // Reload last hash from DB for thread safety (multi-process support)
+    if (this.provider.getLatestHash) {
+      const dbHash = await this.provider.getLatestHash();
+      if (dbHash) {
+        this.lastHash = dbHash;
+      }
+    }
+
     const prev_hash = this.lastHash;
 
     // Generate embedding
@@ -112,6 +122,7 @@ export class MemoryStore {
       ...eventBase,
       hash,
       embedding,
+      schema_version: 1,
     };
 
     await this.provider.insert(event);
@@ -207,9 +218,8 @@ export class MemoryStore {
 
   async prune(options?: { maxEvents?: number; maxAgeDays?: number }): Promise<{ deleted: number }> {
     await this.ensureInitialized();
-    const config = loadMemoryConfig();
-    const maxEvents = options?.maxEvents ?? config.max_events ?? 100000;
-    const maxAgeDays = options?.maxAgeDays ?? config.auto_prune_days ?? 365;
+    const maxEvents = options?.maxEvents ?? this.config.max_events ?? 100000;
+    const maxAgeDays = options?.maxAgeDays ?? this.config.auto_prune_days ?? 365;
     return this.provider.prune({ maxEvents, maxAgeDays });
   }
 

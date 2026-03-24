@@ -9,8 +9,8 @@ Run a comprehensive AgentOps audit on this project. Execute all checks and prese
 
 ## Phase 1: Run audit scripts
 
-1. Run `bash agentops/scripts/security-audit.sh` and capture its output
-2. Run `bash agentops/scripts/rules-file-linter.sh` and capture its output
+1. Run `bash agent-sentry/scripts/security-audit.sh` and capture its output
+2. Run `bash agent-sentry/scripts/rules-file-linter.sh` and capture its output
 
 ## Phase 2: Run skill-specific checks
 

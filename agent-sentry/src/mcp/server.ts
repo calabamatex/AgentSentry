@@ -9,6 +9,9 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { createStdioTransport, createHttpTransport } from './transport';
 import { VERSION } from '../version';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'mcp-server' });
 
 // Import all tools
 import * as checkGit from './tools/check-git';
@@ -151,7 +154,7 @@ export async function main(): Promise<void> {
 // Run main if this file is executed directly
 if (require.main === module) {
   main().catch((error) => {
-    console.error('Fatal error:', error);
+    logger.error('Fatal error', { error: error instanceof Error ? error.message : String(error) });
     process.exit(1);
   });
 }

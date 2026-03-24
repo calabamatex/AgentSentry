@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# [AgentOps] Pre-commit hook
+# [AgentSentry] Pre-commit hook
 # Scans staged files for secrets, PII in logs, and unsafe patterns.
 # Exit 1 = block commit. Exit 0 = allow.
 
 set -euo pipefail
 
-PREFIX="[AgentOps]"
+PREFIX="[AgentSentry]"
 VIOLATIONS=()
 
 # Binary extensions to skip entirely
@@ -19,7 +19,7 @@ if [[ -z "$STAGED_FILES" ]]; then
 fi
 
 # Load exclude paths from config
-AGENTOPS_CONFIG="$(git rev-parse --show-toplevel 2>/dev/null)/agentops/agentops.config.json"
+AGENTOPS_CONFIG="$(git rev-parse --show-toplevel 2>/dev/null)/agent-sentry/agent-sentry.config.json"
 EXCLUDE_PATHS=""
 if command -v jq &>/dev/null && [[ -f "$AGENTOPS_CONFIG" ]]; then
     EXCLUDE_PATHS=$(jq -r '.security.exclude_paths // [] | .[]' "$AGENTOPS_CONFIG" 2>/dev/null || true)

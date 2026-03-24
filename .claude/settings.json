@@ -21,12 +21,12 @@
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/secret-scanner.sh",
+            "command": "bash agent-sentry/scripts/secret-scanner.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/git-hygiene-check.sh --pre-write",
+            "command": "bash agent-sentry/scripts/git-hygiene-check.sh --pre-write",
             "timeout": 5000
           }
         ]
@@ -36,12 +36,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash agentops/scripts/permission-enforcer.sh",
+            "command": "bash agent-sentry/scripts/permission-enforcer.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/delegation-validator.sh",
+            "command": "bash agent-sentry/scripts/delegation-validator.sh",
             "timeout": 5000
           }
         ]
@@ -58,7 +58,7 @@
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/post-write-checks.sh",
+            "command": "bash agent-sentry/scripts/post-write-checks.sh",
             "timeout": 10000
           }
         ]
@@ -78,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash agentops/scripts/cost-tracker.sh",
+            "command": "bash agent-sentry/scripts/cost-tracker.sh",
             "timeout": 5000
           }
         ]
@@ -94,17 +94,17 @@
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/task-sizer.sh",
+            "command": "bash agent-sentry/scripts/task-sizer.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/context-estimator.sh",
+            "command": "bash agent-sentry/scripts/context-estimator.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/ruflo-enforcement.sh",
+            "command": "bash agent-sentry/scripts/ruflo-enforcement.sh",
             "timeout": 5000
           }
         ]
@@ -125,12 +125,12 @@
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/session-start-checks.sh",
+            "command": "bash agent-sentry/scripts/session-start-checks.sh",
             "timeout": 10000
           },
           {
             "type": "command",
-            "command": "bash agentops/plugins/plugin-loader.sh validate 2>/dev/null || true",
+            "command": "bash agent-sentry/plugins/plugin-loader.sh validate 2>/dev/null || true",
             "timeout": 5000
           }
         ]
@@ -157,7 +157,7 @@
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/session-checkpoint.sh",
+            "command": "bash agent-sentry/scripts/session-checkpoint.sh",
             "timeout": 10000
           }
         ]
@@ -203,7 +203,7 @@
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/lifecycle-manager.sh start \"agent-${CLAUDE_AGENT_ID:-unknown}\"",
+            "command": "bash agent-sentry/scripts/lifecycle-manager.sh start \"agent-${CLAUDE_AGENT_ID:-unknown}\"",
             "timeout": 3000
           }
         ]
@@ -219,7 +219,7 @@
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/lifecycle-manager.sh complete \"agent-${CLAUDE_AGENT_ID:-unknown}\"",
+            "command": "bash agent-sentry/scripts/lifecycle-manager.sh complete \"agent-${CLAUDE_AGENT_ID:-unknown}\"",
             "timeout": 3000
           }
         ]

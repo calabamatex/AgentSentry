@@ -18,10 +18,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
-          cache-dependency-path: agentops/package-lock.json
-      - run: cd agentops && npm ci
-      - run: cd agentops && npm run build
-      - run: cd agentops && npm test
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci
+      - run: cd agent-sentry && npm run build
+      - run: cd agent-sentry && npm test
 
   lint:
     runs-on: ubuntu-latest
@@ -31,9 +31,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: agentops/package-lock.json
-      - run: cd agentops && npm ci
-      - run: cd agentops && npm run lint
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci
+      - run: cd agent-sentry && npm run lint
 
   smoke-test-install:
     runs-on: ubuntu-latest
@@ -44,30 +44,30 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: agentops/package-lock.json
-      - run: cd agentops && npm ci && npm run build
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci && npm run build
       - name: Pack and install in fresh directory
         run: |
-          cd agentops && npm pack
+          cd agent-sentry && npm pack
           mkdir /tmp/test-install && cd /tmp/test-install
           npm init -y
-          npm install $GITHUB_WORKSPACE/agentops/agentops-*.tgz --ignore-scripts
-      - name: Verify require('agentops') works
+          npm install $GITHUB_WORKSPACE/agent-sentry/agent-sentry-*.tgz --ignore-scripts
+      - name: Verify require('agent-sentry') works
         run: |
           cd /tmp/test-install
-          node -e "const a = require('agentops'); console.log('Import OK:', Object.keys(a).length, 'exports')"
+          node -e "const a = require('agent-sentry'); console.log('Import OK:', Object.keys(a).length, 'exports')"
       - name: Verify MCP server entry point is valid
         run: |
           cd /tmp/test-install
-          node -c node_modules/agentops/dist/src/mcp/server.js
+          node -c node_modules/agent-sentry/dist/src/mcp/server.js
       - name: Verify CLI entry point is valid
         run: |
           cd /tmp/test-install
-          node -c node_modules/agentops/dist/src/cli/index.js
+          node -c node_modules/agent-sentry/dist/src/cli/index.js
       - name: Verify config resolution module exists
         run: |
           cd /tmp/test-install
-          node -e "const { resolveConfigPath } = require('agentops'); console.log('Config path:', resolveConfigPath() || 'defaults')"
+          node -e "const { resolveConfigPath } = require('agent-sentry'); console.log('Config path:', resolveConfigPath() || 'defaults')"
 
   doc-validation:
     runs-on: ubuntu-latest
@@ -76,9 +76,9 @@ jobs:
       - name: Check that documented doc links exist
         run: |
           errors=0
-          for f in agentops/docs/getting-started.md agentops/docs/api-reference.md \
-                   agentops/docs/memory-schema.md agentops/docs/plugin-tutorial.md \
-                   agentops/docs/ROADMAP.md; do
+          for f in agent-sentry/docs/getting-started.md agent-sentry/docs/api-reference.md \
+                   agent-sentry/docs/memory-schema.md agent-sentry/docs/plugin-tutorial.md \
+                   agent-sentry/docs/ROADMAP.md; do
             if [ ! -f "$f" ]; then
               echo "ERROR: $f referenced in README but missing"
               errors=$((errors + 1))
@@ -86,8 +86,8 @@ jobs:
           done
           for f in docs/architecture/memory-model.md docs/architecture/enablement-model.md \
                    docs/architecture/mcp-integration.md; do
-            if [ ! -f "agentops/$f" ]; then
-              echo "ERROR: agentops/$f missing"
+            if [ ! -f "agent-sentry/$f" ]; then
+              echo "ERROR: agent-sentry/$f missing"
               errors=$((errors + 1))
             fi
           done
@@ -99,10 +99,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: agentops/package-lock.json
-      - run: cd agentops && npm ci && npm run build
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci && npm run build
       - name: Run documentation contract tests
-        run: cd agentops && npx vitest run tests/contracts/doc-contracts.test.ts --reporter=verbose
+        run: cd agent-sentry && npx vitest run tests/contracts/doc-contracts.test.ts --reporter=verbose
 
   benchmark:
     runs-on: ubuntu-latest
@@ -113,16 +113,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: agentops/package-lock.json
-      - run: cd agentops && npm ci
-      - run: cd agentops && npm run build
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci
+      - run: cd agent-sentry && npm run build
       - name: Run performance benchmarks with regression thresholds
-        run: cd agentops && npx vitest run tests/performance/benchmark-regression.test.ts --reporter=verbose
+        run: cd agent-sentry && npx vitest run tests/performance/benchmark-regression.test.ts --reporter=verbose
         timeout-minutes: 5
       - name: Upload benchmark results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: agentops/benchmarks/ci-latest.json
+          path: agent-sentry/benchmarks/ci-latest.json
           retention-days: 30

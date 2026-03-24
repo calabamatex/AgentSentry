@@ -12,15 +12,15 @@ Product spec: `AgentOps-Product-Spec.md` (repo root, now v4.0)
 
 ## Phase 4 Completed Assets
 
-### 4.1 Progressive Enablement (`agentops/src/enablement/`)
+### 4.1 Progressive Enablement (`agent-sentry/src/enablement/`)
 | File | Purpose |
 |------|---------|
 | `engine.ts` | `generateConfigForLevel()`, `isSkillEnabled()`, `getActiveSkills()`, `getNextLevel()`, `validateEnablementConfig()` |
 | `dashboard-adapter.ts` | `getDashboardPanels()`, `getDashboardHeader()` — adapts dashboard to show only enabled skills |
 | `index.ts` | Public API exports |
 
-**Config:** `agentops/config/enablement.schema.json` — JSON Schema for enablement config
-**Setup Wizard:** `agentops/scripts/setup-wizard.sh` — interactive CLI with `--level N` and `--dry-run` flags
+**Config:** `agent-sentry/config/enablement.schema.json` — JSON Schema for enablement config
+**Setup Wizard:** `agent-sentry/scripts/setup-wizard.sh` — interactive CLI with `--level N` and `--dry-run` flags
 
 **5 Levels:**
 | Level | Name | Skills |
@@ -31,14 +31,14 @@ Product spec: `AgentOps-Product-Spec.md` (repo root, now v4.0)
 | 4 | Right Size | + small_bets |
 | 5 | Full Guard | + proactive_safety |
 
-### 4.2 Auto-Classification Enrichment (`agentops/src/memory/enrichment.ts`)
+### 4.2 Auto-Classification Enrichment (`agent-sentry/src/memory/enrichment.ts`)
 | Export | Purpose |
 |--------|---------|
 | `LocalPatternMatcher` | Zero-cost enrichment: cross-tags files by domain (auth, db, api, testing, config, infra), detects recurring patterns, finds related events, adds severity context |
 | `EventEnricher` | Orchestrates enrichment providers, merges results |
 | `captureAndEnrich()` | Convenience: capture + enrich in one call |
 
-### 4.3 Semantic Audit Search (`agentops/src/memory/audit-index.ts`)
+### 4.3 Semantic Audit Search (`agent-sentry/src/memory/audit-index.ts`)
 | Export | Purpose |
 |--------|---------|
 | `AuditIndex` | Indexes events for semantic search via MemoryStore |
@@ -71,12 +71,12 @@ tests/memory/audit-index.test.ts             — 25 tests
 | **Total** | **393** |
 
 ## Do NOT Change
-- `agentops/audit/audit-logger.ts`
-- `agentops/core/event-bus.ts`
-- `agentops/tracing/trace-context.ts`
-- Any Phase 1 file in `agentops/src/memory/` (store.ts, schema.ts, embeddings.ts, etc.)
-- Any Phase 2 file in `agentops/src/mcp/`
-- Any Phase 3 file in `agentops/src/primitives/`
+- `agent-sentry/audit/audit-logger.ts`
+- `agent-sentry/core/event-bus.ts`
+- `agent-sentry/tracing/trace-context.ts`
+- Any Phase 1 file in `agent-sentry/src/memory/` (store.ts, schema.ts, embeddings.ts, etc.)
+- Any Phase 2 file in `agent-sentry/src/mcp/`
+- Any Phase 3 file in `agent-sentry/src/primitives/`
 
 ## Key Interfaces for Future Work
 ```typescript

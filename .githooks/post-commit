@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# AgentOps post-commit hook (§8.2)
+# AgentSentry post-commit hook (§8.2)
 # Runs after every commit — must never block, so we trap errors and exit 0.
 
-PREFIX="[AgentOps]"
-TMPBASE="${TMPDIR:-/tmp}/agentops"
-DASHBOARD_DIR="agentops/dashboard/data"
+PREFIX="[AgentSentry]"
+TMPBASE="${TMPDIR:-/tmp}/agent-sentry"
+DASHBOARD_DIR="agent-sentry/dashboard/data"
 SESSION_LOG="${DASHBOARD_DIR}/session-log.json"
 
 # Ensure we never block the developer workflow

@@ -110,13 +110,10 @@ describe('SupabaseProvider', () => {
       expect(callOpts.headers.Authorization).toBe(`Bearer ${SUPABASE_KEY}`);
     });
 
-    it('warns but does not throw if RPC fails', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('does not throw if RPC fails', async () => {
       setupMockRequest([{ statusCode: 500, body: '{"error":"function not found"}' }]);
-      // The RPC will throw due to 500, but initialize catches it
-      await provider.initialize();
-      expect(warnSpy).toHaveBeenCalled();
-      warnSpy.mockRestore();
+      // The RPC will throw due to 500, but initialize catches it and logs via Logger
+      await expect(provider.initialize()).resolves.not.toThrow();
     });
 
     it('throws if URL or key are missing', async () => {

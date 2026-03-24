@@ -14,9 +14,9 @@ OB1 analysis: `AgentOps-OB1-Analysis.md` (repo root)
 
 | # | Decision | Rationale |
 |---|----------|-----------|
-| 1 | **Bootstrap TS project** inside `agentops/` | No `package.json` or `tsconfig.json` exists yet. Need `src/` tree. |
+| 1 | **Bootstrap TS project** inside `agent-sentry/` | No `package.json` or `tsconfig.json` exists yet. Need `src/` tree. |
 | 2 | **Subscribe to event-bus, don't modify it** | `event-bus.ts`, `audit-logger.ts`, `trace-context.ts` are frozen (do not change). Memory capture adds a new subscriber module. |
-| 3 | **ONNX model: download-on-first-use (Option B)** | Keeps repo small. Model cached to `agentops/models/` on first `search()` call. No 23MB binary in git. |
+| 3 | **ONNX model: download-on-first-use (Option B)** | Keeps repo small. Model cached to `agent-sentry/models/` on first `search()` call. No 23MB binary in git. |
 | 4 | **Stub Supabase, implement SQLite only** | Supabase needs env vars to test. Build the `StorageProvider` interface + SQLite provider. Supabase provider is a stub returning `NotImplementedError`. |
 | 5 | **Phase 1 only this cycle** | Context limits. Phases 2-4 deferred to subsequent sessions. |
 | 6 | **Spec at repo root** | `AgentOps-Product-Spec.md` is at `/AgentOps-Product-Spec.md`, not in `docs/`. |
@@ -24,13 +24,13 @@ OB1 analysis: `AgentOps-OB1-Analysis.md` (repo root)
 ## What to Build (Phase 1: Persistent Memory Store)
 
 ### 1. Bootstrap TypeScript Project
-- Create `agentops/package.json` with dependencies: `better-sqlite3`, `onnxruntime-node`, `uuid`
-- Create `agentops/tsconfig.json` targeting ES2020
+- Create `agent-sentry/package.json` with dependencies: `better-sqlite3`, `onnxruntime-node`, `uuid`
+- Create `agent-sentry/tsconfig.json` targeting ES2020
 - Add `npm run build` and `npm test` scripts
 
 ### 2. Memory Store Core — File Tree
 ```
-agentops/src/memory/
+agent-sentry/src/memory/
 ├── store.ts                    # MemoryStore class — CRUD + vector search
 ├── schema.ts                   # OpsEvent interface, EventType, Severity, Skill types
 ├── embeddings.ts               # EmbeddingProvider interface + download-on-first-use ONNX
@@ -53,23 +53,23 @@ agentops/src/memory/
 - `EmbeddingProvider` — embed(), dimension, name
 
 ### 4. Embedding Provider Priority
-1. Local ONNX model (`all-MiniLM-L6-v2`) — downloaded on first use to `agentops/models/`
+1. Local ONNX model (`all-MiniLM-L6-v2`) — downloaded on first use to `agent-sentry/models/`
 2. Ollama local API (if running)
 3. OpenAI API (if `OPENAI_API_KEY` set)
 4. No-op provider (structured queries only, no semantic search)
 
 ### 5. Hook Integration
-Every existing shell script in `agentops/scripts/` gets a `capture_event` call appended. Uses `cli-capture.js` to write to memory store. Does NOT modify `event-bus.ts`.
+Every existing shell script in `agent-sentry/scripts/` gets a `capture_event` call appended. Uses `cli-capture.js` to write to memory store. Does NOT modify `event-bus.ts`.
 
 ### 6. Config Update
-Add `memory` section to `agentops/agentops.config.json`:
+Add `memory` section to `agent-sentry/agentops.config.json`:
 ```json
 {
   "memory": {
     "enabled": true,
     "provider": "sqlite",
     "embedding_provider": "auto",
-    "database_path": "agentops/data/ops.db",
+    "database_path": "agent-sentry/data/ops.db",
     "max_events": 100000,
     "auto_prune_days": 365
   }
@@ -78,7 +78,7 @@ Add `memory` section to `agentops/agentops.config.json`:
 
 ### 7. Tests (TDD London School)
 ```
-agentops/tests/memory/
+agent-sentry/tests/memory/
 ├── store.test.ts               # CRUD, hash chain, pagination
 ├── embeddings.test.ts          # Provider detection, fallback chain
 ├── search.test.ts              # Semantic + filtered search
@@ -100,16 +100,16 @@ cd agentops && npm run build
 ```
 
 ## Do NOT Change
-- `agentops/audit/audit-logger.ts`
-- `agentops/core/event-bus.ts`
-- `agentops/tracing/trace-context.ts`
+- `agent-sentry/audit/audit-logger.ts`
+- `agent-sentry/core/event-bus.ts`
+- `agent-sentry/tracing/trace-context.ts`
 
 ## Existing Assets (Reference Only)
-- 17 shell scripts in `agentops/scripts/`
-- 10 eval suites in `agentops/evals/`
-- `agentops/plugins/plugin-loader.sh` + `community/` dir
-- `agentops/dashboard/` — HTML dashboard with data files
-- `agentops/agentops.config.json` — current config (no `memory` section yet)
+- 17 shell scripts in `agent-sentry/scripts/`
+- 10 eval suites in `agent-sentry/evals/`
+- `agent-sentry/plugins/plugin-loader.sh` + `community/` dir
+- `agent-sentry/dashboard/` — HTML dashboard with data files
+- `agent-sentry/agentops.config.json` — current config (no `memory` section yet)
 
 ## After Phase 1
 Phases 2-4 are detailed in `AgentOps-OB1-Build-Plan.md`:

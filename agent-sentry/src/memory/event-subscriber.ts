@@ -6,6 +6,9 @@
 import { subscribe, EventType as BusEventType, EventPayload } from '../../core/event-bus';
 import { MemoryStore } from './store';
 import { EventType, Severity, Skill } from './schema';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'event-subscriber' });
 
 const BUS_TO_OPS_TYPE: Record<string, EventType> = {
   [BusEventType.OnAuditLog]: 'audit_finding',
@@ -58,7 +61,7 @@ export function registerEventSubscriber(store: MemoryStore, sessionId: string): 
         metadata: payload.data,
       });
     } catch (err) {
-      console.error('[AgentSentry] Memory capture failed:', err);
+      logger.error('Memory capture failed', { error: err instanceof Error ? err.message : String(err) });
     }
   };
 

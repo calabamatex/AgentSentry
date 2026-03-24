@@ -19,7 +19,7 @@
 **Problem**: `package.json` ships only `dist/`. Scripts, dashboard, templates, plugins, and config assets are excluded. Anyone installing from npm gets a broken product.
 
 **Files to change**:
-- `agentops/package.json`
+- `agent-sentry/package.json`
 
 **Tasks**:
 
@@ -39,14 +39,14 @@
 **Problem**: `post-write-checks.sh` (line 22) calls `python3 -c` to parse JSON. If python3 is absent, the hook silently does nothing. Docs say python3 is "optional."
 
 **Files to change**:
-- `agentops/scripts/post-write-checks.sh`
+- `agent-sentry/scripts/post-write-checks.sh`
 - Any other scripts using `python3` (audit all 20 scripts)
 
 **Tasks**:
 
 | # | Task | Detail |
 |---|------|--------|
-| 1.2.1 | Audit all scripts for python3 usage | `grep -l 'python3' agentops/scripts/*.sh` — identify every script. |
+| 1.2.1 | Audit all scripts for python3 usage | `grep -l 'python3' agent-sentry/scripts/*.sh` — identify every script. |
 | 1.2.2 | Replace python3 JSON parsing with node | Replace `python3 -c "import json..."` with `node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); ..."` or use `jq` (which is already used in `session-start-checks.sh`). Node is a hard dependency already. |
 | 1.2.3 | Remove python3 from docs as optional | If python3 is no longer used, remove all references. If it remains for any reason, mark it as required. |
 
@@ -60,9 +60,9 @@
 
 **Files to change**:
 - Root `README.md`
-- `agentops/README.md` (package README)
-- `agentops/docs/getting-started.md`
-- `agentops/docs/api-reference.md`
+- `agent-sentry/README.md` (package README)
+- `agent-sentry/docs/getting-started.md`
+- `agent-sentry/docs/api-reference.md`
 - `TASKS.md` / `CONTEXT.md` (if they exist at project root)
 
 **Tasks**:
@@ -101,9 +101,9 @@
 **Problem**: Hooks silently degrade, use inconsistent config parsing, and employ brittle regex for security scanning.
 
 **Files to change**:
-- `agentops/scripts/post-write-checks.sh`
-- `agentops/scripts/session-start-checks.sh`
-- `agentops/scripts/session-checkpoint.sh`
+- `agent-sentry/scripts/post-write-checks.sh`
+- `agent-sentry/scripts/session-start-checks.sh`
+- `agent-sentry/scripts/session-checkpoint.sh`
 
 **Tasks**:
 
@@ -130,10 +130,10 @@
 **Problem**: 66 unit tests exist, but no test validates the actual user journey from install to operation.
 
 **Files to create**:
-- `agentops/tests/e2e/install-and-run.test.ts`
-- `agentops/tests/e2e/hook-lifecycle.test.ts`
-- `agentops/tests/e2e/mcp-server.test.ts`
-- `agentops/tests/e2e/dashboard-startup.test.ts`
+- `agent-sentry/tests/e2e/install-and-run.test.ts`
+- `agent-sentry/tests/e2e/hook-lifecycle.test.ts`
+- `agent-sentry/tests/e2e/mcp-server.test.ts`
+- `agent-sentry/tests/e2e/dashboard-startup.test.ts`
 
 **Tasks**:
 
@@ -154,14 +154,14 @@
 **Problem**: Shell scripts with inline python3/jq/grep are hard to test, hard to maintain, and brittle across platforms.
 
 **Files to create**:
-- `agentops/src/cli/hooks/session-start.ts`
-- `agentops/src/cli/hooks/post-write.ts`
-- `agentops/src/cli/hooks/session-checkpoint.ts`
+- `agent-sentry/src/cli/hooks/session-start.ts`
+- `agent-sentry/src/cli/hooks/post-write.ts`
+- `agent-sentry/src/cli/hooks/session-checkpoint.ts`
 
 **Files to modify**:
-- `agentops/scripts/session-start-checks.sh` → thin wrapper
-- `agentops/scripts/post-write-checks.sh` → thin wrapper
-- `agentops/scripts/session-checkpoint.sh` → thin wrapper
+- `agent-sentry/scripts/session-start-checks.sh` → thin wrapper
+- `agent-sentry/scripts/post-write-checks.sh` → thin wrapper
+- `agent-sentry/scripts/session-checkpoint.sh` → thin wrapper
 
 **Tasks**:
 
@@ -182,7 +182,7 @@
 
 **Files to change**:
 - Root `README.md`
-- `agentops/README.md`
+- `agent-sentry/README.md`
 
 **Tasks**:
 
@@ -201,8 +201,8 @@
 **Problem**: MemoryStore is the strongest component and the most defensible moat. It should be treated as the product kernel.
 
 **Files to change**:
-- `agentops/src/memory/store.ts`
-- `agentops/src/memory/providers/sqlite-provider.ts`
+- `agent-sentry/src/memory/store.ts`
+- `agent-sentry/src/memory/providers/sqlite-provider.ts`
 
 **Tasks**:
 
@@ -229,8 +229,8 @@
 **Problem**: This is one of the best product ideas in the repo but it's buried. It should be the headline adoption story.
 
 **Files to change**:
-- `agentops/src/enablement/engine.ts`
-- `agentops/src/enablement/dashboard-adapter.ts`
+- `agent-sentry/src/enablement/engine.ts`
+- `agent-sentry/src/enablement/dashboard-adapter.ts`
 - Docs
 
 **Tasks**:
@@ -251,9 +251,9 @@
 **Problem**: This is the real moat — not safety checks (copyable) but accumulated operational knowledge across sessions.
 
 **Files to change**:
-- `agentops/src/memory/store.ts`
-- `agentops/src/memory/enrichment.ts`
-- New: `agentops/src/memory/intelligence.ts`
+- `agent-sentry/src/memory/store.ts`
+- `agent-sentry/src/memory/enrichment.ts`
+- New: `agent-sentry/src/memory/intelligence.ts`
 
 **Tasks**:
 

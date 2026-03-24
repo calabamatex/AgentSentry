@@ -14,7 +14,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/secret-scanner.sh` |
+| **Path** | `agent-sentry/scripts/secret-scanner.sh` |
 | **Hook Event** | `PreToolUse` |
 | **Trigger (matcher)** | `Write\|Edit\|MultiEdit` |
 | **Timeout** | 5000ms |
@@ -41,7 +41,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/git-hygiene-check.sh` |
+| **Path** | `agent-sentry/scripts/git-hygiene-check.sh` |
 | **Hook Event** | `PreToolUse` |
 | **Trigger (matcher)** | `Write\|Edit\|MultiEdit` (also processes Bash) |
 | **Timeout** | 5000ms |
@@ -69,7 +69,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/post-write-checks.sh` |
+| **Path** | `agent-sentry/scripts/post-write-checks.sh` |
 | **Hook Event** | `PostToolUse` |
 | **Trigger (matcher)** | `Write\|Edit\|MultiEdit` |
 | **Timeout** | 10000ms |
@@ -93,7 +93,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/task-sizer.sh` |
+| **Path** | `agent-sentry/scripts/task-sizer.sh` |
 | **Hook Event** | `UserPromptSubmit` |
 | **Trigger (matcher)** | All prompts (no matcher filter) |
 | **Timeout** | 5000ms |
@@ -127,7 +127,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/context-estimator.sh` |
+| **Path** | `agent-sentry/scripts/context-estimator.sh` |
 | **Hook Event** | `UserPromptSubmit` |
 | **Trigger (matcher)** | All prompts (no matcher filter) |
 | **Timeout** | 5000ms |
@@ -152,7 +152,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/session-start-checks.sh` |
+| **Path** | `agent-sentry/scripts/session-start-checks.sh` |
 | **Hook Event** | `SessionStart` |
 | **Trigger (matcher)** | All sessions (no matcher filter) |
 | **Timeout** | 10000ms |
@@ -178,7 +178,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/session-checkpoint.sh` |
+| **Path** | `agent-sentry/scripts/session-checkpoint.sh` |
 | **Hook Event** | `Stop` |
 | **Trigger (matcher)** | All stop events (no matcher filter) |
 | **Timeout** | 10000ms |
@@ -186,7 +186,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 **What it does:** Runs when a session ends. Performs three steps:
 1. **Auto-commit** -- Commits all uncommitted changes with message `[agentops] session-end checkpoint`
 2. **Reset state** -- Clears blast-radius-files, context-state, and git-hygiene-session temp files
-3. **Log event** -- Appends a session-end NDJSON event to `agentops/dashboard/data/session-log.json`
+3. **Log event** -- Appends a session-end NDJSON event to `agent-sentry/dashboard/data/session-log.json`
 
 **Exit codes:**
 - `0` -- Always (advisory only, never blocks)
@@ -199,11 +199,11 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/cost-tracker.sh` |
+| **Path** | `agent-sentry/scripts/cost-tracker.sh` |
 | **Hook Event** | `PostToolUse` |
 | **Trigger (matcher)** | Not currently wired in settings.json (available for manual integration) |
 
-**What it does:** Runs after tool use to estimate cost, track cumulative session spend, warn at budget thresholds, and log cost events as NDJSON to `agentops/dashboard/data/cost-log.json`.
+**What it does:** Runs after tool use to estimate cost, track cumulative session spend, warn at budget thresholds, and log cost events as NDJSON to `agent-sentry/dashboard/data/cost-log.json`.
 
 **Model tier detection:** Checks hook input `.model` field, then `CLAUDE_MODEL` / `ANTHROPIC_MODEL` environment variables. Defaults to sonnet.
 
@@ -235,7 +235,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/permission-enforcer.sh` |
+| **Path** | `agent-sentry/scripts/permission-enforcer.sh` |
 | **Hook Event** | `PreToolUse` |
 | **Trigger (matcher)** | Not currently wired in settings.json (available for manual integration) |
 
@@ -272,7 +272,7 @@ permissions:
 
 **Config keys read:** None (reads from `.claude/agents/*.md` YAML frontmatter).
 
-**Logs to:** `agentops/dashboard/data/permission-log.json` (NDJSON)
+**Logs to:** `agent-sentry/dashboard/data/permission-log.json` (NDJSON)
 
 ---
 
@@ -280,7 +280,7 @@ permissions:
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/delegation-validator.sh` |
+| **Path** | `agent-sentry/scripts/delegation-validator.sh` |
 | **Hook Event** | `PreToolUse` |
 | **Trigger (matcher)** | Not currently wired in settings.json (available for manual integration) |
 
@@ -317,7 +317,7 @@ permissions:
 
 **Config keys read:** None (reads from `AGENTOPS_DELEGATION_TOKEN` env var).
 
-**Logs to:** `agentops/dashboard/data/delegation-log.json` (NDJSON)
+**Logs to:** `agent-sentry/dashboard/data/delegation-log.json` (NDJSON)
 
 ---
 
@@ -331,10 +331,10 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/security-audit.sh` |
+| **Path** | `agent-sentry/scripts/security-audit.sh` |
 | **Invoked by** | `/agentops audit` |
 
-**What it does:** Runs a comprehensive project security scan across 6 check categories. Results are grouped by severity (Critical, Warning, Advisory, Pass) and written to `agentops/dashboard/data/audit-results.json` as NDJSON.
+**What it does:** Runs a comprehensive project security scan across 6 check categories. Results are grouped by severity (Critical, Warning, Advisory, Pass) and written to `agent-sentry/dashboard/data/audit-results.json` as NDJSON.
 
 **Check categories:**
 1. **Secrets in Code** -- Scans source files for hardcoded secrets, checks `.env.example` for real values, verifies `.env` is in `.gitignore`, optionally scans git history
@@ -359,7 +359,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/rules-file-linter.sh` |
+| **Path** | `agent-sentry/scripts/rules-file-linter.sh` |
 | **Invoked by** | `/agentops audit` |
 
 **What it does:** Validates `AGENTS.md`, `CLAUDE.md`, and nested rules files for structure, size, contradictions, clarity, and completeness.
@@ -384,9 +384,9 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/lifecycle-manager.sh` |
+| **Path** | `agent-sentry/scripts/lifecycle-manager.sh` |
 
-**What it does:** Manages agent state transitions and emits NDJSON lifecycle events to `agentops/dashboard/data/lifecycle.json`. State is stored in temp files at `$TMPDIR/agentops/lifecycle/<agent-id>.state`.
+**What it does:** Manages agent state transitions and emits NDJSON lifecycle events to `agent-sentry/dashboard/data/lifecycle.json`. State is stored in temp files at `$TMPDIR/agent-sentry/lifecycle/<agent-id>.state`.
 
 **Subcommands:**
 
@@ -412,9 +412,9 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/provider-health.sh` |
+| **Path** | `agent-sentry/scripts/provider-health.sh` |
 
-**What it does:** Tracks per-provider metrics, logs failover events, and aggregates stats. Stores per-provider call data as NDJSON in `$TMPDIR/agentops/provider-state/<provider>.ndjson`.
+**What it does:** Tracks per-provider metrics, logs failover events, and aggregates stats. Stores per-provider call data as NDJSON in `$TMPDIR/agent-sentry/provider-state/<provider>.ndjson`.
 
 **Subcommands:**
 
@@ -426,7 +426,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 | `record` | `provider-health.sh record <provider> <latency_ms> [status] [cost]` | Record a single provider call metric |
 | `set-ratelimit` | `provider-health.sh set-ratelimit <provider> <remaining/limit>` | Cache rate limit headroom for a provider |
 
-**Logs to:** `agentops/dashboard/data/provider-health.json` (NDJSON)
+**Logs to:** `agent-sentry/dashboard/data/provider-health.json` (NDJSON)
 
 **Exit codes:**
 - `0` -- Always
@@ -437,10 +437,10 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/run-evals.sh` |
+| **Path** | `agent-sentry/scripts/run-evals.sh` |
 | **Dependencies** | `jq`, `yq` (both required) |
 
-**What it does:** Runs golden datasets found in `agentops/evals/*/cases.yaml`. For each test case, the target script is executed with a synthetic hook payload, and the outcome (exit code + output pattern) is compared against expected results.
+**What it does:** Runs golden datasets found in `agent-sentry/evals/*/cases.yaml`. For each test case, the target script is executed with a synthetic hook payload, and the outcome (exit code + output pattern) is compared against expected results.
 
 **Test case format** (`cases.yaml`):
 ```yaml
@@ -461,10 +461,10 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/plugins/plugin-loader.sh` |
+| **Path** | `agent-sentry/plugins/plugin-loader.sh` |
 | **Dependencies** | `jq` (required) |
 
-**What it does:** Discovers, validates, and executes plugins located in the `agentops/plugins/community/` directory. Each plugin lives in its own subdirectory and exposes a `manifest.json`.
+**What it does:** Discovers, validates, and executes plugins located in the `agent-sentry/plugins/community/` directory. Each plugin lives in its own subdirectory and exposes a `manifest.json`.
 
 **Plugin manifest format:**
 ```json
@@ -498,7 +498,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/scripts/validate-plugin.sh` |
+| **Path** | `agent-sentry/scripts/validate-plugin.sh` |
 | **Invoked by** | Manual or CI |
 
 **What it does:** Validates a plugin directory against the AgentOps plugin specification. Accepts a plugin path as the first argument.
@@ -532,10 +532,10 @@ These modules provide programmatic APIs for tracing, auditing, and event routing
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/tracing/trace-context.ts` |
+| **Path** | `agent-sentry/tracing/trace-context.ts` |
 | **Spec section** | Section 13 (Distributed Tracing) |
 
-OpenTelemetry-compatible trace context propagation and span recording. Generates W3C-compliant trace IDs (32 hex chars / 128 bits) and span IDs (16 hex chars / 64 bits). Records spans as NDJSON to `agentops/dashboard/data/traces.json`.
+OpenTelemetry-compatible trace context propagation and span recording. Generates W3C-compliant trace IDs (32 hex chars / 128 bits) and span IDs (16 hex chars / 64 bits). Records spans as NDJSON to `agent-sentry/dashboard/data/traces.json`.
 
 **Exports:**
 
@@ -561,10 +561,10 @@ OpenTelemetry-compatible trace context propagation and span recording. Generates
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/audit/audit-logger.ts` |
+| **Path** | `agent-sentry/audit/audit-logger.ts` |
 | **Spec section** | Section 19 (Compliance and Immutable Audit Trail) |
 
-Tamper-evident, append-only logging of all agent operations. Each record is SHA-256 hash-chained to its predecessor, forming a verifiable sequence. Records are stored as NDJSON in `agentops/audit/audit-trail.jsonl`.
+Tamper-evident, append-only logging of all agent operations. Each record is SHA-256 hash-chained to its predecessor, forming a verifiable sequence. Records are stored as NDJSON in `agent-sentry/audit/audit-trail.jsonl`.
 
 **Exports:**
 
@@ -591,7 +591,7 @@ Tamper-evident, append-only logging of all agent operations. Each record is SHA-
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/core/event-bus.ts` |
+| **Path** | `agent-sentry/core/event-bus.ts` |
 | **Spec section** | Section 21.3 (Plugin Event Bus) |
 
 Central publish/subscribe system for hook events. Uses a singleton pattern so all consumers share a single bus instance within a process.
@@ -619,7 +619,7 @@ Central publish/subscribe system for hook events. Uses a singleton pattern so al
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/src/memory/store.ts` |
+| **Path** | `agent-sentry/src/memory/store.ts` |
 | **Spec section** | Section 25 (Persistent Operations Memory) |
 
 Persistent, hash-chained event storage with vector search. Provider-agnostic (SQLite default; Supabase for teams planned for a future release).
@@ -650,7 +650,7 @@ Persistent, hash-chained event storage with vector search. Provider-agnostic (SQ
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/src/mcp/server.ts` |
+| **Path** | `agent-sentry/src/mcp/server.ts` |
 | **Spec section** | Section 26 (MCP Server Interface) |
 
 Model Context Protocol server exposing 8 tools via stdio or HTTP transport.
@@ -669,14 +669,14 @@ Model Context Protocol server exposing 8 tools via stdio or HTTP transport.
 | `agentops_health` | none | System health dashboard |
 
 **Transport:**
-- Stdio (default): `node agentops/dist/src/mcp/server.js`
-- HTTP: `node agentops/dist/src/mcp/server.js --http --port 3100`
+- Stdio (default): `node agent-sentry/dist/src/mcp/server.js`
+- HTTP: `node agent-sentry/dist/src/mcp/server.js --http --port 3100`
 
 **Auth (HTTP only):** `x-agentops-key` header or `?key=` query param. Rate limited to 100 req/min.
 
 **Integration:**
 ```bash
-claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 ---
@@ -685,7 +685,7 @@ claude mcp add agentops -- node agentops/dist/src/mcp/server.js
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/src/primitives/` |
+| **Path** | `agent-sentry/src/primitives/` |
 | **Spec section** | Section 27 (Primitives Library) |
 
 Seven composable TypeScript primitives extracted from core skills.
@@ -712,7 +712,7 @@ Seven composable TypeScript primitives extracted from core skills.
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/src/enablement/engine.ts` |
+| **Path** | `agent-sentry/src/enablement/engine.ts` |
 | **Spec section** | Section 28 (Progressive Enablement) |
 
 Progressive skill enablement with 5 adoption levels.
@@ -737,7 +737,7 @@ Progressive skill enablement with 5 adoption levels.
 | 4 | Right Size | + small_bets |
 | 5 | Full Guard | + proactive_safety |
 
-**Setup:** `bash agentops/scripts/setup-wizard.sh --level 3`
+**Setup:** `bash agent-sentry/scripts/setup-wizard.sh --level 3`
 
 ---
 
@@ -745,7 +745,7 @@ Progressive skill enablement with 5 adoption levels.
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/src/memory/enrichment.ts` |
+| **Path** | `agent-sentry/src/memory/enrichment.ts` |
 | **Spec section** | Section 25 (Persistent Operations Memory) |
 
 Auto-classification enrichment for captured events.
@@ -769,7 +769,7 @@ Auto-classification enrichment for captured events.
 
 | Field | Value |
 |---|---|
-| **Path** | `agentops/src/memory/audit-index.ts` |
+| **Path** | `agent-sentry/src/memory/audit-index.ts` |
 | **Spec section** | Section 19 (Compliance & Audit Trail) |
 
 Semantic search over audit records.
@@ -801,7 +801,7 @@ Runs a session health dashboard. Executes `session-start-checks.sh` to validate 
 
 ### /agentops audit
 
-Runs a full project audit by executing both `security-audit.sh` (6-category security scan) and `rules-file-linter.sh` (5-check rules validation). Writes results to `agentops/dashboard/data/audit-results.json`.
+Runs a full project audit by executing both `security-audit.sh` (6-category security scan) and `rules-file-linter.sh` (5-check rules validation). Writes results to `agent-sentry/dashboard/data/audit-results.json`.
 
 ### /agentops scaffold
 
@@ -815,7 +815,7 @@ Runs the progressive enablement setup wizard. Prompts for an enablement level (1
 
 ## Configuration (agentops.config.json)
 
-**Path:** `agentops/agentops.config.json`
+**Path:** `agent-sentry/agentops.config.json`
 
 ### save_points
 
@@ -881,7 +881,7 @@ Runs the progressive enablement setup wizard. Prompts for an enablement level (1
 | `memory.enabled` | `true` | Enable persistent memory store |
 | `memory.provider` | `"sqlite"` | Storage backend (`sqlite` or `supabase`) |
 | `memory.embedding_provider` | `"auto"` | Embedding provider (auto, onnx, ollama, openai, noop) |
-| `memory.database_path` | `"agentops/data/ops.db"` | Path to SQLite database file |
+| `memory.database_path` | `"agent-sentry/data/ops.db"` | Path to SQLite database file |
 | `memory.max_events` | `100000` | Maximum events before auto-pruning |
 | `memory.auto_prune_days` | `365` | Days after which events are pruned |
 

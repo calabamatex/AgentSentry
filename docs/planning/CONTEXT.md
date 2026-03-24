@@ -14,12 +14,12 @@ This session completed all 4 build phases of AgentOps v4.0, plus P0 scaling fixe
 
 | Area | Entry Point |
 |------|-------------|
-| Memory Store | `agentops/src/memory/store.ts` |
-| MCP Server | `agentops/src/mcp/server.ts` (built: `agentops/dist/src/mcp/server.js`) |
-| Primitives | `agentops/src/primitives/index.ts` |
-| Enablement | `agentops/src/enablement/engine.ts` |
-| Enrichment | `agentops/src/memory/enrichment.ts` |
-| Config | `agentops/agentops.config.json` |
+| Memory Store | `agent-sentry/src/memory/store.ts` |
+| MCP Server | `agent-sentry/src/mcp/server.ts` (built: `agent-sentry/dist/src/mcp/server.js`) |
+| Primitives | `agent-sentry/src/primitives/index.ts` |
+| Enablement | `agent-sentry/src/enablement/engine.ts` |
+| Enrichment | `agent-sentry/src/memory/enrichment.ts` |
+| Config | `agent-sentry/agentops.config.json` |
 | Build Plan | `AgentOps-OB1-Build-Plan.md` |
 | Product Spec | `AgentOps-Product-Spec.md` |
 

@@ -34,9 +34,9 @@ Each span records: agent ID, tool called, input/output tokens, latency, cost, su
 
 | Component | Purpose | Priority |
 |---|---|---|
-| `agentops/tracing/trace-context.ts` | Trace ID propagation across agent boundaries | P0 |
-| `agentops/tracing/span-logger.ts` | Structured span logging with OpenTelemetry-compatible format | P0 |
-| `agentops/tracing/trace-viewer.html` | Visual trace waterfall in the dashboard (new page) | P1 |
+| `agent-sentry/tracing/trace-context.ts` | Trace ID propagation across agent boundaries | P0 |
+| `agent-sentry/tracing/span-logger.ts` | Structured span logging with OpenTelemetry-compatible format | P0 |
+| `agent-sentry/tracing/trace-viewer.html` | Visual trace waterfall in the dashboard (new page) | P1 |
 | Hook: inject trace context into swarm deploys | Ensure every agent in a swarm shares the trace ID | P0 |
 | Dashboard: trace search and filter | Find traces by agent, task, time range, error | P1 |
 
@@ -131,7 +131,7 @@ Queen permissions (broad) → Worker delegation (narrow)
 | Component | Purpose | Priority |
 |---|---|---|
 | Permission schema in agent YAML definitions | Formal per-agent permissions | P0 |
-| `agentops/scripts/permission-enforcer.sh` | PreToolUse hook that validates permissions | P0 |
+| `agent-sentry/scripts/permission-enforcer.sh` | PreToolUse hook that validates permissions | P0 |
 | Agent Identity Registry page in dashboard | Shows all agents, their roles, permissions, and violation history | P1 |
 | Delegation token format and validator | Scope narrowing for queen → worker delegation | P1 |
 | Audit trail for all permission checks | Append-only log of every allow/deny decision | P0 |
@@ -218,7 +218,7 @@ ELSE IF task requires complex reasoning:
 | Component | Purpose | Priority |
 |---|---|---|
 | `agentops.config.json` → budget section | Per-agent, per-session, monthly budgets | P0 |
-| `agentops/scripts/cost-tracker.sh` | PostToolUse hook logging token usage and cost | P0 |
+| `agent-sentry/scripts/cost-tracker.sh` | PostToolUse hook logging token usage and cost | P0 |
 | Dashboard: Cost page | Real-time spend per agent, per session, per provider, with trends | P1 |
 | Budget enforcement in PreToolUse | Block or downgrade when budget exceeded | P1 |
 | MoE cost feedback loop | Feed cost data into RuFlo's routing decisions | P2 |
@@ -290,7 +290,7 @@ ON cancel request:
 | Component | Purpose | Priority |
 |---|---|---|
 | Agent state schema in agent definitions | Formal lifecycle states per agent | P0 |
-| `agentops/scripts/lifecycle-manager.sh` | State tracking, graceful shutdown, cleanup | P0 |
+| `agent-sentry/scripts/lifecycle-manager.sh` | State tracking, graceful shutdown, cleanup | P0 |
 | Dashboard: Agent lifecycle view | Visual state for every active agent with transitions | P1 |
 | Timeout enforcement | Auto-cancel agents that exceed max duration | P1 |
 | Resource cleanup on termination | Kill child processes, release locks, commit checkpoint | P0 |
@@ -354,7 +354,7 @@ Every provider switch is logged so you can answer: "Why did agent X use GPT-4o i
 | Component | Purpose | Priority |
 |---|---|---|
 | Provider field in all trace/cost records | Attribution by provider | P0 |
-| `agentops/scripts/provider-health.sh` | Track availability, latency, error rates per provider | P1 |
+| `agent-sentry/scripts/provider-health.sh` | Track availability, latency, error rates per provider | P1 |
 | Dashboard: Provider Health page | Visual comparison across Claude, GPT, Gemini, etc. | P1 |
 | Failover logging in session-log.json | Record every provider switch with reason | P0 |
 
@@ -375,7 +375,7 @@ The current spec monitors agents in production but has no mechanism for testing 
 Each AgentOps skill and each RuFlo agent skill gets a set of test cases:
 
 ```yaml
-# agentops/evals/secret-scanner/cases.yaml
+# agent-sentry/evals/secret-scanner/cases.yaml
 - name: "Detects hardcoded Anthropic key"
   input_file: "fixtures/hardcoded-anthropic-key.ts"
   expected: { blocked: true, pattern: "ANTHROPIC_API_KEY" }
@@ -394,7 +394,7 @@ Each AgentOps skill and each RuFlo agent skill gets a set of test cases:
 When a bug is found in production, add a test case that reproduces it. Run the full regression suite on every rules file or agent definition change:
 
 ```bash
-# agentops/scripts/run-evals.sh
+# agent-sentry/scripts/run-evals.sh
 # Runs all golden datasets, reports pass/fail, blocks merge if regressions
 ```
 
@@ -411,9 +411,9 @@ Periodic full-system benchmarks that measure:
 
 | Component | Purpose | Priority |
 |---|---|---|
-| `agentops/evals/` directory | Test fixtures and expected results per module | P1 |
-| `agentops/scripts/run-evals.sh` | Evaluate all modules against golden datasets | P1 |
-| CI integration (GitHub Actions) | Run evals on every PR that touches agentops/ | P2 |
+| `agent-sentry/evals/` directory | Test fixtures and expected results per module | P1 |
+| `agent-sentry/scripts/run-evals.sh` | Evaluate all modules against golden datasets | P1 |
+| CI integration (GitHub Actions) | Run evals on every PR that touches agent-sentry/ | P2 |
 | Dashboard: Eval Results page | Pass/fail rates, regression trends | P2 |
 
 ---
@@ -483,8 +483,8 @@ If any record is modified, all subsequent hashes break, making tampering detecta
 
 | Component | Purpose | Priority |
 |---|---|---|
-| `agentops/audit/audit-logger.ts` | Append-only, hash-chained audit logging | P0 (for EU market) |
-| `agentops/audit/integrity-verifier.sh` | Verify hash chain hasn't been tampered with | P1 |
+| `agent-sentry/audit/audit-logger.ts` | Append-only, hash-chained audit logging | P0 (for EU market) |
+| `agent-sentry/audit/integrity-verifier.sh` | Verify hash chain hasn't been tampered with | P1 |
 | Dashboard: Audit Trail page | Searchable, filterable audit log viewer | P1 |
 | Compliance report generator | Produce EU AI Act Article 12-compliant documentation | P2 |
 | Data retention policy enforcement | Auto-archive records older than retention period | P2 |
@@ -578,7 +578,7 @@ Agent proposes a rules file update:
   in tsconfig.json paths."
 
 Proposal goes to PENDING queue (not applied):
-  Stored in agentops/proposals/pending/001-import-path.md
+  Stored in agent-sentry/proposals/pending/001-import-path.md
 
 Operator reviews in dashboard:
   - See the proposed rule
@@ -589,7 +589,7 @@ Operator reviews in dashboard:
 On approval:
   Rule is appended to CLAUDE.md
   Append-only log records: who proposed, who approved, when
-  Original proposal archived to agentops/proposals/approved/
+  Original proposal archived to agent-sentry/proposals/approved/
 
 CRITICAL CONSTRAINT: Rules can only be ADDED, never REMOVED by agents.
 Only operators can remove rules. This prevents an agent from
@@ -600,7 +600,7 @@ weakening its own guardrails.
 
 | Component | Purpose | Priority |
 |---|---|---|
-| `agentops/proposals/` directory | Pending and approved rule proposals | P2 |
+| `agent-sentry/proposals/` directory | Pending and approved rule proposals | P2 |
 | Proposal format and submission mechanism | Agents propose, operators approve | P2 |
 | Dashboard: Proposals page | Review queue with evidence and impact analysis | P2 |
 | Append-only enforcement | Agents can only add rules, never remove | P1 |
@@ -618,7 +618,7 @@ The current spec is a monolithic set of scripts and hooks. Adding a new check (s
 **Plugin system for custom checks:**
 
 ```
-agentops/
+agent-sentry/
 ├── plugins/
 │   ├── registry.json              # Installed plugins
 │   ├── core/                      # Built-in plugins (the current scripts)

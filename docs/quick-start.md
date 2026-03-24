@@ -50,7 +50,7 @@ yq --version        # optional — needed for YAML eval fixtures only
 
 ## 2. Install AgentOps
 
-Copy the `agentops/` directory from this repository into the root of your project:
+Copy the `agent-sentry/` directory from this repository into the root of your project:
 
 ```bash
 cp -r /path/to/AgenticManagement/agentops /path/to/your-project/agentops
@@ -60,7 +60,7 @@ Your project tree should now contain:
 
 ```
 your-project/
-  agentops/
+  agent-sentry/
     agentops.config.json
     scripts/
     dashboard/
@@ -83,7 +83,7 @@ your-project/
 AgentOps v4.0 includes TypeScript modules that require Node.js:
 
 ```bash
-cd agentops && npm install
+cd agent-sentry && npm install
 ```
 
 This installs the MCP SDK, vector search, and other runtime dependencies.
@@ -138,12 +138,12 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
         "hooks": [
           {
             "type": "command",
-            "command": "bash agentops/scripts/secret-scanner.sh",
+            "command": "bash agent-sentry/scripts/secret-scanner.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/git-hygiene-check.sh --pre-write",
+            "command": "bash agent-sentry/scripts/git-hygiene-check.sh --pre-write",
             "timeout": 5000
           }
         ]
@@ -155,7 +155,7 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
         "hooks": [
           {
             "type": "command",
-            "command": "bash agentops/scripts/post-write-checks.sh",
+            "command": "bash agent-sentry/scripts/post-write-checks.sh",
             "timeout": 10000
           }
         ]
@@ -166,12 +166,12 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
         "hooks": [
           {
             "type": "command",
-            "command": "bash agentops/scripts/task-sizer.sh",
+            "command": "bash agent-sentry/scripts/task-sizer.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash agentops/scripts/context-estimator.sh",
+            "command": "bash agent-sentry/scripts/context-estimator.sh",
             "timeout": 5000
           }
         ]
@@ -182,7 +182,7 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
         "hooks": [
           {
             "type": "command",
-            "command": "bash agentops/scripts/session-start-checks.sh",
+            "command": "bash agent-sentry/scripts/session-start-checks.sh",
             "timeout": 10000
           }
         ]
@@ -193,7 +193,7 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
         "hooks": [
           {
             "type": "command",
-            "command": "bash agentops/scripts/session-checkpoint.sh",
+            "command": "bash agent-sentry/scripts/session-checkpoint.sh",
             "timeout": 10000
           }
         ]
@@ -222,7 +222,7 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
 AgentOps exposes 9 tools via the Model Context Protocol. Register with Claude Code:
 
 ```bash
-claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 This gives Claude Code direct access to: `agentops_check_git`, `agentops_check_context`, `agentops_check_rules`, `agentops_size_task`, `agentops_scan_security`, `agentops_capture_event`, `agentops_search_history`, `agentops_health`, and `agentops_recall_context`.
@@ -230,7 +230,7 @@ This gives Claude Code direct access to: `agentops_check_git`, `agentops_check_c
 For HTTP transport (team/remote access):
 
 ```bash
-node agentops/dist/src/mcp/server.js --http --port 3100
+node agent-sentry/dist/src/mcp/server.js --http --port 3100
 ```
 
 ---
@@ -250,19 +250,19 @@ AgentOps supports 5 progressive adoption levels:
 Run the setup wizard (a configuration generator that writes enablement settings to `agentops.config.json`):
 
 ```bash
-bash agentops/scripts/setup-wizard.sh
+bash agent-sentry/scripts/setup-wizard.sh
 ```
 
 Or set a level directly:
 
 ```bash
-bash agentops/scripts/setup-wizard.sh --level 3
+bash agent-sentry/scripts/setup-wizard.sh --level 3
 ```
 
 Preview without writing changes:
 
 ```bash
-bash agentops/scripts/setup-wizard.sh --dry-run
+bash agent-sentry/scripts/setup-wizard.sh --dry-run
 ```
 
 The wizard prompts for an enablement level (1-5), generates the corresponding enablement JSON, and merges it into `agentops.config.json`. It does **not** install git hooks, register MCP servers, or modify `.claude/settings.json` -- those are separate steps.
@@ -278,7 +278,7 @@ The setup wizard handles enablement configuration only. You must wire up hooks a
 3. **MCP server registration:**
 
 ```bash
-claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 ---
@@ -293,7 +293,7 @@ For tools that do not support Claude Code-style hooks, you can still get value f
 - Wiring the scripts into your tool's extension or plugin system.
 - Using the git hooks (step 3), which work with every tool that commits through git.
 
-The `agentops/plugins/plugin-loader.sh` script provides an extension point for custom integrations.
+The `agent-sentry/plugins/plugin-loader.sh` script provides an extension point for custom integrations.
 
 ---
 
@@ -302,7 +302,7 @@ The `agentops/plugins/plugin-loader.sh` script provides an extension point for c
 Run the session-start health check to confirm everything is wired up:
 
 ```bash
-bash agentops/scripts/session-start-checks.sh
+bash agent-sentry/scripts/session-start-checks.sh
 ```
 
 You should see output like:
@@ -342,7 +342,7 @@ This creates:
 | `CONTEXT.md` | Session context summary (auto-refreshed) |
 | `WORKFLOW.md` | Commit log and workflow audit trail |
 
-Templates live in `agentops/templates/` if you want to customize them before scaffolding.
+Templates live in `agent-sentry/templates/` if you want to customize them before scaffolding.
 
 ---
 
@@ -359,7 +359,7 @@ The audit checks rules-file quality, security posture, scaffold doc freshness, g
 You can also run the security audit script directly:
 
 ```bash
-bash agentops/scripts/security-audit.sh
+bash agent-sentry/scripts/security-audit.sh
 ```
 
 ---
@@ -369,10 +369,10 @@ bash agentops/scripts/security-audit.sh
 Open the AgentOps dashboard in your browser:
 
 ```bash
-open agentops/dashboard/agentops-dashboard.html
+open agent-sentry/dashboard/agentops-dashboard.html
 ```
 
-The dashboard displays session metrics, commit history, risk scores, and audit findings. It reads data from `agentops/dashboard/data/` which is populated automatically by the post-commit hook and other scripts.
+The dashboard displays session metrics, commit history, risk scores, and audit findings. It reads data from `agent-sentry/dashboard/data/` which is populated automatically by the post-commit hook and other scripts.
 
 ---
 
@@ -382,7 +382,7 @@ All AgentOps thresholds are controlled by a single configuration file:
 
 ```bash
 # Open in your editor
-$EDITOR agentops/agentops.config.json
+$EDITOR agent-sentry/agentops.config.json
 ```
 
 Key settings you may want to tune:

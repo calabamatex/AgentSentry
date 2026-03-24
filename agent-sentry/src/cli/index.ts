@@ -19,6 +19,9 @@ import { dashboardCommand } from './commands/dashboard';
 import { enableCommand } from './commands/enable';
 import { initCommand } from './commands/init';
 import { handoffCommand } from './commands/handoff';
+import { pruneCommand } from './commands/prune';
+import { exportCommand } from './commands/export';
+import { importCommand } from './commands/import';
 
 // ---------------------------------------------------------------------------
 // Version — single source of truth from package.json
@@ -41,6 +44,9 @@ const commands: CommandDefinition[] = [
   configCommand,
   dashboardCommand,
   enableCommand,
+  pruneCommand,
+  exportCommand,
+  importCommand,
 ];
 
 const commandMap = new Map(commands.map((c) => [c.name, c]));

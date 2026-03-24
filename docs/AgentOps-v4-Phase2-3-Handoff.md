@@ -12,7 +12,7 @@ Product spec: `AgentOps-Product-Spec.md` (repo root)
 
 ## Phase 1 Completed Assets
 
-### Source Files (`agentops/src/memory/`)
+### Source Files (`agent-sentry/src/memory/`)
 | File | Purpose |
 |------|---------|
 | `schema.ts` | `OpsEvent` interface, `EventType`, `Severity`, `Skill` types, `computeHash()`, `validateEventInput()` |
@@ -28,14 +28,14 @@ Product spec: `AgentOps-Product-Spec.md` (repo root)
 | `index.ts` | Public API exports |
 
 ### Config
-`agentops/agentops.config.json` has a `memory` section:
+`agent-sentry/agentops.config.json` has a `memory` section:
 ```json
 {
   "memory": {
     "enabled": true,
     "provider": "sqlite",
     "embedding_provider": "auto",
-    "database_path": "agentops/data/ops.db",
+    "database_path": "agent-sentry/data/ops.db",
     "max_events": 100000,
     "auto_prune_days": 365
   }
@@ -70,7 +70,7 @@ Expose AgentOps as an MCP server so Claude Code, Cursor, and other AI clients ca
 
 ### File Tree to Build
 ```
-agentops/src/mcp/
+agent-sentry/src/mcp/
 ├── server.ts              # MCP server setup, tool registration
 ├── tools/
 │   ├── check-git.ts       # agentops_check_git
@@ -98,9 +98,9 @@ agentops/src/mcp/
 | `agentops_health` | none | `MemoryStore.stats()` |
 
 ### Transport
-- **Stdio** (default): `node agentops/dist/src/mcp/server.js`
-- **HTTP** (optional): `node agentops/dist/src/mcp/server.js --http --port 3100` with `x-agentops-key` header
-- Integration: `claude mcp add agentops -- node agentops/dist/src/mcp/server.js`
+- **Stdio** (default): `node agent-sentry/dist/src/mcp/server.js`
+- **HTTP** (optional): `node agent-sentry/dist/src/mcp/server.js --http --port 3100` with `x-agentops-key` header
+- Integration: `claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js`
 
 ### Security
 - HTTP transport requires access key (generated on install, stored in `.env`)
@@ -111,7 +111,7 @@ agentops/src/mcp/
 
 ### Tests to Write
 ```
-agentops/tests/mcp/
+agent-sentry/tests/mcp/
 ├── server.test.ts         # Tool registration, request routing
 ├── tools/*.test.ts        # Each tool unit-tested
 ├── transport.test.ts      # Stdio and HTTP transport
@@ -127,7 +127,7 @@ agentops/tests/mcp/
 ```bash
 cd agentops && npm test -- --grep "mcp"
 cd agentops && npm run build
-claude mcp add agentops -- node agentops/dist/src/mcp/server.js
+claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 ---
@@ -139,7 +139,7 @@ Extract shared patterns from the 17 shell scripts into composable TypeScript pri
 
 ### File Tree to Build
 ```
-agentops/src/primitives/
+agent-sentry/src/primitives/
 ├── checkpoint-and-branch.ts    # Used by: Skills 1, 4
 ├── rules-validation.ts         # Used by: Skills 3, 5
 ├── risk-scoring.ts             # Used by: Skills 4, 5
@@ -163,7 +163,7 @@ agentops/src/primitives/
 
 ### Plugin Model
 ```
-agentops/plugins/
+agent-sentry/plugins/
 ├── _templates/
 │   ├── monitor/     # metadata.json, README.md, src/index.ts
 │   ├── auditor/
@@ -192,7 +192,7 @@ Required fields: `name`, `description`, `category` (monitor|auditor|dashboard|in
 
 ### Tests to Write
 ```
-agentops/tests/primitives/
+agent-sentry/tests/primitives/
 ├── checkpoint-and-branch.test.ts
 ├── rules-validation.test.ts
 ├── risk-scoring.test.ts
@@ -202,7 +202,7 @@ agentops/tests/primitives/
 ├── event-capture.test.ts
 └── integration.test.ts
 
-agentops/tests/plugins/
+agent-sentry/tests/plugins/
 ├── validation.test.ts
 ├── metadata-schema.test.ts
 └── template.test.ts
@@ -219,10 +219,10 @@ bash scripts/validate-plugin.sh plugins/_templates/monitor
 ---
 
 ## Do NOT Change
-- `agentops/audit/audit-logger.ts`
-- `agentops/core/event-bus.ts`
-- `agentops/tracing/trace-context.ts`
-- Any Phase 1 file in `agentops/src/memory/` (consume, don't modify)
+- `agent-sentry/audit/audit-logger.ts`
+- `agent-sentry/core/event-bus.ts`
+- `agent-sentry/tracing/trace-context.ts`
+- Any Phase 1 file in `agent-sentry/src/memory/` (consume, don't modify)
 
 ## Parallel Execution Notes
 - Phase 2 and Phase 3 have **no shared files** — they can run in separate sessions or as parallel agents

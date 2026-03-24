@@ -17,7 +17,7 @@ Check the repo root for these 4 files:
 
 ## Step 2: Create missing docs from templates
 
-For each missing file, copy from `agentops/templates/{NAME}.md.template` and fill in project-specific content:
+For each missing file, copy from `agent-sentry/templates/{NAME}.md.template` and fill in project-specific content:
 
 - **PLANNING.md**: Scan `package.json` (if exists) for project name, dependencies, scripts. Scan directory structure for tech stack clues. Fill in the Project Overview and Tech Stack sections.
 - **TASKS.md**: Scan recent `git log --oneline -20` for recent work. Scan for TODO/FIXME comments in source files. Populate In Progress and Completed sections.
@@ -33,7 +33,7 @@ For docs that already exist:
 
 ## Step 4: Generate handoff message
 
-Using the template at `agentops/templates/handoff-message.md`, fill in all `{placeholders}` with real data from the scaffold docs and git state. Sources:
+Using the template at `agent-sentry/templates/handoff-message.md`, fill in all `{placeholders}` with real data from the scaffold docs and git state. Sources:
 - `{project}`: from PLANNING.md or package.json name
 - `{branch_name}`: from `git branch --show-current`
 - `{commit_hash}` and `{commit_message}`: from `git log -1 --format='%h' and '%s'`

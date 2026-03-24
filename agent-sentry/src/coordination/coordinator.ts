@@ -15,8 +15,10 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { MemoryStore } from '../memory/store';
+import type { StorageProvider } from '../memory/providers/storage-provider';
 import { Logger } from '../observability/logger';
 import type { OpsEventInput } from '../memory/schema';
+import { TaskDelegator } from './coordinator-tasks';
 
 const logger = new Logger({ module: 'coordinator' });
 
@@ -55,6 +57,8 @@ export interface CoordinatorOptions {
   role?: string;
   capabilities?: string[];
   store: MemoryStore;
+  /** Optional: storage provider for atomic lock operations. When provided, uses database-level CAS instead of event-sourced locks. */
+  provider?: StorageProvider;
   heartbeatIntervalMs?: number;
   lockTimeoutMs?: number;
 }
@@ -63,7 +67,7 @@ const SESSION_ID = 'coordination';
 const TAG_REGISTRY = 'coordination:agent-registry';
 const TAG_LOCK = 'coordination:lock';
 const TAG_MESSAGE = 'coordination:message';
-const TAG_TASK = 'coordination:task';
+// TAG_TASK moved to coordinator-tasks.ts
 
 export class AgentCoordinator {
   private agentId: string;
@@ -71,11 +75,13 @@ export class AgentCoordinator {
   private role: string;
   private capabilities: string[];
   private store: MemoryStore;
+  private provider?: StorageProvider;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private messageHandlers: Map<string, (msg: CoordinationMessage) => void | Promise<void>>;
   private heartbeatIntervalMs: number;
   private lockTimeoutMs: number;
   private started = false;
+  private taskDelegator: TaskDelegator;
 
   constructor(options: CoordinatorOptions) {
     if (typeof process !== 'undefined' && process.env.AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN !== '1') {
@@ -89,9 +95,11 @@ export class AgentCoordinator {
     this.role = options.role ?? 'default';
     this.capabilities = options.capabilities ?? [];
     this.store = options.store;
+    this.provider = options.provider;
     this.heartbeatIntervalMs = options.heartbeatIntervalMs ?? 30_000;
     this.lockTimeoutMs = options.lockTimeoutMs ?? 60_000;
     this.messageHandlers = new Map();
+    this.taskDelegator = new TaskDelegator(this.store, this.agentId);
   }
 
   async start(): Promise<void> {
@@ -203,16 +211,28 @@ export class AgentCoordinator {
   /**
    * Attempts to acquire a lock on a resource.
    *
-   * WARNING: This implementation uses check-then-act without atomicity guarantees.
-   * Two agents calling acquireLock() concurrently may both succeed, as there is no
-   * compare-and-swap (CAS) mechanism. For correctness-critical coordination,
-   * use LeaseManager which provides fencing tokens.
+   * When a StorageProvider with atomic lock support is available (e.g. SQLite with
+   * coordination_locks table), uses database-level INSERT OR IGNORE for true CAS
+   * semantics. Falls back to event-sourced check-then-act when no provider is set.
    *
    * @param resource - The resource identifier to lock
    * @param ttlMs - Optional time-to-live in milliseconds
    * @returns true if the lock was acquired (or re-entered), false if held by another agent
    */
   async acquireLock(resource: string, ttlMs?: number): Promise<boolean> {
+    const timeout = ttlMs ?? this.lockTimeoutMs;
+    const expiresAt = new Date(Date.now() + timeout).toISOString();
+
+    // Prefer atomic lock when provider supports it
+    if (this.provider?.atomicLockAcquire) {
+      const acquired = await this.provider.atomicLockAcquire(resource, this.agentId, Date.now(), expiresAt);
+      if (acquired) {
+        logger.debug('Lock acquired (atomic)', { resource, holder: this.agentId });
+      }
+      return acquired;
+    }
+
+    // Fallback: event-sourced (non-atomic, race conditions possible)
     await this.cleanExpiredLocks();
 
     const existing = await this.isLocked(resource);
@@ -223,7 +243,6 @@ export class AgentCoordinator {
       return true; // re-entrant
     }
 
-    const timeout = ttlMs ?? this.lockTimeoutMs;
     const now = new Date();
     const lockInfo: LockInfo = {
       resource,
@@ -233,11 +252,17 @@ export class AgentCoordinator {
     };
 
     await this.store.capture(this.buildLockEvent(lockInfo, 'acquire'));
-    logger.debug('Lock acquired (non-atomic)', { resource, holder: this.agentId });
+    logger.debug('Lock acquired (event-sourced, non-atomic)', { resource, holder: this.agentId });
     return true;
   }
 
   async releaseLock(resource: string): Promise<boolean> {
+    // Prefer atomic release when provider supports it
+    if (this.provider?.atomicLockRelease) {
+      return this.provider.atomicLockRelease(resource, this.agentId);
+    }
+
+    // Fallback: event-sourced
     const existing = await this.isLocked(resource);
     if (!existing || existing.holder !== this.agentId) {
       return false;
@@ -380,68 +405,20 @@ export class AgentCoordinator {
     toAgentId: string,
     task: { name: string; params: Record<string, unknown> },
   ): Promise<string> {
-    const taskId = uuidv4();
-    const event = this.buildTaskEvent({
-      taskId,
-      from: this.agentId,
-      to: toAgentId,
-      name: task.name,
-      params: task.params,
-      status: 'pending',
-    });
-    await this.store.capture(event);
-    return taskId;
+    return this.taskDelegator.delegateTask(toAgentId, task);
   }
 
   async reportTaskComplete(
     taskId: string,
     result: Record<string, unknown>,
   ): Promise<void> {
-    const event = this.buildTaskEvent({
-      taskId,
-      from: this.agentId,
-      to: '',
-      name: '',
-      params: {},
-      status: 'complete',
-      result,
-    });
-    await this.store.capture(event);
+    return this.taskDelegator.reportTaskComplete(taskId, result);
   }
 
   async getTaskStatus(
     taskId: string,
   ): Promise<{ status: string; result?: Record<string, unknown> } | null> {
-    const events = await this.store.list({
-      tag: TAG_TASK,
-      event_type: 'decision',
-      skill: 'system',
-      limit: 500,
-    });
-
-    // Collect all events for this task and pick the terminal status.
-    // Events come DESC by timestamp, but same-ms events may be unordered.
-    // Terminal statuses (complete, failed) always win over pending.
-    let best: { status: string; result?: Record<string, unknown>; ts: string } | null = null;
-    const terminalStatuses = new Set(['complete', 'failed']);
-
-    for (const evt of events) {
-      const meta = evt.metadata as Record<string, unknown>;
-      if (meta.taskId !== taskId) continue;
-      const status = meta.status as string;
-      const result = meta.result as Record<string, unknown> | undefined;
-
-      if (!best) {
-        best = { status, result, ts: evt.timestamp };
-      } else if (terminalStatuses.has(status) && !terminalStatuses.has(best.status)) {
-        best = { status, result, ts: evt.timestamp };
-      } else if (evt.timestamp > best.ts) {
-        best = { status, result, ts: evt.timestamp };
-      }
-    }
-
-    if (!best) return null;
-    return { status: best.status, result: best.result };
+    return this.taskDelegator.getTaskStatus(taskId);
   }
 
   private buildRegistryEvent(info: AgentInfo): OpsEventInput {
@@ -495,27 +472,4 @@ export class AgentCoordinator {
     };
   }
 
-  private buildTaskEvent(task: {
-    taskId: string;
-    from: string;
-    to: string;
-    name: string;
-    params: Record<string, unknown>;
-    status: string;
-    result?: Record<string, unknown>;
-  }): OpsEventInput {
-    return {
-      timestamp: new Date().toISOString(),
-      session_id: SESSION_ID,
-      agent_id: this.agentId,
-      event_type: 'decision',
-      severity: 'low',
-      skill: 'system',
-      title: `task:${task.status}:${task.taskId}`,
-      detail: `Task ${task.name} ${task.status} (${task.from} -> ${task.to})`,
-      affected_files: [],
-      tags: [TAG_TASK],
-      metadata: task,
-    };
-  }
 }

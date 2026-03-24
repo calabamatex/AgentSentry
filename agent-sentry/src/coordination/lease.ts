@@ -201,7 +201,9 @@ export class LeaseManager {
       if (
         !latest ||
         evt.timestamp > latest.ts ||
-        (evt.timestamp === latest.ts && action === 'release')
+        (evt.timestamp === latest.ts && action === 'release') ||
+        (evt.timestamp === latest.ts && lease.fencingToken > (latest.lease.fencingToken ?? 0)) ||
+        (evt.timestamp === latest.ts && lease.renewCount > (latest.lease.renewCount ?? 0))
       ) {
         latest = { lease, action: action ?? '', ts: evt.timestamp };
       }
