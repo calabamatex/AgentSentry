@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 
-export const name = 'agentops_scan_security';
+export const name = 'agent_sentry_scan_security';
 export const description =
   'Scan code content for security issues: API keys, hardcoded passwords, SQL injection patterns, eval usage, and private keys.';
 
