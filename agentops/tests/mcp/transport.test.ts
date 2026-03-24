@@ -71,8 +71,8 @@ describe('Transport', () => {
     });
 
     it('should reject requests without valid access key', async () => {
-      const originalKey = process.env.AGENTOPS_ACCESS_KEY;
-      process.env.AGENTOPS_ACCESS_KEY = 'test-secret-key';
+      const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
+      process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
 
       try {
         httpTransport = createHttpTransport(0, 'test-secret-key');
@@ -84,16 +84,16 @@ describe('Transport', () => {
         expect(response.status).toBe(401);
       } finally {
         if (originalKey === undefined) {
-          delete process.env.AGENTOPS_ACCESS_KEY;
+          delete process.env.AGENT_SENTRY_ACCESS_KEY;
         } else {
-          process.env.AGENTOPS_ACCESS_KEY = originalKey;
+          process.env.AGENT_SENTRY_ACCESS_KEY = originalKey;
         }
       }
     });
 
     it('should accept requests with valid access key in header', async () => {
-      const originalKey = process.env.AGENTOPS_ACCESS_KEY;
-      process.env.AGENTOPS_ACCESS_KEY = 'test-secret-key';
+      const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
+      process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
 
       try {
         httpTransport = createHttpTransport(0, 'test-secret-key');
@@ -102,21 +102,21 @@ describe('Transport', () => {
         if (!addr || typeof addr === 'string') return;
 
         const response = await fetch(`http://127.0.0.1:${addr.port}/health`, {
-          headers: { 'x-agentops-key': 'test-secret-key' },
+          headers: { 'x-agent-sentry-key': 'test-secret-key' },
         });
         expect(response.status).toBe(200);
       } finally {
         if (originalKey === undefined) {
-          delete process.env.AGENTOPS_ACCESS_KEY;
+          delete process.env.AGENT_SENTRY_ACCESS_KEY;
         } else {
-          process.env.AGENTOPS_ACCESS_KEY = originalKey;
+          process.env.AGENT_SENTRY_ACCESS_KEY = originalKey;
         }
       }
     });
 
     it('should accept requests with valid access key in query param', async () => {
-      const originalKey = process.env.AGENTOPS_ACCESS_KEY;
-      process.env.AGENTOPS_ACCESS_KEY = 'test-secret-key';
+      const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
+      process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
 
       try {
         httpTransport = createHttpTransport(0, 'test-secret-key');
@@ -128,9 +128,9 @@ describe('Transport', () => {
         expect(response.status).toBe(200);
       } finally {
         if (originalKey === undefined) {
-          delete process.env.AGENTOPS_ACCESS_KEY;
+          delete process.env.AGENT_SENTRY_ACCESS_KEY;
         } else {
-          process.env.AGENTOPS_ACCESS_KEY = originalKey;
+          process.env.AGENT_SENTRY_ACCESS_KEY = originalKey;
         }
       }
     });

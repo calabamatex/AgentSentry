@@ -36,7 +36,7 @@ describe('HTTP MCP Transport', () => {
       cleanup = null;
     }
     // Always clean up env var
-    delete process.env.AGENTOPS_ACCESS_KEY;
+    delete process.env.AGENT_SENTRY_ACCESS_KEY;
   });
 
   it('health endpoint returns ok', async () => {
@@ -71,7 +71,7 @@ describe('HTTP MCP Transport', () => {
   });
 
   it('rejects invalid access key with 401', async () => {
-    process.env.AGENTOPS_ACCESS_KEY = 'test-secret-key';
+    process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
     const { createHttpTransport } = await import('../../src/mcp/transport');
     const transport = createHttpTransport(0, 'test-secret-key');
     await transport.ready;
@@ -85,7 +85,7 @@ describe('HTTP MCP Transport', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-agentops-key': 'wrong-key',
+          'x-agent-sentry-key': 'wrong-key',
         },
       },
       '{}',
@@ -94,7 +94,7 @@ describe('HTTP MCP Transport', () => {
   });
 
   it('accepts valid access key', async () => {
-    process.env.AGENTOPS_ACCESS_KEY = 'test-secret-key';
+    process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
     const { createHttpTransport } = await import('../../src/mcp/transport');
     const transport = createHttpTransport(0, 'test-secret-key');
     await transport.ready;
@@ -105,7 +105,7 @@ describe('HTTP MCP Transport', () => {
       port: transport.port,
       path: '/health',
       method: 'GET',
-      headers: { 'x-agentops-key': 'test-secret-key' },
+      headers: { 'x-agent-sentry-key': 'test-secret-key' },
     });
     expect(res.status).toBe(200);
   });

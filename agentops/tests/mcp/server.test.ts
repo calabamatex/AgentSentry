@@ -33,16 +33,16 @@ describe('MCP Server', () => {
 
     it('should include all expected tool names', () => {
       const names = tools.map((t) => t.name);
-      expect(names).toContain('agentops_check_git');
-      expect(names).toContain('agentops_check_context');
-      expect(names).toContain('agentops_check_rules');
-      expect(names).toContain('agentops_size_task');
-      expect(names).toContain('agentops_scan_security');
-      expect(names).toContain('agentops_capture_event');
-      expect(names).toContain('agentops_search_history');
-      expect(names).toContain('agentops_health');
-      expect(names).toContain('agentops_recall_context');
-      expect(names).toContain('agentops_generate_handoff');
+      expect(names).toContain('agent_sentry_check_git');
+      expect(names).toContain('agent_sentry_check_context');
+      expect(names).toContain('agent_sentry_check_rules');
+      expect(names).toContain('agent_sentry_size_task');
+      expect(names).toContain('agent_sentry_scan_security');
+      expect(names).toContain('agent_sentry_capture_event');
+      expect(names).toContain('agent_sentry_search_history');
+      expect(names).toContain('agent_sentry_health');
+      expect(names).toContain('agent_sentry_recall_context');
+      expect(names).toContain('agent_sentry_generate_handoff');
     });
 
     it('should have descriptions for all tools', () => {
@@ -103,7 +103,7 @@ describe('MCP Server', () => {
       const callHandler = handlers.get('tools/call');
 
       const result = await callHandler!({
-        params: { name: 'agentops_check_context', arguments: { message_count: 5 } },
+        params: { name: 'agent_sentry_check_context', arguments: { message_count: 5 } },
       });
 
       expect(result.isError).toBeUndefined();
@@ -118,7 +118,7 @@ describe('MCP Server', () => {
       const callHandler = handlers.get('tools/call');
 
       const result = await callHandler!({
-        params: { name: 'agentops_check_context' },
+        params: { name: 'agent_sentry_check_context' },
       });
 
       // Should not error — message_count is optional

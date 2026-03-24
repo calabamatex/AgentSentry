@@ -1,5 +1,5 @@
 /**
- * Tests for mcp/tools/generate-handoff.ts — agentops_generate_handoff tool.
+ * Tests for mcp/tools/generate-handoff.ts — agent_sentry_generate_handoff tool.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -31,7 +31,7 @@ function mockGitCommands(): void {
   });
 }
 
-describe('agentops_generate_handoff MCP tool', () => {
+describe('agent_sentry_generate_handoff MCP tool', () => {
   beforeEach(() => {
     mockGitCommands();
   });
@@ -41,7 +41,7 @@ describe('agentops_generate_handoff MCP tool', () => {
   });
 
   it('has correct name and description', () => {
-    expect(name).toBe('agentops_generate_handoff');
+    expect(name).toBe('agent_sentry_generate_handoff');
     expect(description).toContain('handoff');
   });
 

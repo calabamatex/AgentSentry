@@ -12,7 +12,7 @@ CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
 PREFIX="[AgentSentry]"
 
 # State file for tracking files modified in this session
-STATE_DIR="${TMPDIR:-/tmp}/agentops"
+STATE_DIR="${TMPDIR:-/tmp}/agent-sentry"
 mkdir -p "$STATE_DIR"
 SESSION_STATE="$STATE_DIR/git-hygiene-session-$$"
 
@@ -89,7 +89,7 @@ esac
 if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     echo "$PREFIX BLOCKED — No git repository detected."
     echo ""
-    echo "$PREFIX AgentOps requires version control for safe operation."
+    echo "$PREFIX AgentSentry requires version control for safe operation."
     echo "$PREFIX Run:  git init && git add -A && git commit -m 'Initial commit'"
     exit 2
 fi
@@ -158,7 +158,7 @@ if [[ "$NEEDS_AUTO_SAVE" == true ]]; then
         echo "$PREFIX CONFIRM: Would checkpoint ${UNCOMMITTED_COUNT} file(s) (${MINUTES_SINCE_COMMIT}min since last commit). Set auto_checkpoint_mode=auto to proceed."
     else
         git add -A 2>/dev/null || true
-        COMMIT_MSG="[agentops] auto-save before modification"
+        COMMIT_MSG="[agent-sentry] auto-save before modification"
         if git commit -m "$COMMIT_MSG" --no-verify 2>/dev/null; then
             ACTIONS_TAKEN+=("Auto-committed: \"$COMMIT_MSG\" (${UNCOMMITTED_COUNT} files, ${MINUTES_SINCE_COMMIT}min since last commit)")
             # Reset session counter after auto-save
@@ -187,7 +187,7 @@ if [[ "$FILES_MODIFIED_COUNT" -ge "$MID_SESSION_CHECKPOINT_THRESHOLD" ]] && [[ "
         echo "$PREFIX CONFIRM: Would checkpoint ${UNCOMMITTED_COUNT} file(s) ($FILES_MODIFIED_COUNT modifications). Set auto_checkpoint_mode=auto to proceed."
     else
         git add -A 2>/dev/null || true
-        CHECKPOINT_MSG="[agentops] mid-session checkpoint"
+        CHECKPOINT_MSG="[agent-sentry] mid-session checkpoint"
         if git commit -m "$CHECKPOINT_MSG" --no-verify 2>/dev/null; then
             ACTIONS_TAKEN+=("Mid-session checkpoint: \"$CHECKPOINT_MSG\" ($FILES_MODIFIED_COUNT modifications tracked)")
             echo "0" > "$SESSION_STATE"
