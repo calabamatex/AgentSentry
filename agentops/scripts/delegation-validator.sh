@@ -52,9 +52,9 @@ fi
 PREFIX="[AgentSentry]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-DASHBOARD_DATA="$REPO_ROOT/agentops/dashboard/data"
+DASHBOARD_DATA="$REPO_ROOT/agent-sentry/dashboard/data"
 LOG_FILE="$DASHBOARD_DATA/delegation-log.json"
-TMPBASE="${TMPDIR:-/tmp}/agentops"
+TMPBASE="${TMPDIR:-/tmp}/agent-sentry"
 COST_STATE="$TMPBASE/cost-state"
 
 # Ensure directories exist
@@ -75,7 +75,7 @@ fi
 # ---------------------------------------------------------------------------
 # 2. Check for delegation token
 # ---------------------------------------------------------------------------
-DELEGATION_TOKEN="${AGENTOPS_DELEGATION_TOKEN:-}"
+DELEGATION_TOKEN="${AGENT_SENTRY_DELEGATION_TOKEN:-}"
 
 if [[ -z "$DELEGATION_TOKEN" ]]; then
     # No delegation token — direct user session, allow everything

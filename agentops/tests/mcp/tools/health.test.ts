@@ -1,5 +1,5 @@
 /**
- * health.test.ts — Tests for agentops_health tool (comprehensive health check).
+ * health.test.ts — Tests for agent_sentry_health tool (comprehensive health check).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -85,7 +85,7 @@ import { handler } from '../../../src/mcp/tools/health';
 import { MemoryStore } from '../../../src/memory/store';
 import { detectEmbeddingProvider } from '../../../src/memory/embeddings';
 
-describe('agentops_health', () => {
+describe('agent_sentry_health', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Re-apply defaults after clearAllMocks

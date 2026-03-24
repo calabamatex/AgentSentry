@@ -7,7 +7,7 @@ import { name, description, inputSchema, handler } from '../../../src/mcp/tools/
 
 describe('recall-context MCP tool', () => {
   it('has correct name and description', () => {
-    expect(name).toBe('agentops_recall_context');
+    expect(name).toBe('agent_sentry_recall_context');
     expect(description).toBeTruthy();
     expect(description).toContain('memory');
   });

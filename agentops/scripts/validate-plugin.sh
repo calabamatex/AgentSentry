@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-plugin.sh — Validates an AgentOps plugin directory.
+# validate-plugin.sh — Validates an AgentSentry plugin directory.
 # Usage: bash scripts/validate-plugin.sh <plugin-path>
 #
 # Runs 11 validation checks:
@@ -11,7 +11,7 @@
 #  6. Version follows semver pattern
 #  7. Category is valid
 #  8. Author has name field
-#  9. Requires has agentops field
+#  9. Requires has agent-sentry field
 # 10. src/index.ts exists
 # 11. README.md exists
 
@@ -150,11 +150,11 @@ else
   check 8 "Author has name field" "fail"
 fi
 
-# 9. Requires has agentops field
-if json_has "requires.agentops"; then
-  check 9 "Requires has agentops field" "pass"
+# 9. Requires has agent-sentry field
+if json_has "requires.agent-sentry"; then
+  check 9 "Requires has agent-sentry field" "pass"
 else
-  check 9 "Requires has agentops field" "fail"
+  check 9 "Requires has agent-sentry field" "fail"
 fi
 
 # 10. src/index.ts exists
