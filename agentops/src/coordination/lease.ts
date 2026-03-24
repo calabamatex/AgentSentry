@@ -50,7 +50,10 @@ export interface LeaseManagerOptions {
   store: MemoryStore;
   /** Default lease TTL in milliseconds (default: 60000). */
   defaultTtlMs?: number;
-  /** Maximum number of renewals before a lease must be re-acquired (default: 10). */
+  /**
+   * Maximum number of renewals before a lease must be re-acquired (default: 10).
+   * A value of N allows exactly N successful renew() calls. The (N+1)th call returns null.
+   */
   maxRenewals?: number;
 }
 
