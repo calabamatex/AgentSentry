@@ -2,7 +2,7 @@
 # =============================================================================
 # [AgentSentry] Testing & Evaluation Framework (S18)
 # =============================================================================
-# Runs all golden datasets found in agentops/evals/*/cases.yaml.
+# Runs all golden datasets found in agent-sentry/evals/*/cases.yaml.
 # For each test case the target script is executed with a synthetic hook
 # payload, and the outcome is compared against the expected result.
 #
@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-PREFIX="[AgentOps]"
+PREFIX="[AgentSentry]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENTOPS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 EVALS_DIR="$AGENTOPS_DIR/evals"

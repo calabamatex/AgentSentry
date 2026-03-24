@@ -59,10 +59,10 @@ Once wired, these tools are available in any Claude Code session:
 
 | Tool | Purpose |
 |------|---------|
-| `agentops_health` | Store stats, chain integrity, embedding state, enablement level |
-| `agentops_capture_event` | Log a hash-chained event (decision, error, tool_use, etc.) |
-| `agentops_check_rules` | Validate a file change against CLAUDE.md/AGENTS.md rules |
-| `agentops_check_context` | Estimate context window usage |
+| `agent_sentry_health` | Store stats, chain integrity, embedding state, enablement level |
+| `agent_sentry_capture_event` | Log a hash-chained event (decision, error, tool_use, etc.) |
+| `agent_sentry_check_rules` | Validate a file change against CLAUDE.md/AGENTS.md rules |
+| `agent_sentry_check_context` | Estimate context window usage |
 | `agentops_size_task` | Score risk of a proposed change (LOW/MEDIUM/HIGH/CRITICAL) |
 | `agentops_search_history` | Search the event audit trail |
 | `agentops_scan_security` | Detect secrets in file content |

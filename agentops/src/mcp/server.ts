@@ -65,7 +65,7 @@ for (const tool of tools) {
 export function createMcpServer(): Server {
   const server = new Server(
     {
-      name: 'agentops',
+      name: 'agent-sentry',
       version: VERSION,
     },
     {
@@ -131,10 +131,10 @@ export async function main(): Promise<void> {
   const server = createMcpServer();
 
   if (isHttp) {
-    const accessKey = process.env.AGENTOPS_ACCESS_KEY;
+    const accessKey = process.env.AGENT_SENTRY_ACCESS_KEY;
     const httpTransport = createHttpTransport(port, accessKey);
     await server.connect(httpTransport.transport);
-    console.error(`AgentOps MCP HTTP server listening on port ${httpTransport.port}`);
+    console.error(`AgentSentry MCP HTTP server listening on port ${httpTransport.port}`);
 
     process.on('SIGINT', async () => {
       await httpTransport.close();

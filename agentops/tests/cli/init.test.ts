@@ -1,7 +1,7 @@
 /**
  * Tests for cli/commands/init.ts — init onboarding command.
  *
- * Uses a temporary config file to avoid polluting the real agentops.config.json,
+ * Uses a temporary config file to avoid polluting the real agent-sentry.config.json,
  * which is validated by doc-contracts tests.
  */
 
@@ -31,7 +31,7 @@ describe('initCommand', () => {
   beforeEach(() => {
     // Create a temp directory with its own config path
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-sentry-init-test-'));
-    tmpConfigPath = path.join(tmpDir, 'agentops.config.json');
+    tmpConfigPath = path.join(tmpDir, 'agent-sentry.config.json');
 
     // Mock resolveConfigPath to return our temp path
     vi.mock('../../src/config/resolve', () => ({
