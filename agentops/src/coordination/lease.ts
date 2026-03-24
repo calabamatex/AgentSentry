@@ -1,5 +1,5 @@
 /**
- * lease.ts — Lease-based resource management for AgentOps coordination.
+ * lease.ts — Lease-based resource management for AgentSentry coordination.
  *
  * [experimental] Single-machine, event-sourced coordination primitives.
  *

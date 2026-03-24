@@ -1,5 +1,5 @@
 /**
- * coordinator.ts — Multi-agent coordination primitives for AgentOps.
+ * coordinator.ts — Multi-agent coordination primitives for AgentSentry.
  *
  * [experimental] Single-machine, event-sourced coordination.
  * Not a distributed system. No consensus protocol. Best-effort only.

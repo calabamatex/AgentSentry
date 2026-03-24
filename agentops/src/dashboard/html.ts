@@ -1,5 +1,5 @@
 /**
- * html.ts — Inline HTML template for the AgentOps v5 real-time dashboard.
+ * html.ts — Inline HTML template for the AgentSentry v5 real-time dashboard.
  *
  * Returns a self-contained HTML string with all CSS and JS inline.
  * Connects to the SSE endpoint at /events and polls /api/* for data.
@@ -11,7 +11,7 @@ export function getDashboardHtml(): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AgentOps Dashboard v5</title>
+<title>AgentSentry Dashboard v5</title>
 <style>
 :root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;--orange:#db6d28;--purple:#bc8cff;--radius:8px;--gap:16px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -67,7 +67,7 @@ header .dot.disconnected{background:var(--red)}
 </head>
 <body>
 <header>
-  <h1>AgentOps Dashboard v5</h1>
+  <h1>AgentSentry Dashboard v5</h1>
   <div class="status">
     <span class="dot" id="conn-dot"></span>
     <span id="conn-text">Connecting...</span>

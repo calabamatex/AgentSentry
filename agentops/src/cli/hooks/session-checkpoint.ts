@@ -16,7 +16,7 @@ import { Logger } from '../../observability/logger';
 const logger = new Logger({ module: 'hook-session-checkpoint' });
 
 const PREFIX = '[AgentSentry]';
-const TMPBASE = path.join(process.env.TMPDIR ?? '/tmp', 'agentops');
+const TMPBASE = path.join(process.env.TMPDIR ?? '/tmp', 'agent-sentry');
 
 function readConfig(): Record<string, unknown> {
   const configPath = resolveConfigPath();
@@ -94,7 +94,7 @@ function stashSnapshot(config: Record<string, unknown>): string {
     }
 
     // Protect the SHA from garbage collection by storing it in the stash reflog
-    const stashMsg = `AgentOps checkpoint — ${summary}`;
+    const stashMsg = `AgentSentry checkpoint — ${summary}`;
     execSync(`git stash store -m "${stashMsg}" ${sha}`, { stdio: 'pipe' });
 
     console.log(`${PREFIX} Snapshot created: ${sha} (${summary})`);

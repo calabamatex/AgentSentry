@@ -1,5 +1,5 @@
 /**
- * server.ts — Dashboard HTTP server for AgentOps v5.
+ * server.ts — Dashboard HTTP server for AgentSentry v5.
  *
  * Serves a single-file SPA dashboard and proxies API endpoints:
  *   /           → Dashboard HTML
