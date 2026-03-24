@@ -10,8 +10,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { generateConfigForLevel, validateLevelMatchesSkills } from '../../src/enablement/engine';
 
-const agentopsRoot = resolve(__dirname, '../..');
-const readFile = (rel: string) => readFileSync(resolve(agentopsRoot, rel), 'utf8');
+const agentSentryRoot = resolve(__dirname, '../..');
+const readFile = (rel: string) => readFileSync(resolve(agentSentryRoot, rel), 'utf8');
 
 describe('Version consistency', () => {
   it('all version references match package.json', () => {

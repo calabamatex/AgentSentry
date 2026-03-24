@@ -515,13 +515,56 @@ describe('AgentCoordinator', () => {
 
   describe('Documented Boundaries (NOT supported)', () => {
     it('emits experimental warning on construction', async () => {
-      // The coordinator must warn users that the API is experimental
-      const coord = createCoordinator(store, {
-        agentId: 'warn-test',
-        agentName: 'WarnTest',
-      });
-      // Construction should succeed without throwing
-      expect(coord).toBeDefined();
+      // The coordinator must warn users that the API is experimental.
+      // Logger.warn() writes JSON to stderr via process.stderr.write.
+      const lines: string[] = [];
+      const origWrite = process.stderr.write;
+      process.stderr.write = ((chunk: string | Uint8Array) => {
+        lines.push(typeof chunk === 'string' ? chunk : chunk.toString());
+        return true;
+      }) as typeof process.stderr.write;
+
+      try {
+        delete process.env.AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN;
+        const coord = createCoordinator(store, {
+          agentId: 'warn-test',
+          agentName: 'WarnTest',
+        });
+        expect(coord).toBeDefined();
+
+        // Verify the warning was emitted as structured JSON
+        const warnLine = lines.find((l) => l.includes('"level":"warn"'));
+        expect(warnLine).toBeDefined();
+        const parsed = JSON.parse(warnLine!);
+        expect(parsed.msg).toContain('experimental');
+        expect(parsed.msg).toContain('AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN');
+      } finally {
+        process.stderr.write = origWrite;
+      }
+    });
+
+    it('suppresses experimental warning when env var is set', async () => {
+      const lines: string[] = [];
+      const origWrite = process.stderr.write;
+      process.stderr.write = ((chunk: string | Uint8Array) => {
+        lines.push(typeof chunk === 'string' ? chunk : chunk.toString());
+        return true;
+      }) as typeof process.stderr.write;
+
+      try {
+        process.env.AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN = '1';
+        const coord = createCoordinator(store, {
+          agentId: 'suppress-test',
+          agentName: 'SuppressTest',
+        });
+        expect(coord).toBeDefined();
+
+        const warnLine = lines.find((l) => l.includes('"level":"warn"') && l.includes('experimental'));
+        expect(warnLine).toBeUndefined();
+      } finally {
+        process.stderr.write = origWrite;
+        delete process.env.AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN;
+      }
     });
 
     it('locks are NOT enforced by a background reaper', async () => {
