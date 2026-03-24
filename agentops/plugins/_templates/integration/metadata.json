@@ -1,14 +1,14 @@
 {
   "name": "my-integration-plugin",
-  "description": "Integrates AgentOps with external services and tools via MCP",
+  "description": "Integrates AgentSentry with external services and tools via MCP",
   "category": "integration",
   "author": {
-    "name": "AgentOps Team",
-    "github": "agentops"
+    "name": "AgentSentry Team",
+    "github": "agent-sentry"
   },
   "version": "1.0.0",
   "requires": {
-    "agentops": ">=4.0.0",
+    "agent-sentry": ">=4.0.0",
     "primitives": ["event-capture", "checkpoint-and-branch"]
   },
   "hooks": ["PreToolUse", "PostToolUse", "SessionStart", "Stop"],

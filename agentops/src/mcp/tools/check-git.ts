@@ -7,7 +7,7 @@ import { Logger } from '../../observability/logger';
 
 const logger = new Logger({ module: 'mcp-check-git' });
 
-export const name = 'agentops_check_git';
+export const name = 'agent_sentry_check_git';
 export const description =
   'Check git repository status including uncommitted files, last commit age, current branch, and risk score.';
 

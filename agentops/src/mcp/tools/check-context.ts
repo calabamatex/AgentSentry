@@ -1,10 +1,10 @@
 /**
- * check-context.ts — agentops_check_context tool: Estimate context window usage.
+ * check-context.ts — agent_sentry_check_context tool: Estimate context window usage.
  */
 
 import { z } from 'zod';
 
-export const name = 'agentops_check_context';
+export const name = 'agent_sentry_check_context';
 export const description =
   'Estimate context window usage based on message count and recommend whether to continue, proceed with caution, or refresh.';
 

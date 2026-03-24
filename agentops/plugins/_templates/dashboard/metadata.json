@@ -4,11 +4,11 @@
   "category": "dashboard",
   "author": {
     "name": "AgentSentry Team",
-    "github": "agentops"
+    "github": "agent-sentry"
   },
   "version": "1.0.0",
   "requires": {
-    "agentops": ">=4.0.0",
+    "agent-sentry": ">=4.0.0",
     "primitives": ["event-capture", "context-estimation", "scaffold-update"]
   },
   "hooks": ["SessionStart", "Stop"],

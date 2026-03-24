@@ -3,7 +3,7 @@
   "description": "Monitors git commit frequency and alerts when commits become infrequent",
   "category": "monitor",
   "author": {
-    "name": "AgentOps Core",
+    "name": "AgentSentry Core",
     "github": "ruvnet"
   },
   "version": "1.0.0",

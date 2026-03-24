@@ -1,5 +1,5 @@
 /**
- * check-rules.ts — agentops_check_rules tool: delegates to rules-validation primitive.
+ * check-rules.ts — agent_sentry_check_rules tool: delegates to rules-validation primitive.
  */
 
 import { z } from 'zod';
