@@ -159,6 +159,11 @@
             "type": "command",
             "command": "bash agent-sentry/scripts/session-checkpoint.sh",
             "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "bash agent-sentry/scripts/context-critical-stop.sh",
+            "timeout": 5000
           }
         ]
       }
