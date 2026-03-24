@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # [AgentSentry] Context Usage Estimator — UserPromptSubmit hook
 # Estimates context window usage and message count, warns when thresholds
-# are approached or exceeded. See AgentOps-Product-Spec.md §3.2.1.
+# are approached or exceeded. See AgentSentry-Product-Spec.md §3.2.1.
 # Exit 0 always (advisory only, never blocks prompt submission).
 
 set -euo pipefail
