@@ -12,7 +12,7 @@ export const healthCommand: CommandDefinition = {
   name: 'health',
   description: 'Show health and readiness status',
   usage: [
-    'Usage: agentops health [subcommand] [options]',
+    'Usage: agent-sentry health [subcommand] [options]',
     '',
     'Subcommands:',
     '  live       Liveness probe (is the process running?)',

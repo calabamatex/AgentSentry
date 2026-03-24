@@ -20,7 +20,7 @@ const ROOT = path.resolve(__dirname, '..');
 const METADATA_PATH = path.join(ROOT, 'release-metadata.json');
 const README_PATH = path.join(ROOT, 'README.md');
 const PKG_PATH = path.join(ROOT, 'package.json');
-const CONFIG_PATH = path.join(ROOT, 'agentops.config.json');
+const CONFIG_PATH = path.join(ROOT, 'agent-sentry.config.json');
 
 interface ReleaseMetadata {
   version: string;

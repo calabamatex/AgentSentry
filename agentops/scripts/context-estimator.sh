@@ -98,7 +98,7 @@ NOTIFICATIONS=()
 if [[ "$CTX_PERCENT" -ge "$CTX_CRIT" ]]; then
     NOTIFICATIONS+=("$PREFIX WARN: Context critically full (~${CTX_PERCENT}%). Early instructions being lost.")
     NOTIFICATIONS+=("$PREFIX RECOMMEND: Start fresh session using handoff message.")
-    NOTIFICATIONS+=("$PREFIX ACTION: Run \`agentops_generate_handoff\` MCP tool or \`/agentops:handoff\` to auto-generate a handoff prompt.")
+    NOTIFICATIONS+=("$PREFIX ACTION: Run \`agent_sentry_generate_handoff\` MCP tool or \`/agent-sentry:handoff\` to auto-generate a handoff prompt.")
 elif [[ "$CTX_PERCENT" -ge "$CTX_WARN" ]]; then
     NOTIFICATIONS+=("$PREFIX NOTIFY: Context at ~${CTX_PERCENT}%. Consider wrapping up current task.")
 fi

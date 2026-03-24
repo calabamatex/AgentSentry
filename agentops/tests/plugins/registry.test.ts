@@ -13,7 +13,7 @@ import { PluginRegistry } from '../../src/plugins/registry';
 // ---------------------------------------------------------------------------
 
 function createTempDir(): string {
-  return mkdtempSync(join(tmpdir(), 'agentops-registry-test-'));
+  return mkdtempSync(join(tmpdir(), 'agent-sentry-registry-test-'));
 }
 
 function createPluginDir(base: string, subdir: string, name: string, overrides?: Record<string, unknown>): string {
@@ -26,7 +26,7 @@ function createPluginDir(base: string, subdir: string, name: string, overrides?:
     category: 'monitor',
     author: { name: 'Test Author', github: 'test' },
     version: '1.0.0',
-    requires: { agentops: '>=4.0.0' },
+    requires: { 'agent-sentry': '>=4.0.0' },
     hooks: ['PostToolUse'],
     tags: ['test'],
     difficulty: 'beginner',
@@ -300,7 +300,7 @@ describe('PluginRegistry.validate()', () => {
         category: 'invalid-category',
         author: { name: 'Test' },
         version: '1.0.0',
-        requires: { agentops: '>=4.0.0' },
+        requires: { 'agent-sentry': '>=4.0.0' },
         hooks: [],
         tags: ['test'],
         difficulty: 'beginner',
@@ -325,7 +325,7 @@ describe('PluginRegistry.validate()', () => {
         category: 'monitor',
         author: { name: 'Test' },
         version: '1.0.0',
-        requires: { agentops: '>=4.0.0' },
+        requires: { 'agent-sentry': '>=4.0.0' },
         hooks: ['NonExistentHook'],
         tags: ['test'],
         difficulty: 'beginner',

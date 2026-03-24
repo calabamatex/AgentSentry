@@ -11,7 +11,7 @@ export const metricsCommand: CommandDefinition = {
   name: 'metrics',
   description: 'Display collected metrics',
   usage: [
-    'Usage: agentops metrics [subcommand] [options]',
+    'Usage: agent-sentry metrics [subcommand] [options]',
     '',
     'Subcommands:',
     '  show       Show all metrics in Prometheus text format (default)',
