@@ -26,13 +26,13 @@ export function resolveConfigPath(explicit?: string): string | undefined {
   }
 
   // 3. CWD direct
-  const cwdDirect = path.resolve('agentops.config.json');
+  const cwdDirect = path.resolve('agent-sentry.config.json');
   if (fs.existsSync(cwdDirect)) {
     return cwdDirect;
   }
 
-  // 4. CWD/agentops (repo-clone layout)
-  const cwdSubdir = path.resolve('agentops/agentops.config.json');
+  // 4. CWD/agent-sentry (repo-clone layout)
+  const cwdSubdir = path.resolve('agent-sentry/agent-sentry.config.json');
   if (fs.existsSync(cwdSubdir)) {
     return cwdSubdir;
   }

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AgentOps Enablement Configuration",
-  "description": "Progressive skill enablement configuration for AgentOps v4.0",
+  "title": "AgentSentry Enablement Configuration",
+  "description": "Progressive skill enablement configuration for AgentSentry v4.0",
   "type": "object",
   "required": ["level", "skills"],
   "properties": {

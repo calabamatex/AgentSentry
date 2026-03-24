@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-PREFIX="[AgentOps]"
-TMPBASE="${TMPDIR:-/tmp}/agentops"
+PREFIX="[AgentSentry]"
+TMPBASE="${TMPDIR:-/tmp}/agent-sentry"
 COST_STATE="$TMPBASE/cost-state"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../agentops.config.json"
