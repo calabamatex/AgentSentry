@@ -46,8 +46,8 @@ describe('Build contracts', () => {
     expect(metadata).toHaveProperty('author');
   });
 
-  it('agentops.config.json exists and is valid JSON', () => {
-    const configPath = path.join(agentopsRoot, 'agentops.config.json');
+  it('agent-sentry.config.json exists and is valid JSON', () => {
+    const configPath = path.join(agentopsRoot, 'agent-sentry.config.json');
     expect(fs.existsSync(configPath)).toBe(true);
     const content = fs.readFileSync(configPath, 'utf-8');
     expect(() => JSON.parse(content)).not.toThrow();

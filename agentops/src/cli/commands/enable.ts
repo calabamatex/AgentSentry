@@ -20,7 +20,7 @@ import {
   ALL_SKILLS,
 } from '../../enablement/engine';
 
-const DEFAULT_CONFIG_PATH = path.resolve('agentops/agentops.config.json');
+const DEFAULT_CONFIG_PATH = path.resolve('agent-sentry/agent-sentry.config.json');
 
 function getConfigPath(): string {
   return resolveConfigPath() ?? DEFAULT_CONFIG_PATH;
@@ -37,7 +37,7 @@ const SKILL_DESCRIPTIONS: Record<string, string> = {
 
 export const enableCommand: CommandDefinition = {
   name: 'enable',
-  description: 'Set your AgentOps enablement level (1-5)',
+  description: 'Set your AgentSentry enablement level (1-5)',
   usage: [
     'Usage: agentops enable --level <1-5> [options]',
     '',

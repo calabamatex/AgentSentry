@@ -1,4 +1,4 @@
-# AgentOps API Reference
+# AgentSentry API Reference
 
 ## Memory Store
 
@@ -480,7 +480,7 @@ interface PluginSearchOptions {
 
 ### `createMcpServer(): Server`
 
-Creates and configures an MCP server with all AgentOps tools registered: `check-git`, `check-context`, `check-rules`, `size-task`, `scan-security`, `capture-event`, `search-history`, `health`, `recall-context`.
+Creates and configures an MCP server with all AgentSentry tools registered: `check-git`, `check-context`, `check-rules`, `size-task`, `scan-security`, `capture-event`, `search-history`, `health`, `recall-context`.
 
 Returns a `@modelcontextprotocol/sdk` `Server` instance ready for transport connection.
 

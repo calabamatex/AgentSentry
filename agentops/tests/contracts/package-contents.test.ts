@@ -29,7 +29,7 @@ describe('Package contents', () => {
       'dist/src/analyzers/error-handling.js',
       'dist/src/analyzers/pii-scanner.js',
       'dist/src/config/resolve.js',
-      'agentops.config.json',
+      'agent-sentry.config.json',
     ];
 
     for (const pattern of requiredPatterns) {
@@ -68,8 +68,8 @@ describe('Package contents', () => {
     }
   });
 
-  it('agentops.config.json exists', () => {
-    const configPath = join(__dirname, '../../agentops.config.json');
+  it('agent-sentry.config.json exists', () => {
+    const configPath = join(__dirname, '../../agent-sentry.config.json');
     expect(existsSync(configPath)).toBe(true);
   });
 });

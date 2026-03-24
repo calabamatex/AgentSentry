@@ -45,7 +45,7 @@ describe('Version consistency', () => {
 
 describe('Enablement config consistency', () => {
   it('config skills match declared level', () => {
-    const config = JSON.parse(readFile('agentops.config.json'));
+    const config = JSON.parse(readFile('agent-sentry.config.json'));
     const level = config.enablement?.level;
 
     expect(level).toBeGreaterThanOrEqual(1);
@@ -71,7 +71,7 @@ describe('Enablement config consistency', () => {
 
 describe('README accuracy', () => {
   it('documented default level matches config file', () => {
-    const config = JSON.parse(readFile('agentops.config.json'));
+    const config = JSON.parse(readFile('agent-sentry.config.json'));
     const readme = readFile('README.md');
     const configLevel = config.enablement?.level;
 
@@ -94,7 +94,7 @@ describe('README accuracy', () => {
 
 describe('No orphaned config keys', () => {
   it('all top-level config keys have consumers in src/', () => {
-    const config = JSON.parse(readFile('agentops.config.json'));
+    const config = JSON.parse(readFile('agent-sentry.config.json'));
     const topLevelKeys = Object.keys(config);
 
     // These are the known valid top-level keys consumed by src/
