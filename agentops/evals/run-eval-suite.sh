@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# [AgentOps] Eval Suite Runner
+# [AgentSentry] Eval Suite Runner
 # =============================================================================
-# Runs eval cases against AgentOps scripts.
+# Runs eval cases against AgentSentry scripts.
 #
 # Usage: bash agentops/evals/run-eval-suite.sh [suite-name]
 #   suite-name: task-sizer | permission-enforcer | delegation-validator |
@@ -11,9 +11,9 @@
 
 set -euo pipefail
 
-PREFIX="[AgentOps Evals]"
+PREFIX="[AgentSentry Evals]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AGENTOPS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+AGENT_SENTRY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 PASSED=0
 FAILED=0
@@ -52,7 +52,7 @@ run_suite() {
     echo ""
 }
 
-echo "$PREFIX AgentOps Eval Suite Runner"
+echo "$PREFIX AgentSentry Eval Suite Runner"
 echo "═══════════════════════════════════════════════"
 
 if [[ "$SUITE" == "all" ]]; then

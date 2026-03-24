@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# [AgentSentry] CLI Wrapper — agentops.sh
+# [AgentSentry] CLI Wrapper — agent-sentry.sh
 # =============================================================================
 # Unified CLI entry point for AgentSentry.
 #
@@ -13,16 +13,16 @@
 #   help      — Show this help message
 #
 # Usage:
-#   bash agentops/bin/agentops.sh <subcommand> [options]
-#   ./agentops/bin/agentops.sh check
+#   bash agent-sentry/bin/agent-sentry.sh <subcommand> [options]
+#   ./agent-sentry/bin/agent-sentry.sh check
 # =============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AGENTOPS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SCRIPTS_DIR="$AGENTOPS_ROOT/scripts"
-CONFIG_FILE="$AGENTOPS_ROOT/agentops.config.json"
+AGENT_SENTRY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPTS_DIR="$AGENT_SENTRY_ROOT/scripts"
+CONFIG_FILE="$AGENT_SENTRY_ROOT/agent-sentry.config.json"
 PREFIX="[AgentSentry]"
 VERSION="4.0.0"
 
@@ -68,12 +68,12 @@ cmd_check() {
     echo "  Config:"
     if [[ -f "$CONFIG_FILE" ]]; then
         if command -v jq &>/dev/null && jq empty "$CONFIG_FILE" 2>/dev/null; then
-            echo "    agentops.config.json: valid JSON"
+            echo "    agent-sentry.config.json: valid JSON"
         else
-            echo "    agentops.config.json: INVALID JSON"
+            echo "    agent-sentry.config.json: INVALID JSON"
         fi
     else
-        echo "    agentops.config.json: MISSING"
+        echo "    agent-sentry.config.json: MISSING"
     fi
     echo ""
 
@@ -133,10 +133,10 @@ cmd_audit() {
     echo "  [1/6] Config Validation"
     if [[ -f "$CONFIG_FILE" ]]; then
         if command -v jq &>/dev/null && jq empty "$CONFIG_FILE" 2>/dev/null; then
-            echo "    ✓ agentops.config.json is valid JSON"
+            echo "    ✓ agent-sentry.config.json is valid JSON"
             passes=$((passes + 1))
         else
-            echo "    ✗ agentops.config.json is INVALID JSON"
+            echo "    ✗ agent-sentry.config.json is INVALID JSON"
             criticals=$((criticals + 1))
         fi
 
@@ -150,7 +150,7 @@ cmd_audit() {
             fi
         done
     else
-        echo "    ✗ agentops.config.json not found"
+        echo "    ✗ agent-sentry.config.json not found"
         criticals=$((criticals + 1))
     fi
     echo ""
@@ -209,7 +209,7 @@ cmd_audit() {
 
     # 5. Dashboard data
     echo "  [5/6] Dashboard Data"
-    local data_dir="$AGENTOPS_ROOT/dashboard/data"
+    local data_dir="$AGENT_SENTRY_ROOT/dashboard/data"
     for file in session-log.json audit-results.json; do
         if [[ -f "$data_dir/$file" ]]; then
             local entries
@@ -229,7 +229,7 @@ cmd_audit() {
     for script in "$SCRIPTS_DIR"/*.sh; do
         [[ -f "$script" ]] && script_count=$((script_count + 1))
     done
-    echo "    ✓ $script_count scripts found in agentops/scripts/"
+    echo "    ✓ $script_count scripts found in agent-sentry/scripts/"
     passes=$((passes + 1))
     echo ""
 
@@ -347,13 +347,13 @@ cmd_doctor() {
 
     # 1. Config file exists and is valid JSON
     if [[ ! -f "$CONFIG_FILE" ]]; then
-        echo "  ✗ agentops.config.json missing — cannot auto-fix. Copy from template."
+        echo "  ✗ agent-sentry.config.json missing — cannot auto-fix. Copy from template."
         issues=$((issues + 1))
     elif ! jq empty "$CONFIG_FILE" 2>/dev/null; then
-        echo "  ✗ agentops.config.json is invalid JSON — manual fix required."
+        echo "  ✗ agent-sentry.config.json is invalid JSON — manual fix required."
         issues=$((issues + 1))
     else
-        echo "  ✓ agentops.config.json valid"
+        echo "  ✓ agent-sentry.config.json valid"
     fi
 
     # 2. Git hooks path
@@ -369,7 +369,7 @@ cmd_doctor() {
 
     # 3. Script permissions
     local perm_fixed=0
-    for script in "$SCRIPTS_DIR"/*.sh "$AGENTOPS_ROOT/bin"/*.sh; do
+    for script in "$SCRIPTS_DIR"/*.sh "$AGENT_SENTRY_ROOT/bin"/*.sh; do
         [[ -f "$script" ]] || continue
         if [[ ! -x "$script" ]]; then
             chmod +x "$script"
@@ -384,7 +384,7 @@ cmd_doctor() {
     fi
 
     # 4. Dashboard data directory
-    local data_dir="$AGENTOPS_ROOT/dashboard/data"
+    local data_dir="$AGENT_SENTRY_ROOT/dashboard/data"
     if [[ ! -d "$data_dir" ]]; then
         mkdir -p "$data_dir"
         echo "  ✓ Fixed: Created dashboard/data/"
@@ -394,7 +394,7 @@ cmd_doctor() {
     fi
 
     # 5. Temp directory
-    local tmp_dir="${TMPDIR:-/tmp}/agentops"
+    local tmp_dir="${TMPDIR:-/tmp}/agent-sentry"
     if [[ ! -d "$tmp_dir" ]]; then
         mkdir -p "$tmp_dir"
         echo "  ✓ Fixed: Created temp directory"
@@ -412,8 +412,8 @@ cmd_doctor() {
 # Subcommand: cost
 # ---------------------------------------------------------------------------
 cmd_cost() {
-    local cost_state="${TMPDIR:-/tmp}/agentops/cost-state"
-    local cost_log="$AGENTOPS_ROOT/dashboard/data/cost-log.json"
+    local cost_state="${TMPDIR:-/tmp}/agent-sentry/cost-state"
+    local cost_log="$AGENT_SENTRY_ROOT/dashboard/data/cost-log.json"
 
     echo "$PREFIX Cost Summary (v$VERSION)"
     echo "═══════════════════════════════════════════════"
@@ -449,7 +449,7 @@ cmd_cost() {
     # Monthly total
     local month_key monthly_file
     month_key="$(date +"%Y-%m")"
-    monthly_file="${TMPDIR:-/tmp}/agentops/cost-monthly-$month_key"
+    monthly_file="${TMPDIR:-/tmp}/agent-sentry/cost-monthly-$month_key"
     if [[ -f "$monthly_file" ]]; then
         local monthly_budget="500"
         if command -v jq &>/dev/null && [[ -f "$CONFIG_FILE" ]]; then
@@ -479,7 +479,7 @@ cmd_lifecycle() {
             bash "$SCRIPTS_DIR/lifecycle-manager.sh" "$action" "$@"
             ;;
         *)
-            echo "$PREFIX Usage: agentops.sh lifecycle {list|status|start|pause|complete|fail|cancel} [agent-id]"
+            echo "$PREFIX Usage: agent-sentry.sh lifecycle {list|status|start|pause|complete|fail|cancel} [agent-id]"
             exit 1
             ;;
     esac
@@ -494,10 +494,10 @@ cmd_plugin() {
 
     case "$action" in
         list|validate|run)
-            bash "$AGENTOPS_ROOT/plugins/plugin-loader.sh" "$action" "$@"
+            bash "$AGENT_SENTRY_ROOT/plugins/plugin-loader.sh" "$action" "$@"
             ;;
         *)
-            echo "$PREFIX Usage: agentops.sh plugin {list|validate|run} [args...]"
+            echo "$PREFIX Usage: agent-sentry.sh plugin {list|validate|run} [args...]"
             exit 1
             ;;
     esac
@@ -516,7 +516,7 @@ cmd_version() {
 cmd_help() {
     echo "AgentSentry CLI v$VERSION"
     echo ""
-    echo "Usage: bash agentops/bin/agentops.sh <command>"
+    echo "Usage: bash agent-sentry/bin/agent-sentry.sh <command>"
     echo ""
     echo "Commands:"
     echo "  check      Quick session health check"
