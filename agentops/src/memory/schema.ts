@@ -1,5 +1,5 @@
 /**
- * schema.ts — OpsEvent types, enums, and validation for AgentOps memory store.
+ * schema.ts — OpsEvent types, enums, and validation for AgentSentry memory store.
  */
 
 import { createHash } from 'crypto';

@@ -1,5 +1,5 @@
 /**
- * storage-provider.ts — StorageProvider interface for AgentOps memory backends.
+ * storage-provider.ts — StorageProvider interface for AgentSentry memory backends.
  */
 
 import {

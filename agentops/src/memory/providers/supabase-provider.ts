@@ -1,5 +1,5 @@
 /**
- * supabase-provider.ts — Supabase (PostgREST) storage backend for AgentOps memory store.
+ * supabase-provider.ts — Supabase (PostgREST) storage backend for AgentSentry memory store.
  *
  * Uses raw HTTPS requests against the Supabase REST API — no @supabase/supabase-js dependency.
  * Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY env vars (or constructor config).

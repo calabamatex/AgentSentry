@@ -1,5 +1,5 @@
 /**
- * sqlite-provider.ts — SQLite storage backend for AgentOps memory store.
+ * sqlite-provider.ts — SQLite storage backend for AgentSentry memory store.
  */
 
 import Database from 'better-sqlite3';
