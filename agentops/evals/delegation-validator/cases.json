@@ -4,13 +4,13 @@
     "input": {"tool_name": "Write", "tool_input": {"file_path": "src/main.ts"}},
     "env": {},
     "expected_exit": 0,
-    "description": "No AGENTOPS_DELEGATION_TOKEN means direct session — allow"
+    "description": "No AGENT_SENTRY_DELEGATION_TOKEN means direct session — allow"
   },
   {
     "name": "expired_token_blocks",
     "input": {"tool_name": "Read", "tool_input": {}},
     "env": {
-      "AGENTOPS_DELEGATION_TOKEN": "{\"issuer\":\"lead\",\"delegate\":\"worker\",\"task\":\"test\",\"scope\":{},\"issued_at\":\"2020-01-01T00:00:00Z\",\"expires_at\":\"2020-01-02T00:00:00Z\"}"
+      "AGENT_SENTRY_DELEGATION_TOKEN": "{\"issuer\":\"lead\",\"delegate\":\"worker\",\"task\":\"test\",\"scope\":{},\"issued_at\":\"2020-01-01T00:00:00Z\",\"expires_at\":\"2020-01-02T00:00:00Z\"}"
     },
     "expected_exit": 2,
     "description": "Expired token should block"
@@ -19,7 +19,7 @@
     "name": "malformed_token_blocks",
     "input": {"tool_name": "Read", "tool_input": {}},
     "env": {
-      "AGENTOPS_DELEGATION_TOKEN": "{\"invalid\":true}"
+      "AGENT_SENTRY_DELEGATION_TOKEN": "{\"invalid\":true}"
     },
     "expected_exit": 2,
     "description": "Malformed token (missing required fields) should block"
@@ -28,7 +28,7 @@
     "name": "tool_not_in_scope_blocks",
     "input": {"tool_name": "Bash", "tool_input": {"command": "rm -rf /"}},
     "env": {
-      "AGENTOPS_DELEGATION_TOKEN": "{\"issuer\":\"lead\",\"delegate\":\"worker\",\"task\":\"read files\",\"scope\":{\"tools\":[\"Read\",\"Grep\"]},\"issued_at\":\"2026-01-01T00:00:00Z\",\"expires_at\":\"2027-01-01T00:00:00Z\"}"
+      "AGENT_SENTRY_DELEGATION_TOKEN": "{\"issuer\":\"lead\",\"delegate\":\"worker\",\"task\":\"read files\",\"scope\":{\"tools\":[\"Read\",\"Grep\"]},\"issued_at\":\"2026-01-01T00:00:00Z\",\"expires_at\":\"2027-01-01T00:00:00Z\"}"
     },
     "expected_exit": 2,
     "description": "Tool not in scope.tools should block"
@@ -37,7 +37,7 @@
     "name": "valid_token_allows",
     "input": {"tool_name": "Read", "tool_input": {"file_path": "src/main.ts"}},
     "env": {
-      "AGENTOPS_DELEGATION_TOKEN": "{\"issuer\":\"lead\",\"delegate\":\"worker\",\"task\":\"read source\",\"scope\":{\"tools\":[\"Read\"],\"files\":[\"src/**\"]},\"issued_at\":\"2026-01-01T00:00:00Z\",\"expires_at\":\"2027-01-01T00:00:00Z\"}"
+      "AGENT_SENTRY_DELEGATION_TOKEN": "{\"issuer\":\"lead\",\"delegate\":\"worker\",\"task\":\"read source\",\"scope\":{\"tools\":[\"Read\"],\"files\":[\"src/**\"]},\"issued_at\":\"2026-01-01T00:00:00Z\",\"expires_at\":\"2027-01-01T00:00:00Z\"}"
     },
     "expected_exit": 0,
     "description": "Valid token with matching scope should allow"
