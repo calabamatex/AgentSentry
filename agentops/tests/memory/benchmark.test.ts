@@ -182,7 +182,7 @@ describe('BenchmarkSuite', () => {
       expect(formatted).toContain('\u2551'); // vertical line
       expect(formatted).toContain('\u255A'); // bottom-left corner
       // Should contain header text
-      expect(formatted).toContain('AgentOps Benchmark Report');
+      expect(formatted).toContain('AgentSentry Benchmark Report');
       expect(formatted).toContain('Ops/sec');
       expect(formatted).toContain('Avg (ms)');
       expect(formatted).toContain('P95 (ms)');

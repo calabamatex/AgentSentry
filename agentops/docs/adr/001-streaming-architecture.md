@@ -2,7 +2,7 @@
 
 **Status**: Accepted
 **Date**: 2026-03-21
-**Context**: AgentOps streaming module (SSE/WebSocket)
+**Context**: AgentSentry streaming module (SSE/WebSocket)
 
 ## Decision
 
@@ -60,6 +60,6 @@ cross-machine event streaming or durable event replay across network boundaries.
 ## Review
 
 Revisit if:
-- AgentOps is adopted by teams (>1 developer) needing shared dashboards
+- AgentSentry is adopted by teams (>1 developer) needing shared dashboards
 - Users request persistent event replay beyond the buffer
 - A cloud/SaaS offering is planned

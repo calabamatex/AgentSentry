@@ -198,7 +198,7 @@ export const initCommand: CommandDefinition = {
     // Step 4: Hooks hint
     const hooksHint = [
       'Add to .claude/settings.json → hooks.SessionStart:',
-      '  "command": "node agentops/dist/src/cli/hooks/session-start.js"',
+      '  "command": "node agent-sentry/dist/src/cli/hooks/session-start.js"',
     ].join('\n');
 
     const result: InitResult = {
@@ -307,7 +307,7 @@ export const initCommand: CommandDefinition = {
         event_type: 'decision',
         severity: 'low',
         skill: 'system',
-        title: 'agentops:init',
+        title: 'agent-sentry:init',
         detail: `Project initialized at level ${level} (${LEVEL_NAMES[level]}). Config: ${configCreated ? 'created' : 'updated'}. Skills: ${activeSkills.join(', ')}`,
         affected_files: [configPath],
         tags: ['init', 'enablement'],
@@ -378,7 +378,7 @@ async function promptForLevel(): Promise<number> {
 }
 
 /**
- * Auto-wire AgentOps hooks into .claude/settings.json.
+ * Auto-wire AgentSentry hooks into .claude/settings.json.
  * Adds SessionStart and SessionEnd hooks if not already present.
  * Returns true if hooks were added.
  */
@@ -408,19 +408,19 @@ function wireHooksIntoSettings(): boolean {
   const hooks = settings.hooks as Record<string, unknown>;
   let modified = false;
 
-  // Define the AgentOps hooks to wire
-  const agentopsHooks: Record<string, { command: string; timeout: number }> = {
+  // Define the AgentSentry hooks to wire
+  const agentSentryHooks: Record<string, { command: string; timeout: number }> = {
     SessionStart: {
-      command: 'bash agentops/scripts/session-start-checks.sh',
+      command: 'bash agent-sentry/scripts/session-start-checks.sh',
       timeout: 10000,
     },
     UserPromptSubmit: {
-      command: 'bash agentops/scripts/context-estimator.sh',
+      command: 'bash agent-sentry/scripts/context-estimator.sh',
       timeout: 5000,
     },
   };
 
-  for (const [event, hookDef] of Object.entries(agentopsHooks)) {
+  for (const [event, hookDef] of Object.entries(agentSentryHooks)) {
     const existing = hooks[event] as Array<{ hooks?: Array<{ command?: string }> }> | undefined;
 
     // Check if the agentops hook is already present
@@ -482,8 +482,8 @@ function runHealthAudit(): HealthSummary {
     results.warnings.push('CLAUDE.md missing. Create one with project rules.');
   } else {
     const content = fs.readFileSync(claudeMd, 'utf-8');
-    if (!/agentops/i.test(content)) {
-      results.advisories.push('CLAUDE.md has no AgentOps rules.');
+    if (!/agent.sentry/i.test(content)) {
+      results.advisories.push('CLAUDE.md has no AgentSentry rules.');
     }
     for (const section of ['security', 'error handling']) {
       if (!new RegExp(section, 'i').test(content)) {
