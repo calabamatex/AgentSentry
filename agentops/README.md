@@ -95,7 +95,7 @@ Auto-pruning keeps the database bounded — configure `max_events` and `max_age_
 
 ```bash
 npm run build      # TypeScript compilation
-npm test           # ~990 tests via vitest
+npm test           # 1098 tests via vitest
 npm run test:watch # Watch mode
 npm run benchmark  # Run performance benchmarks
 ```

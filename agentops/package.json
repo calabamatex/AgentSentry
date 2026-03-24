@@ -32,6 +32,10 @@
     "prebuild": "rm -rf dist",
     "build": "tsc",
     "test": "vitest run",
+    "test:unit": "vitest run --exclude 'tests/contracts/**' --exclude 'tests/e2e/**' --exclude 'tests/performance/**'",
+    "test:contracts": "vitest run tests/contracts/",
+    "test:e2e": "vitest run tests/e2e/",
+    "test:perf": "vitest run tests/performance/",
     "test:watch": "vitest",
     "benchmark": "tsx scripts/run-benchmark.ts",
     "lint": "eslint src/"
