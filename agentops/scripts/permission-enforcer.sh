@@ -41,7 +41,7 @@ if ! command -v jq &>/dev/null; then
     exit 0
 fi
 if ! command -v node &>/dev/null; then
-    echo "[AgentSentry] CRITICAL: 'node' is required but not found. AgentOps is a Node.js package." >&2
+    echo "[AgentSentry] CRITICAL: 'node' is required but not found. AgentSentry is a Node.js package." >&2
     exit 0
 fi
 

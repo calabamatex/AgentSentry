@@ -144,7 +144,7 @@ The `agent_sentry_health` dashboard:
   "config": {
     "max_events": 10000,
     "auto_prune_days": 90,
-    "database_path": "/Users/you/project/.agentops/memory.db"
+    "database_path": "/Users/you/project/.agent-sentry/memory.db"
   },
   "issues": []
 }

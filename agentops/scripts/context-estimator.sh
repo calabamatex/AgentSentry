@@ -14,7 +14,7 @@ CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
 PREFIX="[AgentSentry]"
 
 # ── Config ────────────────────────────────────────────────────────────
-# Read thresholds from agentops.config.json with sane defaults
+# Read thresholds from agent-sentry.config.json with sane defaults
 CTX_WARN=$(jq -r '.context_health.context_percent_warning // 60' "$CONFIG_FILE" 2>/dev/null || echo 60)
 CTX_CRIT=$(jq -r '.context_health.context_percent_critical // 80' "$CONFIG_FILE" 2>/dev/null || echo 80)
 MSG_WARN=$(jq -r '.context_health.message_count_warning // 20' "$CONFIG_FILE" 2>/dev/null || echo 20)

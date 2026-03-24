@@ -12,7 +12,7 @@
 #   6. Database Security
 #
 # Results are grouped by severity (Critical, Warning, Advisory, Pass),
-# written to agentops/dashboard/data/audit-results.json as NDJSON,
+# written to agent-sentry/dashboard/data/audit-results.json as NDJSON,
 # and summarised on stdout.
 #
 # Exit 0 always — this is an advisory tool, not a gate.
