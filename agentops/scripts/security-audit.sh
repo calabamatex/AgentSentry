@@ -20,14 +20,14 @@
 
 set -euo pipefail
 
-PREFIX="[AgentOps]"
+PREFIX="[AgentSentry]"
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
-SCAN_GIT_HISTORY="${AGENTOPS_AUDIT_SCAN_HISTORY:-false}"
-RESULTS_DIR="${PROJECT_ROOT}/agentops/dashboard/data"
+SCAN_GIT_HISTORY="${AGENT_SENTRY_AUDIT_SCAN_HISTORY:-false}"
+RESULTS_DIR="${PROJECT_ROOT}/agent-sentry/dashboard/data"
 RESULTS_FILE="${RESULTS_DIR}/audit-results.json"
 SOURCE_EXTENSIONS="ts,js,py,go,java,rb,sh"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"

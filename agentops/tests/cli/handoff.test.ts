@@ -1,5 +1,5 @@
 /**
- * Tests for cli/commands/handoff.ts — `agentops handoff` command.
+ * Tests for cli/commands/handoff.ts — `agent-sentry handoff` command.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

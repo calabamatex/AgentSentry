@@ -1,5 +1,5 @@
 /**
- * registry.ts — Local Plugin Registry for AgentOps (M4 Task 4.4)
+ * registry.ts — Local Plugin Registry for AgentSentry (M4 Task 4.4)
  *
  * [experimental] Discovers, validates, installs, and manages plugins from
  * core/ and community/ directories. Local directory scanning only — no

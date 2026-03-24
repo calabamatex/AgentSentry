@@ -28,7 +28,7 @@ describe('enableCommand', () => {
   beforeEach(() => {
     // Create a temp directory with its own config path to avoid contention
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-sentry-enable-test-'));
-    tmpConfigPath = path.join(tmpDir, 'agentops.config.json');
+    tmpConfigPath = path.join(tmpDir, 'agent-sentry.config.json');
 
     // Mock resolveConfigPath to return our temp path
     vi.mock('../../src/config/resolve', () => ({
