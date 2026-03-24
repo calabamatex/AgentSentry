@@ -1,5 +1,5 @@
 # =============================================================================
-# [AgentOps] Golden Dataset — Secret Scanner Eval Cases
+# [AgentSentry] Golden Dataset — Secret Scanner Eval Cases
 # =============================================================================
 # Each case feeds content to agentops/scripts/secret-scanner.sh via the
 # Claude Code hook JSON contract and asserts the expected outcome.

@@ -98,7 +98,7 @@ class EventBus {
     for (const result of results) {
       if (result.status === "rejected") {
         console.error(
-          `[AgentOps] EventBus handler error on ${eventType}:`,
+          `[AgentSentry] EventBus handler error on ${eventType}:`,
           result.reason,
         );
       }

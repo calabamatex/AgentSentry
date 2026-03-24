@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ###############################################################################
-# plugin-loader.sh — AgentOps Plugin Architecture (§21.2)
+# plugin-loader.sh — AgentSentry Plugin Architecture (§21.2)
 #
 # Discovers, validates, and executes plugins located in the community/
 # directory. Each plugin lives in its own subdirectory and exposes a
@@ -15,7 +15,7 @@ set -euo pipefail
 ###############################################################################
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/community" && pwd)"
-PREFIX="[AgentOps]"
+PREFIX="[AgentSentry]"
 
 # ---------------------------------------------------------------------------
 # Helpers

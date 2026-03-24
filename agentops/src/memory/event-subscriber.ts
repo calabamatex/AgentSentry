@@ -58,7 +58,7 @@ export function registerEventSubscriber(store: MemoryStore, sessionId: string): 
         metadata: payload.data,
       });
     } catch (err) {
-      console.error('[AgentOps] Memory capture failed:', err);
+      console.error('[AgentSentry] Memory capture failed:', err);
     }
   };
 
