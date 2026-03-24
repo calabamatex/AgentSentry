@@ -78,7 +78,7 @@ async function main() {
     await store.capture({
       timestamp: new Date().toISOString(),
       session_id: args.session || process.env.AGENT_SENTRY_SESSION_ID || 'cli',
-      agent_id: args.agent || process.env.AGENTOPS_AGENT_ID || 'hook',
+      agent_id: args.agent || process.env.AGENT_SENTRY_AGENT_ID || 'hook',
       event_type: args.type || 'decision',
       severity: args.severity || 'low',
       skill: args.skill || 'system',

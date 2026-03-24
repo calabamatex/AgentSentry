@@ -51,7 +51,7 @@ export class SqliteProvider implements StorageProvider {
   private dbPath: string;
 
   constructor(dbPath?: string) {
-    this.dbPath = dbPath ?? path.resolve('agentops/data/ops.db');
+    this.dbPath = dbPath ?? path.resolve('agent-sentry/data/ops.db');
   }
 
   async initialize(): Promise<void> {

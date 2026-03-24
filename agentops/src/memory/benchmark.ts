@@ -331,7 +331,7 @@ export class BenchmarkSuite {
     const w = 62;
 
     lines.push(`\u2554${''.padEnd(w, '\u2550')}\u2557`);
-    lines.push(`\u2551${'AgentOps Benchmark Report'.padStart(Math.ceil((w + 25) / 2)).padEnd(w)}\u2551`);
+    lines.push(`\u2551${'AgentSentry Benchmark Report'.padStart(Math.ceil((w + 25) / 2)).padEnd(w)}\u2551`);
     lines.push(`\u2560${''.padEnd(w, '\u2550')}\u2563`);
 
     const hdrBenchmark = 'Benchmark'.padEnd(20);

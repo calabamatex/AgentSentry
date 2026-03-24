@@ -1,4 +1,4 @@
--- Supabase migration for AgentOps memory store.
+-- Supabase migration for AgentSentry memory store.
 -- Run this in your Supabase SQL Editor to set up the required schema.
 
 -- Enable pgvector extension
