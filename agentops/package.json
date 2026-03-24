@@ -1,11 +1,11 @@
 {
-  "name": "agentops",
+  "name": "agent-sentry",
   "version": "4.0.0",
-  "description": "AgentOps v4.0 — Memory-Aware Agent Management",
+  "description": "AgentSentry v4.0 — Memory-Aware Agent Management",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "agentops": "./dist/src/cli/index.js"
+    "agent-sentry": "./dist/src/cli/index.js"
   },
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "keywords": [
-    "agentops",
+    "agent-sentry",
     "agent",
     "observability",
     "memory",
@@ -23,7 +23,7 @@
   ],
   "files": [
     "dist/src/",
-    "agentops.config.json"
+    "agent-sentry.config.json"
   ],
   "publishConfig": {
     "access": "public"

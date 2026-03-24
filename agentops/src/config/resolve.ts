@@ -3,9 +3,9 @@
  *
  * Resolution order:
  * 1. Explicit configPath argument
- * 2. AGENTOPS_CONFIG environment variable
- * 3. ./agentops.config.json (CWD)
- * 4. ./agentops/agentops.config.json (CWD/agentops — repo-clone layout)
+ * 2. AGENT_SENTRY_CONFIG environment variable
+ * 3. ./agent-sentry.config.json (CWD)
+ * 4. ./agent-sentry/agent-sentry.config.json (CWD/agent-sentry — repo-clone layout)
  * 5. Package-relative fallback (relative to this file in dist/)
  * 6. Returns undefined → callers fall back to DEFAULT_CONFIG
  */
@@ -20,7 +20,7 @@ export function resolveConfigPath(explicit?: string): string | undefined {
   }
 
   // 2. Environment variable
-  const envPath = process.env.AGENTOPS_CONFIG;
+  const envPath = process.env.AGENT_SENTRY_CONFIG;
   if (envPath && fs.existsSync(envPath)) {
     return path.resolve(envPath);
   }

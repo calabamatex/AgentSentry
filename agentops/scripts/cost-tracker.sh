@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [AgentOps] Cost Tracker — PostToolUse hook (§15 Cost Management & Token Budgeting)
+# [AgentSentry] Cost Tracker — PostToolUse hook (§15 Cost Management & Token Budgeting)
 # Runs after every tool use: estimates cost, tracks cumulative session spend,
 # warns at budget thresholds, and logs cost events as NDJSON.
 # Exit 0 always (advisory only, never blocks).

@@ -2,3 +2,4 @@
 {"agent_id":"test-agent-1","from":"ACTIVE","to":"COMPLETED","timestamp":"2026-03-19T19:09:13Z"}
 {"agent_id":"agent-unknown","from":"CREATED","to":"ACTIVE","timestamp":"2026-03-20T20:09:48Z"}
 {"agent_id":"agent-unknown","from":"ACTIVE","to":"COMPLETED","timestamp":"2026-03-20T20:16:44Z"}
+{"agent_id":"agent-unknown","from":"CREATED","to":"ACTIVE","timestamp":"2026-03-24T18:43:22Z"}
