@@ -15,7 +15,7 @@ import { Logger } from '../../observability/logger';
 
 const logger = new Logger({ module: 'hook-session-checkpoint' });
 
-const PREFIX = '[AgentOps]';
+const PREFIX = '[AgentSentry]';
 const TMPBASE = path.join(process.env.TMPDIR ?? '/tmp', 'agentops');
 
 function readConfig(): Record<string, unknown> {

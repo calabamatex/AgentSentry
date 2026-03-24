@@ -14,7 +14,7 @@ import { Logger } from '../../observability/logger';
 
 const logger = new Logger({ module: 'hook-session-start' });
 
-const PREFIX = '[AgentOps]';
+const PREFIX = '[AgentSentry]';
 
 interface CheckResults {
   criticals: string[];
@@ -97,8 +97,8 @@ function checkClaudeMd(repoRoot: string, maxLines: number, results: CheckResults
     results.warnings.push(`CLAUDE.md is ${lineCount} lines (recommended: <${maxLines}). Large rules files consume context.`);
   }
 
-  if (!/agentops/i.test(content)) {
-    results.advisories.push('CLAUDE.md has no AgentOps rules. Run /agentops scaffold to add them.');
+  if (!/agent.sentry/i.test(content)) {
+    results.advisories.push('CLAUDE.md has no AgentSentry rules. Run /agent-sentry scaffold to add them.');
   }
 
   const requiredSections = ['security', 'error handling'];
@@ -127,7 +127,7 @@ function checkScaffoldDocs(repoRoot: string, results: CheckResults): void {
   const missing = docs.filter((d) => !fs.existsSync(path.join(repoRoot, d)));
 
   if (missing.length > 0) {
-    results.advisories.push(`Missing scaffold docs: ${missing.join(' ')}. Run /agentops scaffold to create them.`);
+    results.advisories.push(`Missing scaffold docs: ${missing.join(' ')}. Run /agent-sentry scaffold to create them.`);
   }
 
   // Check CONTEXT.md freshness
@@ -136,7 +136,7 @@ function checkScaffoldDocs(repoRoot: string, results: CheckResults): void {
     const stat = fs.statSync(contextMd);
     const daysStale = Math.floor((Date.now() - stat.mtimeMs) / 86400000);
     if (daysStale > 7) {
-      results.advisories.push(`CONTEXT.md last updated ${daysStale} days ago. Run /agentops scaffold to refresh.`);
+      results.advisories.push(`CONTEXT.md last updated ${daysStale} days ago. Run /agent-sentry scaffold to refresh.`);
     }
   }
 }

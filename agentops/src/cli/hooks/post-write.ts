@@ -8,7 +8,7 @@
  *   - Blast Radius Tracking
  *
  * Reads hook JSON from stdin, extracts .tool_input.file_path.
- * All output prefixed with [AgentOps]. Always exits 0.
+ * All output prefixed with [AgentSentry]. Always exits 0.
  */
 
 import * as fs from 'fs';
@@ -21,7 +21,7 @@ import { Logger } from '../../observability/logger';
 
 const logger = new Logger({ module: 'hook-post-write' });
 
-const PREFIX = '[AgentOps]';
+const PREFIX = '[AgentSentry]';
 
 interface HookInput {
   tool_input?: { file_path?: string };
@@ -42,7 +42,7 @@ function readConfig(): Record<string, unknown> {
 }
 
 function checkBlastRadius(filePath: string): void {
-  const tmpBase = path.join(process.env.TMPDIR ?? '/tmp', 'agentops');
+  const tmpBase = path.join(process.env.TMPDIR ?? '/tmp', 'agent-sentry');
   const trackingFile = path.join(tmpBase, 'blast-radius-files');
 
   fs.mkdirSync(tmpBase, { recursive: true });
@@ -117,7 +117,7 @@ function checkBlastRadius(filePath: string): void {
     }
 
     // Protect SHA from garbage collection
-    const stashMsg = `AgentOps auto-checkpoint — blast radius ${uniqueCount} files`;
+    const stashMsg = `AgentSentry auto-checkpoint — blast radius ${uniqueCount} files`;
     execSync(`git stash store -m "${stashMsg}" ${sha}`, { stdio: 'pipe' });
 
     console.log(`${PREFIX} Stash snapshot created: ${sha} (${uniqueCount} files)`);
