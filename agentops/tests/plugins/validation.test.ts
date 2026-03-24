@@ -49,8 +49,8 @@ function validatePluginMetadata(metadata: Record<string, unknown>): string[] {
   // Check 9: Requires has agentops
   if (metadata.requires && typeof metadata.requires === 'object') {
     const requires = metadata.requires as Record<string, unknown>;
-    if (!('agentops' in requires)) {
-      errors.push('Requires must include agentops');
+    if (!('agent-sentry' in requires)) {
+      errors.push('Requires must include agent-sentry');
     }
   }
 
@@ -70,7 +70,7 @@ describe('Plugin validation logic', () => {
       category: 'monitor',
       author: { name: 'Test Author' },
       version: '1.0.0',
-      requires: { agentops: '>=4.0.0' },
+      requires: { 'agent-sentry': '>=4.0.0' },
       tags: ['test'],
     };
 
@@ -95,7 +95,7 @@ describe('Plugin validation logic', () => {
       category: 'monitor',
       author: { name: 'Test' },
       version: '1.0.0',
-      requires: { agentops: '>=4.0.0' },
+      requires: { 'agent-sentry': '>=4.0.0' },
       tags: ['test'],
     };
 
@@ -110,7 +110,7 @@ describe('Plugin validation logic', () => {
       category: 'monitor',
       author: { name: 'Test' },
       version: 'v1.0',
-      requires: { agentops: '>=4.0.0' },
+      requires: { 'agent-sentry': '>=4.0.0' },
       tags: ['test'],
     };
 
@@ -125,7 +125,7 @@ describe('Plugin validation logic', () => {
       category: 'invalid',
       author: { name: 'Test' },
       version: '1.0.0',
-      requires: { agentops: '>=4.0.0' },
+      requires: { 'agent-sentry': '>=4.0.0' },
       tags: ['test'],
     };
 
@@ -140,7 +140,7 @@ describe('Plugin validation logic', () => {
       category: 'monitor',
       author: { github: 'test' },
       version: '1.0.0',
-      requires: { agentops: '>=4.0.0' },
+      requires: { 'agent-sentry': '>=4.0.0' },
       tags: ['test'],
     };
 
@@ -170,7 +170,7 @@ describe('Plugin validation logic', () => {
       category: 'monitor',
       author: { name: 'Test' },
       version: '1.0.0',
-      requires: { agentops: '>=4.0.0' },
+      requires: { 'agent-sentry': '>=4.0.0' },
       tags: [],
     };
 
@@ -207,7 +207,7 @@ describe('validate-plugin.sh exists and is structured', () => {
     expect(content).toContain('Version follows semver');
     expect(content).toContain('Category is valid');
     expect(content).toContain('Author has name');
-    expect(content).toContain('agentops field');
+    expect(content).toContain('agent-sentry field');
     expect(content).toContain('src/index.ts');
     expect(content).toContain('README.md');
   });

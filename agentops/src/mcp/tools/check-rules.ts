@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { validateRules } from '../../primitives/rules-validation';
 
-export const name = 'agentops_check_rules';
+export const name = 'agent_sentry_check_rules';
 export const description =
   'Check a proposed file change against CLAUDE.md and AGENTS.md rules. Reports violations.';
 

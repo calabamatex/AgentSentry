@@ -1,5 +1,5 @@
 /**
- * scan-security.ts — agentops_scan_security tool: Scan content for security issues.
+ * scan-security.ts — agent_sentry_scan_security tool: Scan content for security issues.
  */
 
 import { z } from 'zod';

@@ -1,10 +1,10 @@
 /**
- * size-task.ts — agentops_size_task tool: Analyze task complexity and risk.
+ * size-task.ts — agent_sentry_size_task tool: Analyze task complexity and risk.
  */
 
 import { z } from 'zod';
 
-export const name = 'agentops_size_task';
+export const name = 'agent_sentry_size_task';
 export const description =
   'Analyze task complexity based on description and affected files. Returns risk level and contributing factors.';
 
