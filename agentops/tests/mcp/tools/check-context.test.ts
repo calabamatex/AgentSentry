@@ -1,11 +1,11 @@
 /**
- * check-context.test.ts — Tests for agentops_check_context tool.
+ * check-context.test.ts — Tests for agent_sentry_check_context tool.
  */
 
 import { describe, it, expect } from 'vitest';
 import { handler } from '../../../src/mcp/tools/check-context';
 
-describe('agentops_check_context', () => {
+describe('agent_sentry_check_context', () => {
   it('should return continue for low message count', async () => {
     const result = await handler({ message_count: 5 });
     const parsed = JSON.parse(result.content[0].text);
