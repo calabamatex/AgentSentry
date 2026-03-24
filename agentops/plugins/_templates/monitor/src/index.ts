@@ -27,7 +27,7 @@ let active = false;
 
 /**
  * Activates the monitor plugin.
- * Called when the plugin is loaded by the AgentOps runtime.
+ * Called when the plugin is loaded by the AgentSentry runtime.
  */
 export async function activate(context: PluginContext): Promise<void> {
   active = true;

@@ -243,10 +243,10 @@ describe('initCommand', () => {
       // Verify hooks were added
       const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       const sessionStartHooks = updated.hooks.SessionStart;
-      const hasAgentops = sessionStartHooks.some((group: { hooks?: Array<{ command?: string }> }) =>
+      const hasAgentSentry = sessionStartHooks.some((group: { hooks?: Array<{ command?: string }> }) =>
         group.hooks?.some((h: { command?: string }) => h.command?.includes('agent-sentry/'))
       );
-      expect(hasAgentops).toBe(true);
+      expect(hasAgentSentry).toBe(true);
     } finally {
       process.chdir(origCwd);
     }

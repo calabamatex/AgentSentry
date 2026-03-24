@@ -3,7 +3,7 @@
  *
  * OpenTelemetry-compatible trace context propagation and span recording.
  * Generates W3C-compliant trace IDs (32 hex) and span IDs (16 hex),
- * records spans as NDJSON to agentops/dashboard/data/traces.json.
+ * records spans as NDJSON to agent-sentry/dashboard/data/traces.json.
  */
 
 import { randomBytes } from "crypto";

@@ -1,7 +1,7 @@
 /**
  * Integration Plugin Template
  *
- * Connects AgentOps with external services via MCP.
+ * Connects AgentSentry with external services via MCP.
  */
 
 export const name = 'my-integration-plugin';
