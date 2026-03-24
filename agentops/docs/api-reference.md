@@ -122,11 +122,11 @@ interface StorageProvider {
 
 ### `createProvider(config?: MemoryConfig): StorageProvider`
 
-Factory that returns a `SqliteProvider` or `SupabaseProvider` based on configuration. Defaults to SQLite at `agentops/data/ops.db`.
+Factory that returns a `SqliteProvider` or `SupabaseProvider` based on configuration. Defaults to SQLite at `agent-sentry/data/ops.db`.
 
 ### `loadMemoryConfig(configPath?: string): MemoryConfig`
 
-Loads configuration from `agentops/agentops.config.json` (or the given path), merging with defaults.
+Loads configuration from `agent-sentry/agent-sentry.config.json` (or the given path), merging with defaults.
 
 ```typescript
 interface MemoryConfig {
@@ -453,7 +453,7 @@ interface PluginManifest {
   category: 'monitor' | 'integration' | 'dashboard' | 'auditor';
   author: { name: string; github?: string };
   version: string;
-  requires: { agentops: string; primitives?: string[] };
+  requires: { 'agent-sentry': string; primitives?: string[] };
   hooks: string[]; tags: string[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   downloads?: number; rating?: number;

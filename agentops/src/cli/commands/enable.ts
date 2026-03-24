@@ -39,7 +39,7 @@ export const enableCommand: CommandDefinition = {
   name: 'enable',
   description: 'Set your AgentSentry enablement level (1-5)',
   usage: [
-    'Usage: agentops enable --level <1-5> [options]',
+    'Usage: agent-sentry enable --level <1-5> [options]',
     '',
     '  --level <N>   Set enablement level (1-5)',
     '  --show        Show current level and active skills',
@@ -99,7 +99,7 @@ export const enableCommand: CommandDefinition = {
     if (json) {
       output({ level, name: LEVEL_NAMES[level], config, active, next, applied: true }, true);
     } else {
-      process.stdout.write(`\n  AgentOps Enablement: Level ${level} — ${LEVEL_NAMES[level]}\n`);
+      process.stdout.write(`\n  AgentSentry Enablement: Level ${level} — ${LEVEL_NAMES[level]}\n`);
       process.stdout.write('  ' + '─'.repeat(50) + '\n\n');
       process.stdout.write('  Active skills:\n');
       for (const skill of active) {

@@ -1,10 +1,10 @@
-# AgentOps Memory Schema
+# AgentSentry Memory Schema
 
-> Public contract for the AgentOps event schema. Use this reference when building integrations, custom providers, or querying the memory store directly.
+> Public contract for the AgentSentry event schema. Use this reference when building integrations, custom providers, or querying the memory store directly.
 
 ## OpsEvent
 
-Every record in the AgentOps memory store is an `OpsEvent`. Events are hash-chained for tamper detection.
+Every record in the AgentSentry memory store is an `OpsEvent`. Events are hash-chained for tamper detection.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -14,7 +14,7 @@ Every record in the AgentOps memory store is an `OpsEvent`. Events are hash-chai
 | `agent_id` | `string` | yes | Identifies the agent that produced the event |
 | `event_type` | `EventType` | yes | One of the event type enum values (see below) |
 | `severity` | `Severity` | yes | One of the severity enum values (see below) |
-| `skill` | `Skill` | yes | Which AgentOps skill produced the event (see below) |
+| `skill` | `Skill` | yes | Which AgentSentry skill produced the event (see below) |
 | `title` | `string` | yes | Short summary, max 120 characters |
 | `detail` | `string` | yes | Full description of the event |
 | `affected_files` | `string[]` | yes | List of file paths affected by this event |

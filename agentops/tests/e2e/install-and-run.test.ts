@@ -11,7 +11,7 @@ import { existsSync, mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-const AGENTOPS_ROOT = join(__dirname, '../..');
+const AGENT_SENTRY_ROOT = join(__dirname, '../..');
 let tarballPath: string;
 let tempDir: string;
 
@@ -19,7 +19,7 @@ describe('Install and Run (e2e)', () => {
   beforeAll(() => {
     // Pack the package
     const packOutput = execSync('npm pack --json 2>/dev/null || npm pack', {
-      cwd: AGENTOPS_ROOT,
+      cwd: AGENT_SENTRY_ROOT,
       encoding: 'utf-8',
     });
 
@@ -32,11 +32,11 @@ describe('Install and Run (e2e)', () => {
       tarballName = packOutput.trim().split('\n').pop()!.trim();
     }
 
-    tarballPath = join(AGENTOPS_ROOT, tarballName);
+    tarballPath = join(AGENT_SENTRY_ROOT, tarballName);
     expect(existsSync(tarballPath)).toBe(true);
 
     // Create a temp directory to simulate a fresh install
-    tempDir = mkdtempSync(join(tmpdir(), 'agentops-e2e-'));
+    tempDir = mkdtempSync(join(tmpdir(), 'agent-sentry-e2e-'));
     execSync('npm init -y', { cwd: tempDir, stdio: 'pipe' });
   });
 
@@ -60,22 +60,22 @@ describe('Install and Run (e2e)', () => {
   });
 
   it('installed package contains dist/src/index.js', () => {
-    const indexPath = join(tempDir, 'node_modules/agentops/dist/src/index.js');
+    const indexPath = join(tempDir, 'node_modules/agent-sentry/dist/src/index.js');
     expect(existsSync(indexPath)).toBe(true);
   });
 
   it('installed package contains config resolution module', () => {
-    const resolvePath = join(tempDir, 'node_modules/agentops/dist/src/config/resolve.js');
+    const resolvePath = join(tempDir, 'node_modules/agent-sentry/dist/src/config/resolve.js');
     expect(existsSync(resolvePath)).toBe(true);
   });
 
   it('installed package contains agentops.config.json', () => {
-    const configPath = join(tempDir, 'node_modules/agentops/agentops.config.json');
+    const configPath = join(tempDir, 'node_modules/agent-sentry/agentops.config.json');
     expect(existsSync(configPath)).toBe(true);
   });
 
   it('CLI entry point exists and is valid JS', () => {
-    const cliPath = join(tempDir, 'node_modules/agentops/dist/src/cli/index.js');
+    const cliPath = join(tempDir, 'node_modules/agent-sentry/dist/src/cli/index.js');
     expect(existsSync(cliPath)).toBe(true);
     // Verify it parses as valid JS
     expect(() => {
@@ -84,7 +84,7 @@ describe('Install and Run (e2e)', () => {
   });
 
   it('MCP server entry point exists and is valid JS', () => {
-    const mcpPath = join(tempDir, 'node_modules/agentops/dist/src/mcp/server.js');
+    const mcpPath = join(tempDir, 'node_modules/agent-sentry/dist/src/mcp/server.js');
     expect(existsSync(mcpPath)).toBe(true);
     expect(() => {
       execSync(`node -c "${mcpPath}"`, { stdio: 'pipe' });
