@@ -29,7 +29,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Layer | What it does |
 |-------|-------------|
 | **Memory Store** | Hash-chained event storage with auto-pruning, incremental chain verification, and chunked vector search |
-| **MCP Server** | 9 tools exposed via Model Context Protocol (stdio + HTTP) |
+| **MCP Server** | 10 tools exposed via Model Context Protocol (stdio + HTTP) |
 | **Primitives** | 7 composable modules — risk scoring, rules validation, secret scanning, context health, git checks, task sizing, file analysis |
 | **Enablement Engine** | 5 progressive levels from Safe Ground to Full Guard |
 | **Enrichment** | Auto-classification by domain (auth, db, api, testing, config, infra) with root-cause detection |
@@ -42,10 +42,10 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Feature | Status | Notes |
 |---------|--------|-------|
 | SQLite memory store | **Stable** | Default provider, hash-chained, auto-pruning |
-| MCP server (9 tools) | **Stable** | stdio + HTTP transport |
+| MCP server (10 tools) | **Stable** | stdio + HTTP transport |
 | Claude Code hooks | **Stable** | TypeScript implementations with shell wrappers |
 | Progressive enablement | **Stable** | 5 levels |
-| CLI (8 commands) | **Stable** | health, memory, config, enable, plugin, metrics, stream, dashboard |
+| CLI (13 commands) | **Stable** | init, config, enable, health, memory, metrics, dashboard, stream, plugin, handoff, prune, export, import |
 | Enrichment & observability | **Stable** | Auto-classification, circuit breaker, structured logging |
 | Supabase provider | **Beta** | Requires external Supabase instance |
 | Dashboard / streaming | **Beta** | Local SSE/WebSocket, in-process bus |
@@ -68,6 +68,7 @@ Once wired, these tools are available in any Claude Code session:
 | `agent_sentry_scan_security` | Detect secrets in file content |
 | `agent_sentry_check_git` | Git status and hygiene checks |
 | `agent_sentry_recall_context` | Cross-session context recall for current task |
+| `agent_sentry_generate_handoff` | Generate structured handoff message for session continuity |
 
 ## Progressive Enablement
 
@@ -95,7 +96,7 @@ Auto-pruning keeps the database bounded — configure `max_events` and `max_age_
 
 ```bash
 npm run build          # TypeScript compilation
-npm test               # All 1098 tests via vitest
+npm test               # All 1113 tests via vitest
 npm run test:unit      # Source-only unit tests (no build required)
 npm run test:contracts # Build artifact validation (requires npm run build first)
 npm run test:e2e       # End-to-end integration tests
@@ -111,7 +112,7 @@ npm run benchmark      # Run performance benchmarks
 ```
 src/
   memory/       # Store, schema, providers, migrations, enrichment, intelligence, audit
-  mcp/          # MCP server + 9 tool handlers
+  mcp/          # MCP server + 10 tool handlers
   cli/          # CLI commands, TypeScript hook handlers
   primitives/   # 7 reusable management patterns
   enablement/   # Progressive enablement engine
@@ -133,7 +134,12 @@ docs/           # Getting started, API reference, schema, roadmap
 - [API Reference](docs/api-reference.md) — Every module and method
 - [Memory Schema](docs/memory-schema.md) — Event schema for building integrations
 - [Plugin Tutorial](docs/plugin-tutorial.md) — Build custom plugins
+- [Configuration Reference](docs/configuration.md) — Every config option explained
+- [Dashboard Guide](docs/dashboard-guide.md) — Monitoring dashboard and event streaming
+- [Supabase Setup](docs/supabase-setup.md) — Remote storage for teams
+- [Troubleshooting](docs/troubleshooting.md) — Common issues and solutions
 - [Roadmap](docs/ROADMAP.md) — Feature maturity and planned work
+- [Changelog](CHANGELOG.md) — Version history
 
 ### Architecture
 

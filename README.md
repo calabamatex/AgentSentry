@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/calabamatex/AgenticManagement/actions/workflows/ci.yml/badge.svg)](https://github.com/calabamatex/AgenticManagement/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-1042%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-1113%20passing-brightgreen.svg)](#)
 
 **Memory-aware management and safety framework for AI agents.**
 
@@ -198,7 +198,7 @@ All settings in `agent-sentry/agent-sentry.config.json`:
 
 | Section | Setting | Default |
 |---------|---------|---------|
-| enablement | level | 1 |
+| enablement | level | 2 |
 | memory | provider | sqlite |
 | memory | embedding_provider | auto |
 | save_points | auto_commit_after_minutes | 30 |
@@ -262,7 +262,7 @@ npm run benchmark
 ```bash
 npm install        # Install dependencies
 npm run build      # Compile TypeScript
-npm test           # Run tests (1042 passing)
+npm test           # Run tests (1113 passing)
 npm run benchmark  # Run performance benchmarks
 ```
 
@@ -274,7 +274,7 @@ npm run benchmark  # Run performance benchmarks
 agent-sentry/
   src/
     memory/           # MemoryStore, embeddings, providers, migrations
-    mcp/              # MCP server, 9 tools, transport, auth
+    mcp/              # MCP server, 10 tools, transport, auth
     primitives/       # 7 reusable management patterns
     cli/              # CLI commands, TypeScript hook handlers
   scripts/            # Thin wrapper hooks, setup wizard, validators
@@ -333,3 +333,9 @@ MIT -- see [LICENSE](LICENSE) for details.
 - [Memory Model](agent-sentry/docs/architecture/memory-model.md) -- Hash chains, search, and storage providers
 - [Enablement Model](agent-sentry/docs/architecture/enablement-model.md) -- 5 levels with skill mapping
 - [MCP Integration](agent-sentry/docs/architecture/mcp-integration.md) -- Tools, transports, and auth
+- [Configuration Reference](agent-sentry/docs/configuration.md) -- Every config option explained
+- [Dashboard Guide](agent-sentry/docs/dashboard-guide.md) -- Monitoring dashboard and streaming
+- [Supabase Setup](agent-sentry/docs/supabase-setup.md) -- Remote storage for teams
+- [Troubleshooting](agent-sentry/docs/troubleshooting.md) -- Common issues and solutions
+- [Changelog](agent-sentry/CHANGELOG.md) -- Version history
+- [Contributing](CONTRIBUTING.md) -- Development setup and PR process
