@@ -15,7 +15,7 @@ TMPBASE="${TMPDIR:-/tmp}/agent-sentry"
 COST_STATE="$TMPBASE/cost-state"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
-COST_LOG="$TMPBASE/cost-log.ndjson"
+COST_LOG="$AS_RUNTIME_DATA_DIR/cost-log.ndjson"
 
 # Ensure directories exist
 mkdir -p "$TMPBASE"
