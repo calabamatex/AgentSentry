@@ -16,6 +16,7 @@ import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 import { formatHandoff, buildHandoffPrompt } from './handoff-templates';
 
 const logger = new Logger({ module: 'cli-handoff' });
@@ -154,7 +155,7 @@ async function getSessionSummary(): Promise<string> {
 
     return `${events.length} events (${decisions} decisions, ${incidents} incidents, ${patterns} patterns). ${files.size} files referenced.`;
   } catch (e) {
-    logger.debug('Failed to get session summary', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to get session summary', { error: errorMessage(e) });
     return 'Memory store unavailable.';
   }
 }
@@ -241,7 +242,7 @@ function readTodoState(): TodoItem[] {
         activeForm: item.activeForm,
       }));
   } catch (e) {
-    logger.debug('Failed to read todo state', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read todo state', { error: errorMessage(e) });
     return [];
   }
 }
@@ -370,7 +371,7 @@ export const handoffCommand: CommandDefinition = {
       });
       await store.close();
     } catch (e) {
-      logger.debug('Failed to store handoff event', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to store handoff event', { error: errorMessage(e) });
     }
 
     // Output

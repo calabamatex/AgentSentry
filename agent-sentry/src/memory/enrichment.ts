@@ -7,6 +7,7 @@ import { execSync } from 'child_process';
 import { OpsEvent, OpsEventInput } from './schema';
 import { MemoryStore } from './store';
 import { Logger } from '../observability/logger';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'enrichment' });
 
@@ -43,7 +44,7 @@ function getCurrentBranch(): string | undefined {
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim() || undefined;
   } catch (e) {
-    logger.debug('Failed to detect current git branch', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to detect current git branch', { error: errorMessage(e) });
     return undefined;
   }
 }

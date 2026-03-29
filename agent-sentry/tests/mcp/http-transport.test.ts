@@ -122,7 +122,7 @@ describe('HTTP MCP Transport', () => {
       path: '/health',
       method: 'GET',
     });
-    expect(res.headers['access-control-allow-origin']).toBe('*');
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost');
     expect(res.headers['access-control-allow-methods']).toContain('POST');
     expect(res.headers['access-control-allow-methods']).toContain('DELETE');
   });

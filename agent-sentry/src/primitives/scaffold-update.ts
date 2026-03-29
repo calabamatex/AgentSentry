@@ -6,6 +6,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { Logger } from '../observability/logger';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'scaffold-update' });
 
@@ -45,7 +46,7 @@ function validateFileContent(filePath: string): string[] {
       issues.push('File has no markdown headings');
     }
   } catch (e) {
-    logger.warn('Scaffold file could not be read', { error: e instanceof Error ? e.message : String(e), file: filePath });
+    logger.warn('Scaffold file could not be read', { error: errorMessage(e), file: filePath });
     issues.push('File could not be read');
   }
   return issues;

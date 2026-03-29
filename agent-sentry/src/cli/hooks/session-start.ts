@@ -11,6 +11,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-session-start' });
 
@@ -26,7 +27,7 @@ function getRepoRoot(): string {
   try {
     return execSync('git rev-parse --show-toplevel', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
   } catch (e) {
-    logger.debug('Failed to get repo root via git', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to get repo root via git', { error: errorMessage(e) });
     return process.cwd();
   }
 }
@@ -36,7 +37,7 @@ function isGitRepo(): boolean {
     execSync('git rev-parse --is-inside-work-tree', { stdio: ['pipe', 'pipe', 'pipe'] });
     return true;
   } catch (e) {
-    logger.debug('Not inside a git repository', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Not inside a git repository', { error: errorMessage(e) });
     return false;
   }
 }
@@ -53,7 +54,7 @@ function readConfig(): { claudeMdMaxLines: number; agentsMdMaxLines: number } {
       agentsMdMaxLines: config.rules_file?.agents_md_max_lines ?? config.rules_file?.max_lines ?? 300,
     };
   } catch (e) {
-    logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read config file', { error: errorMessage(e) });
     return { claudeMdMaxLines: 300, agentsMdMaxLines: 300 };
   }
 }
@@ -68,7 +69,7 @@ function checkGitState(results: CheckResults): void {
   try {
     branch = execSync('git branch --show-current', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim() || 'detached';
   } catch (e) {
-    logger.debug('Failed to get current git branch', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to get current git branch', { error: errorMessage(e) });
     branch = 'detached';
   }
 
@@ -79,7 +80,7 @@ function checkGitState(results: CheckResults): void {
       results.advisories.push(`${uncommitted} uncommitted changes on branch '${branch}'.`);
     }
   } catch (e) {
-    logger.debug('Failed to get git status', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to get git status', { error: errorMessage(e) });
   }
 }
 

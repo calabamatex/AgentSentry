@@ -74,7 +74,12 @@ class EventBus {
     if (!handlers) return;
     for (const handler of handlers) {
       try {
-        handler(payload);
+        const result = handler(payload);
+        if (result && typeof (result as Promise<void>).catch === 'function') {
+          void (result as Promise<void>).catch(() => {
+            // Swallow async handler errors to avoid breaking the bus
+          });
+        }
       } catch {
         // Swallow handler errors to avoid breaking the bus
       }

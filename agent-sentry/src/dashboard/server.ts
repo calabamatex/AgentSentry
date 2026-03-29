@@ -16,6 +16,7 @@ import * as http from 'http';
 import * as crypto from 'crypto';
 import { EventStream, StreamClient, StreamEvent, StreamFilter } from '../streaming/event-stream';
 import { Logger } from '../observability/logger';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'dashboard-server' });
 import { HealthChecker, memoryUsageCheck, eventLoopCheck } from '../observability/health';
@@ -170,7 +171,7 @@ export class DashboardServer {
 
     // API endpoints
     if (path === '/api/health') {
-      this.handleHealth(res);
+      void this.handleHealth(res);
       return;
     }
 
@@ -180,12 +181,12 @@ export class DashboardServer {
     }
 
     if (path === '/api/plugins') {
-      this.handlePlugins(res);
+      void this.handlePlugins(res);
       return;
     }
 
     if (path === '/api/stats') {
-      this.handleStats(res);
+      void this.handleStats(res);
       return;
     }
 
@@ -200,7 +201,7 @@ export class DashboardServer {
     }
 
     if (path === '/api/coordination') {
-      this.handleCoordination(res);
+      void this.handleCoordination(res);
       return;
     }
 
@@ -291,7 +292,7 @@ export class DashboardServer {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(plugins));
     } catch (e) {
-      logger.warn('Failed to list plugins for dashboard', { error: e instanceof Error ? e.message : String(e) });
+      logger.warn('Failed to list plugins for dashboard', { error: errorMessage(e) });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('[]');
     }
@@ -311,7 +312,7 @@ export class DashboardServer {
         res.end(JSON.stringify({ ...streamStats, memory: memoryStats }));
         return;
       } catch (e) {
-        logger.debug('Failed to get memory stats for dashboard', { error: e instanceof Error ? e.message : String(e) });
+        logger.debug('Failed to get memory stats for dashboard', { error: errorMessage(e) });
       }
     }
 
@@ -331,7 +332,7 @@ export class DashboardServer {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ available: true, ...header, panels }));
     } catch (e) {
-      logger.warn('Failed to build enablement data', { error: e instanceof Error ? e.message : String(e) });
+      logger.warn('Failed to build enablement data', { error: errorMessage(e) });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ available: false }));
     }
@@ -354,7 +355,7 @@ export class DashboardServer {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ available: true, agents }));
     } catch (e) {
-      logger.warn('Failed to list coordinated agents', { error: e instanceof Error ? e.message : String(e) });
+      logger.warn('Failed to list coordinated agents', { error: errorMessage(e) });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ available: false, agents: [] }));
     }

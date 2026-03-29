@@ -9,9 +9,15 @@ import { timingSafeEqual } from 'crypto';
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
  * Returns true if the key matches or if no key is configured (open access).
  */
+let authWarningLogged = false;
+
 export function validateAccessKey(key: string): boolean {
   const expected = process.env.AGENT_SENTRY_ACCESS_KEY;
   if (!expected) {
+    if (!authWarningLogged) {
+      console.error('[AgentSentry] WARNING: No AGENT_SENTRY_ACCESS_KEY set — MCP server accepting all requests without authentication. Set AGENT_SENTRY_ACCESS_KEY to enable auth.');
+      authWarningLogged = true;
+    }
     return true;
   }
   if (!key) {

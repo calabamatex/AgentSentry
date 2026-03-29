@@ -11,6 +11,7 @@ import { execSync } from 'child_process';
 import { MemoryStore } from './store';
 import { SessionSummarizer, PatternDetector } from './intelligence';
 import { Logger } from '../observability/logger';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'handoff' });
 
@@ -185,7 +186,7 @@ export class HandoffGenerator {
         stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
     } catch (e) {
-      logger.debug('Failed to get git diff stat', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to get git diff stat', { error: errorMessage(e) });
       return '';
     }
   }
@@ -201,7 +202,7 @@ export class HandoffGenerator {
       }).trim();
       return log.split('\n').filter(Boolean);
     } catch (e) {
-      logger.debug('Failed to get recent commits', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to get recent commits', { error: errorMessage(e) });
       return [];
     }
   }

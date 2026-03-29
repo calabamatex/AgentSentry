@@ -134,6 +134,16 @@ export class LRUCache<T = unknown> {
     this._misses = 0;
     this._evictions = 0;
   }
+
+  /** Reduce the TTL of all entries to at most `maxTtlMs` from now. */
+  shortenTtl(maxTtlMs: number): void {
+    const deadline = Date.now() + maxTtlMs;
+    for (const entry of this.store.values()) {
+      if (entry.expiresAt > deadline) {
+        entry.expiresAt = deadline;
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -252,11 +262,14 @@ export class CachedStorageProvider implements StorageProvider {
 
   async insert(event: OpsEvent): Promise<void> {
     await this.provider.insert(event);
-    // Invalidate query/count/aggregate caches since results may have changed.
-    // Keep byIdCache intact — individual event data remains valid.
+    // Cache the newly inserted event by ID for immediate lookups
+    this.byIdCache.set(event.id, event);
+    // Invalidate query and count caches since list results changed
     this.queryCache.clear();
     this.countCache.clear();
-    this.aggregateCache.clear();
+    // Aggregate stats tolerate slight staleness — shorten TTL to 30s
+    // instead of clearing, since aggregates are expensive to rebuild
+    this.aggregateCache.shortenTtl(30_000);
   }
 
   // -- Cache management ---------------------------------------------------

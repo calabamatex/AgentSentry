@@ -161,11 +161,15 @@ export function createShutdownHandler(
   manager: ShutdownManager,
 ): (signal: string) => void {
   return (signal: string) => {
-    manager.shutdown(signal).then(report => {
+    void manager.shutdown(signal).then(report => {
       // Log the report to stderr as a JSON line
       const line = JSON.stringify(report);
       if (typeof process !== 'undefined' && process.stderr) {
         process.stderr.write(line + '\n');
+      }
+    }).catch((err) => {
+      if (typeof process !== 'undefined' && process.stderr) {
+        process.stderr.write(`Shutdown error: ${err}\n`);
       }
     });
   };

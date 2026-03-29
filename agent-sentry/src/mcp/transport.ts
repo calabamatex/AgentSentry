@@ -52,7 +52,7 @@ export function createHttpTransport(
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     // CORS headers
-    const corsOrigin = accessKey ? (process.env.AGENT_SENTRY_CORS_ORIGIN || 'http://localhost') : '*';
+    const corsOrigin = process.env.AGENT_SENTRY_CORS_ORIGIN || 'http://localhost';
     res.setHeader('Access-Control-Allow-Origin', corsOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-agent-sentry-key, Mcp-Session-Id');
@@ -66,9 +66,7 @@ export function createHttpTransport(
     // Access key validation
     if (accessKey) {
       const headerKey = req.headers['x-agent-sentry-key'] as string | undefined;
-      const url = new URL(req.url ?? '/', `http://localhost:${actualPort}`);
-      const queryKey = url.searchParams.get('key') ?? undefined;
-      const providedKey = headerKey ?? queryKey ?? '';
+      const providedKey = headerKey ?? '';
 
       if (!validateAccessKey(providedKey)) {
         res.writeHead(401, { 'Content-Type': 'application/json' });

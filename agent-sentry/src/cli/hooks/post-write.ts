@@ -18,6 +18,7 @@ import { scanErrorHandling } from '../../analyzers/error-handling';
 import { scanPiiLogging } from '../../analyzers/pii-scanner';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-post-write' });
 
@@ -36,7 +37,7 @@ function readConfig(): Record<string, unknown> {
   try {
     return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
   } catch (e) {
-    logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read config file', { error: errorMessage(e) });
     return {};
   }
 }
@@ -55,7 +56,7 @@ function checkBlastRadius(filePath: string): void {
   try {
     lines = fs.readFileSync(trackingFile, 'utf-8').split('\n').filter(Boolean);
   } catch (e) {
-    logger.debug('Failed to read blast-radius tracking file', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read blast-radius tracking file', { error: errorMessage(e) });
     return;
   }
   const uniqueFiles = [...new Set(lines)];
@@ -76,7 +77,7 @@ function checkBlastRadius(filePath: string): void {
       }).trim();
       if (recentCommits) needsCheckpoint = false;
     } catch (e) {
-      logger.debug('Git log check failed, git may not be available', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Git log check failed, git may not be available', { error: errorMessage(e) });
     }
   }
 
@@ -100,7 +101,7 @@ function checkBlastRadius(filePath: string): void {
         try {
           execFileSync('git', ['add', f], { stdio: 'pipe' });
         } catch (e) {
-          logger.debug('Failed to git add file', { error: e instanceof Error ? e.message : String(e), file: f });
+          logger.debug('Failed to git add file', { error: errorMessage(e), file: f });
         }
       }
     }
@@ -122,7 +123,7 @@ function checkBlastRadius(filePath: string): void {
 
     console.log(`${PREFIX} Stash snapshot created: ${sha} (${uniqueCount} files)`);
   } catch (e) {
-    logger.debug('Stash snapshot failed during blast-radius checkpoint', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Stash snapshot failed during blast-radius checkpoint', { error: errorMessage(e) });
   }
 }
 
@@ -138,7 +139,7 @@ async function main(): Promise<void> {
   try {
     input = JSON.parse(raw);
   } catch (e) {
-    logger.warn('Failed to parse hook input from stdin', { error: e instanceof Error ? e.message : String(e) });
+    logger.warn('Failed to parse hook input from stdin', { error: errorMessage(e) });
     process.exit(0);
   }
 

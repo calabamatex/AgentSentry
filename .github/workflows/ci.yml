@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -34,6 +38,19 @@ jobs:
           cache-dependency-path: agent-sentry/package-lock.json
       - run: cd agent-sentry && npm ci
       - run: cd agent-sentry && npm run lint
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci
+      - name: Check for dependency vulnerabilities
+        run: cd agent-sentry && npm audit --omit=dev --audit-level=high
 
   smoke-test-install:
     runs-on: ubuntu-latest

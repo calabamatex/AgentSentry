@@ -281,9 +281,9 @@ describe('CachedStorageProvider', () => {
     expect(result).not.toBeNull();
     expect(result!.id).toBe('cache-test-1');
 
-    // Should have 1 miss (first fetch)
+    // insert() pre-caches the event by ID, so getById is a hit
     const stats = cached.cacheStats();
-    expect(stats.misses).toBeGreaterThanOrEqual(1);
+    expect(stats.hits).toBeGreaterThanOrEqual(1);
   });
 
   it('getById() returns cached result on second call (verify via stats)', async () => {
@@ -441,11 +441,11 @@ describe('CachedStorageProvider', () => {
     await cached.aggregate({});
 
     const stats = cached.cacheStats();
-    // 4 misses from the 4 calls above
-    expect(stats.misses).toBe(4);
-    expect(stats.size).toBe(4);
-    expect(stats.hits).toBe(0);
-    expect(stats.hitRate).toBe(0);
+    // 3 misses from query/count/aggregate; getById is a hit (pre-cached by insert)
+    expect(stats.misses).toBe(3);
+    expect(stats.size).toBe(4); // 1 byId (from insert) + 3 from query/count/aggregate
+    expect(stats.hits).toBe(1);
+    expect(stats.hitRate).toBe(0.25);
     expect(stats.maxSize).toBe(400); // 4 caches x 100 each
   });
 
@@ -475,6 +475,6 @@ describe('CachedStorageProvider', () => {
 
     const stats = cached.cacheStats();
     expect(stats.misses).toBe(2);
-    expect(stats.size).toBe(2);
+    expect(stats.size).toBe(3); // 1 byId (from insert) + 2 query entries
   });
 });

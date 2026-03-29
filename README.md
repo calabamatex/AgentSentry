@@ -161,7 +161,7 @@ Prompts for your enablement level (1-5) and generates `agent-sentry.config.json`
 
 ## MCP Tools
 
-When running as an MCP server, AgentSentry exposes 9 tools:
+When running as an MCP server, AgentSentry exposes 10 tools:
 
 | Tool | What It Does |
 |------|-------------|
@@ -173,6 +173,7 @@ When running as an MCP server, AgentSentry exposes 9 tools:
 | `agent_sentry_capture_event` | Writes a decision, violation, or incident to persistent memory |
 | `agent_sentry_search_history` | Semantic search across all stored operational events |
 | `agent_sentry_recall_context` | Cross-session context recall -- finds relevant prior session data for current task |
+| `agent_sentry_generate_handoff` | Generates a structured handoff message for session continuity |
 | `agent_sentry_health` | Current health scores, KPIs, and skill-level status |
 
 ---
@@ -300,6 +301,10 @@ npx agent-sentry metrics         # Session and cost metrics
 npx agent-sentry dashboard       # Launch monitoring dashboard
 npx agent-sentry stream          # Live event stream
 npx agent-sentry plugin          # Plugin management
+npx agent-sentry handoff         # Generate session handoff message
+npx agent-sentry prune           # Clean up old events from memory store
+npx agent-sentry export          # Export memory store data
+npx agent-sentry import          # Import memory store data
 ```
 
 ## Slash Commands

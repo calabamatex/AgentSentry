@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-cost-tracker' });
 const PREFIX = '[AgentSentry]';
@@ -233,7 +234,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  logger.debug('Cost tracker error', { error: e instanceof Error ? e.message : String(e) });
+  logger.debug('Cost tracker error', { error: errorMessage(e) });
 }).finally(() => {
   process.exit(0);
 });

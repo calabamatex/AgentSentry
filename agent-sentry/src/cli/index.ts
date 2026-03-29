@@ -128,4 +128,8 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+main().catch((err) => {
+  const message = err instanceof Error ? err.message : String(err);
+  process.stderr.write(`Fatal: ${message}\n`);
+  process.exit(1);
+});

@@ -145,33 +145,33 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
   async aggregate(options: AggregateOptions): Promise<OpsStats> {
     const baseParams = this.buildAggregateParams(options);
 
-    // Total count
-    const total = await this.countWithParams(baseParams);
+    // Run all counts in parallel instead of sequentially
+    const [total, ...enumCounts] = await Promise.all([
+      this.countWithParams(baseParams),
+      ...EVENT_TYPES.map((t) => this.countWithParams([...baseParams, `event_type=eq.${encodeURIComponent(t)}`])),
+      ...SEVERITIES.map((s) => this.countWithParams([...baseParams, `severity=eq.${encodeURIComponent(s)}`])),
+      ...SKILLS.map((sk) => this.countWithParams([...baseParams, `skill=eq.${encodeURIComponent(sk)}`])),
+    ]);
 
-    // Count by type
+    // Unpack results
+    let idx = 0;
     const byType = {} as Record<EventType, number>;
-    for (const t of EVENT_TYPES) {
-      byType[t] = await this.countWithParams([...baseParams, `event_type=eq.${t}`]);
-    }
+    for (const t of EVENT_TYPES) byType[t] = enumCounts[idx++];
 
-    // Count by severity
     const bySeverity = {} as Record<Severity, number>;
-    for (const s of SEVERITIES) {
-      bySeverity[s] = await this.countWithParams([...baseParams, `severity=eq.${s}`]);
-    }
+    for (const s of SEVERITIES) bySeverity[s] = enumCounts[idx++];
 
-    // Count by skill
     const bySkill = {} as Record<Skill, number>;
-    for (const sk of SKILLS) {
-      bySkill[sk] = await this.countWithParams([...baseParams, `skill=eq.${sk}`]);
-    }
+    for (const sk of SKILLS) bySkill[sk] = enumCounts[idx++];
 
-    // First and last event timestamps
+    // First and last event timestamps (parallel)
     const firstParams = [...baseParams, 'select=timestamp', 'order=timestamp.asc', 'limit=1'];
     const lastParams = [...baseParams, 'select=timestamp', 'order=timestamp.desc', 'limit=1'];
 
-    const firstRows = await this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${firstParams.join('&')}`, { method: 'GET' });
-    const lastRows = await this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${lastParams.join('&')}`, { method: 'GET' });
+    const [firstRows, lastRows] = await Promise.all([
+      this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${firstParams.join('&')}`, { method: 'GET' }),
+      this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${lastParams.join('&')}`, { method: 'GET' }),
+    ]);
 
     return {
       total_events: total,
@@ -249,7 +249,8 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
    * Default implementation passes all IDs through.
    */
   protected filterValidIds(ids: string[]): string[] {
-    return ids;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return ids.filter((id) => UUID_RE.test(id));
   }
 
   async saveChainCheckpoint(checkpoint: {
@@ -296,9 +297,9 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
       `or=(title.ilike.${encodedQuery},detail.ilike.${encodedQuery})`,
     ];
 
-    if (options.event_type) params.push(`event_type=eq.${options.event_type}`);
-    if (options.severity) params.push(`severity=eq.${options.severity}`);
-    if (options.skill) params.push(`skill=eq.${options.skill}`);
+    if (options.event_type) params.push(`event_type=eq.${encodeURIComponent(options.event_type)}`);
+    if (options.severity) params.push(`severity=eq.${encodeURIComponent(options.severity)}`);
+    if (options.skill) params.push(`skill=eq.${encodeURIComponent(options.skill)}`);
     if (options.since) params.push(`timestamp=gte.${encodeURIComponent(options.since)}`);
     if (options.until) params.push(`timestamp=lte.${encodeURIComponent(options.until)}`);
     if (options.session_id) params.push(`session_id=eq.${encodeURIComponent(options.session_id)}`);
@@ -328,14 +329,14 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
 
   protected buildQueryParams(options: QueryOptions): string[] {
     const params: string[] = [];
-    if (options.event_type) params.push(`event_type=eq.${options.event_type}`);
-    if (options.severity) params.push(`severity=eq.${options.severity}`);
-    if (options.skill) params.push(`skill=eq.${options.skill}`);
+    if (options.event_type) params.push(`event_type=eq.${encodeURIComponent(options.event_type)}`);
+    if (options.severity) params.push(`severity=eq.${encodeURIComponent(options.severity)}`);
+    if (options.skill) params.push(`skill=eq.${encodeURIComponent(options.skill)}`);
     if (options.since) params.push(`timestamp=gte.${encodeURIComponent(options.since)}`);
     if (options.until) params.push(`timestamp=lte.${encodeURIComponent(options.until)}`);
     if (options.session_id) params.push(`session_id=eq.${encodeURIComponent(options.session_id)}`);
     if (options.agent_id) params.push(`agent_id=eq.${encodeURIComponent(options.agent_id)}`);
-    if (options.tag) params.push(`tags=cs.["${options.tag}"]`);
+    if (options.tag) params.push(`tags=cs.${encodeURIComponent(`["${options.tag}"]`)}`);
     return params;
   }
 

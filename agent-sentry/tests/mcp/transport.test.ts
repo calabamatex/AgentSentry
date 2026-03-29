@@ -114,7 +114,7 @@ describe('Transport', () => {
       }
     });
 
-    it('should accept requests with valid access key in query param', async () => {
+    it('should reject requests with access key only in query param (S8: header-only auth)', async () => {
       const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
       process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
 
@@ -125,7 +125,7 @@ describe('Transport', () => {
         if (!addr || typeof addr === 'string') return;
 
         const response = await fetch(`http://127.0.0.1:${addr.port}/health?key=test-secret-key`);
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(401);
       } finally {
         if (originalKey === undefined) {
           delete process.env.AGENT_SENTRY_ACCESS_KEY;

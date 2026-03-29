@@ -4,6 +4,7 @@
 
 import { execFileSync } from 'child_process';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'mcp-check-git' });
 
@@ -29,7 +30,7 @@ function execGit(args: string[]): string {
   try {
     return execFileSync('git', args, { encoding: 'utf-8', timeout: 10000 }).trim();
   } catch (e) {
-    logger.debug('Git command failed', { error: e instanceof Error ? e.message : String(e), args });
+    logger.debug('Git command failed', { error: errorMessage(e), args });
     return '';
   }
 }
@@ -82,7 +83,7 @@ export async function handler(
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     return {
       content: [{ type: 'text', text: JSON.stringify({ error: message }) }],
     };

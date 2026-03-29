@@ -10,6 +10,7 @@ import * as path from 'path';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'cli-enable' });
 import {
@@ -144,7 +145,7 @@ export const enableCommand: CommandDefinition = {
       });
       await store.close();
     } catch (e) {
-      logger.debug('Failed to store enablement event', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to store enablement event', { error: errorMessage(e) });
     }
   },
 };
@@ -160,7 +161,7 @@ function loadEnablementLevel(): number {
     const level = raw?.enablement?.level;
     if (typeof level === 'number' && level >= 1 && level <= 5) return level;
   } catch (e) {
-    logger.debug('Failed to load enablement level from config', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to load enablement level from config', { error: errorMessage(e) });
   }
   return 1;
 }
@@ -171,7 +172,7 @@ function saveEnablementLevel(level: number): void {
   try {
     config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
   } catch (e) {
-    logger.debug('Config file not found, starting fresh', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Config file not found, starting fresh', { error: errorMessage(e) });
   }
 
   if (!config.enablement || typeof config.enablement !== 'object') {
