@@ -151,43 +151,21 @@ export function wireHooksIntoSettings(): boolean {
 
 /**
  * AgentSentry CLAUDE.md rules block — appended to CLAUDE.md by `agent-sentry init`.
- * Includes the directive compliance rule (Level 3+).
+ *
+ * NOTE: The previous "Directive Compliance" block instructed agents to auto-execute
+ * ACTION directives from hook output, which amplified infinite feedback loops.
+ * Hook output is now advisory-only (stderr). This block is intentionally empty.
  */
-export const AGENT_SENTRY_CLAUDE_MD_RULES = `
-## AgentSentry — Directive Compliance
-
-When AgentSentry hook output contains ACTION or RECOMMEND directives, execute the
-specified tool or command immediately. Do not substitute alternatives or defer action.
-
-- **ACTION directives** are mandatory: run the exact tool/command specified.
-- **RECOMMEND directives** are strongly advised: follow unless you have an explicit
-  user instruction that contradicts them.
-- **BLOCKED directives** from Stop hooks are enforced automatically — the agent cannot
-  continue until the blocking condition is resolved.
-
-This is a standing order at enablement Level 3+ (House Rules).
-`.trim();
+export const AGENT_SENTRY_CLAUDE_MD_RULES = '';
 
 /**
  * Append AgentSentry rules to CLAUDE.md if not already present.
- * Returns true if the file was modified.
+ * Currently a no-op — the directive compliance block was removed because it
+ * caused infinite feedback loops by instructing agents to auto-execute hook output.
+ * Returns false (no modification).
  */
-export function appendAgentSentryRulesToClaudeMd(repoRoot: string): boolean {
-  const claudeMd = path.join(repoRoot, 'CLAUDE.md');
-
-  if (!fs.existsSync(claudeMd)) {
-    return false;
-  }
-
-  const content = fs.readFileSync(claudeMd, 'utf-8');
-
-  // Already has directive compliance rules
-  if (/directive.compliance|ACTION.*RECOMMEND.*immediately/i.test(content)) {
-    return false;
-  }
-
-  fs.appendFileSync(claudeMd, '\n\n' + AGENT_SENTRY_CLAUDE_MD_RULES + '\n', 'utf-8');
-  return true;
+export function appendAgentSentryRulesToClaudeMd(_repoRoot: string): boolean {
+  return false;
 }
 
 export function runHealthAudit(): HealthSummary {

@@ -58,7 +58,7 @@ describe('getDashboardPanels', () => {
     expect(titles).toContain('Save Points');
     expect(titles).toContain('Context Health');
     expect(titles).toContain('Standing Orders');
-    expect(titles).toContain('Directive Compliance');
+    expect(titles).toContain('Hook Safety');
     expect(titles).toContain('Small Bets');
     expect(titles).toContain('Proactive Safety');
   });

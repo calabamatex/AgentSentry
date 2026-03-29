@@ -101,10 +101,6 @@ function checkClaudeMd(repoRoot: string, maxLines: number, results: CheckResults
     results.advisories.push('CLAUDE.md has no AgentSentry rules. Run /agent-sentry scaffold to add them.');
   }
 
-  if (!/directive.compliance|ACTION.*RECOMMEND.*immediately/i.test(content)) {
-    results.advisories.push('CLAUDE.md missing directive compliance rule. AgentSentry ACTION/RECOMMEND directives may be ignored.');
-  }
-
   const requiredSections = ['security', 'error handling'];
   for (const section of requiredSections) {
     if (!new RegExp(section, 'i').test(content)) {
