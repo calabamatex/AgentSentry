@@ -19,7 +19,7 @@ const logger = new Logger({ module: 'ws-transport' });
 // ---------------------------------------------------------------------------
 
 /** RFC 6455 Section 4.2.2 — magic GUID for Sec-WebSocket-Accept. */
-export const WS_MAGIC_GUID = '258EAFA5-E914-47DA-95CA-5AB5FC11B36';
+export const WS_MAGIC_GUID = '258EAFA5-E914-47DA-95CA-5AB5DC11B365';
 
 // WebSocket opcodes
 const OPCODE_TEXT = 0x01;
@@ -207,11 +207,18 @@ export class WsTransport {
       return client;
     }
 
-    // Buffer for incomplete frames
+    // Buffer for incomplete frames (capped at 1MB to prevent OOM)
+    const MAX_PENDING_BUFFER = 1024 * 1024;
     let pendingBuffer = Buffer.alloc(0);
 
     socket.on('data', (data: Buffer) => {
       pendingBuffer = Buffer.concat([pendingBuffer, data]);
+
+      if (pendingBuffer.length > MAX_PENDING_BUFFER) {
+        logger.warn('WebSocket pending buffer exceeded limit, closing connection', { clientId, size: pendingBuffer.length });
+        socket.destroy();
+        return;
+      }
 
       while (pendingBuffer.length >= 2) {
         const result = this.decodeFrame(pendingBuffer);

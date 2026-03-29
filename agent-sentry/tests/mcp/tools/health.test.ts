@@ -32,21 +32,24 @@ const mockStats = {
   last_event: '2026-03-20T12:00:00.000Z',
 };
 
-const mockVerifyChain = vi.fn().mockResolvedValue({ valid: true, total_checked: 42 });
-const mockInitialize = vi.fn().mockResolvedValue(undefined);
-const mockStatsFn = vi.fn().mockResolvedValue(mockStats);
-const mockClose = vi.fn().mockResolvedValue(undefined);
-
-vi.mock('../../../src/memory/store', () => {
-  return {
-    MemoryStore: vi.fn().mockImplementation(() => ({
-      initialize: mockInitialize,
-      stats: mockStatsFn,
-      verifyChain: mockVerifyChain,
-      close: mockClose,
-    })),
+const { mockStore, mockInitialize, mockStatsFn, mockVerifyChain, mockClose } = vi.hoisted(() => {
+  const mockInitialize = vi.fn();
+  const mockStatsFn = vi.fn();
+  const mockVerifyChain = vi.fn();
+  const mockClose = vi.fn();
+  const mockStore = {
+    initialize: mockInitialize,
+    stats: mockStatsFn,
+    verifyChain: mockVerifyChain,
+    close: mockClose,
   };
+  return { mockStore, mockInitialize, mockStatsFn, mockVerifyChain, mockClose };
 });
+
+// Mock shared-store singleton (tools now use getSharedStore())
+vi.mock('../../../src/mcp/shared-store', () => ({
+  getSharedStore: vi.fn().mockResolvedValue(mockStore),
+}));
 
 vi.mock('../../../src/memory/providers/provider-factory', () => ({
   loadMemoryConfig: vi.fn().mockReturnValue({
@@ -82,7 +85,6 @@ vi.mock('../../../src/enablement/engine', () => ({
 }));
 
 import { handler } from '../../../src/mcp/tools/health';
-import { MemoryStore } from '../../../src/memory/store';
 import { detectEmbeddingProvider } from '../../../src/memory/embeddings';
 
 describe('agent_sentry_health', () => {
@@ -195,7 +197,7 @@ describe('agent_sentry_health', () => {
   });
 
   it('should return error status on store failure', async () => {
-    mockInitialize.mockRejectedValueOnce(new Error('DB unavailable'));
+    mockStatsFn.mockRejectedValueOnce(new Error('DB unavailable'));
 
     const result = await handler({});
     const parsed = JSON.parse(result.content[0].text);
@@ -205,13 +207,6 @@ describe('agent_sentry_health', () => {
     expect(parsed.store.total_events).toBe(0);
     expect(parsed.chain.verified).toBe(false);
     expect(parsed.embedding.available).toBe(false);
-  });
-
-  it('should close store after stats retrieval', async () => {
-    await handler({});
-
-    const storeInstance = (MemoryStore as unknown as ReturnType<typeof vi.fn>).mock.results[0].value;
-    expect(storeInstance.close).toHaveBeenCalled();
   });
 
   it('should include all top-level fields', async () => {

@@ -5,28 +5,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as childProcess from 'child_process';
 
-// Mock child_process.execSync
+// Mock child_process.execFileSync
 vi.mock('child_process', async () => {
   const actual = await vi.importActual<typeof childProcess>('child_process');
   return {
     ...actual,
-    execSync: vi.fn(),
+    execFileSync: vi.fn(),
   };
 });
 
 import { name, description, inputSchema, handler } from '../../src/mcp/tools/generate-handoff';
 
-const mockedExecSync = vi.mocked(childProcess.execSync);
+const mockedExecFileSync = vi.mocked(childProcess.execFileSync);
 
 function mockGitCommands(): void {
-  mockedExecSync.mockImplementation((cmd: string) => {
-    const cmdStr = String(cmd);
-    if (cmdStr.includes('branch --show-current')) return 'feature/handoff';
-    if (cmdStr.includes('rev-parse --abbrev-ref')) return 'feature/handoff';
-    if (cmdStr.includes('log -1 --oneline')) return 'abc1234 feat: add handoff';
-    if (cmdStr.includes('status --short')) return ' M src/handoff.ts\nA  src/new-file.ts';
-    if (cmdStr.includes('diff --stat')) return ' src/handoff.ts | 50 +++\n 1 file changed';
-    if (cmdStr.includes('log --oneline -10')) return 'abc1234 feat: add handoff\ndef5678 fix: bug';
+  mockedExecFileSync.mockImplementation((_cmd: string, args?: readonly string[]) => {
+    const argsStr = (args ?? []).join(' ');
+    if (argsStr.includes('branch --show-current')) return 'feature/handoff';
+    if (argsStr.includes('rev-parse --abbrev-ref')) return 'feature/handoff';
+    if (argsStr.includes('log -1 --oneline')) return 'abc1234 feat: add handoff';
+    if (argsStr.includes('status --short')) return ' M src/handoff.ts\nA  src/new-file.ts';
+    if (argsStr.includes('diff --stat')) return ' src/handoff.ts | 50 +++\n 1 file changed';
+    if (argsStr.includes('log --oneline -10')) return 'abc1234 feat: add handoff\ndef5678 fix: bug';
     return '';
   });
 }
@@ -106,7 +106,7 @@ describe('agent_sentry_generate_handoff MCP tool', () => {
   });
 
   it('handles git failures gracefully', async () => {
-    mockedExecSync.mockImplementation(() => {
+    mockedExecFileSync.mockImplementation(() => {
       throw new Error('git not found');
     });
 

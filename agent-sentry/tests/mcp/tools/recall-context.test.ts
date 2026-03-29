@@ -2,10 +2,35 @@
  * Tests for mcp/tools/recall-context.ts.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const { mockRecall, mockRecallStore } = vi.hoisted(() => {
+  const mockRecall = vi.fn();
+  const mockRecallStore = {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  return { mockRecall, mockRecallStore };
+});
+
+vi.mock('../../../src/memory/intelligence', () => ({
+  ContextRecaller: vi.fn().mockImplementation(() => ({
+    recall: mockRecall,
+  })),
+}));
+
+vi.mock('../../../src/mcp/shared-store', () => ({
+  getSharedStore: vi.fn().mockResolvedValue(mockRecallStore),
+}));
+
 import { name, description, inputSchema, handler } from '../../../src/mcp/tools/recall-context';
 
 describe('recall-context MCP tool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRecall.mockResolvedValue({ results: [] });
+  });
+
   it('has correct name and description', () => {
     expect(name).toBe('agent_sentry_recall_context');
     expect(description).toBeTruthy();

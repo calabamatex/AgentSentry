@@ -2,7 +2,7 @@
  * health.ts — agent_sentry_health tool: comprehensive system health check.
  */
 
-import { MemoryStore } from '../../memory/store';
+import { getSharedStore } from '../shared-store';
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { detectEmbeddingProvider } from '../../memory/embeddings';
 import { getActiveSkills, generateConfigForLevel, validateLevelMatchesSkills, LEVEL_NAMES } from '../../enablement/engine';
@@ -64,7 +64,6 @@ export interface HealthResult {
 export async function handler(
   _args: Record<string, unknown>,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  let store: MemoryStore | null = null;
   const issues: string[] = [];
   let overallStatus: 'healthy' | 'degraded' | 'error' = 'healthy';
 
@@ -72,9 +71,8 @@ export async function handler(
     // Load config
     const memConfig = loadMemoryConfig();
 
-    // Initialize store
-    store = new MemoryStore();
-    await store.initialize();
+    // Initialize store (shared singleton)
+    const store = await getSharedStore();
 
     // Get stats
     const stats = await store.stats();
@@ -211,9 +209,5 @@ export async function handler(
         }, null, 2),
       }],
     };
-  } finally {
-    if (store) {
-      await store.close().catch(() => {});
-    }
   }
 }

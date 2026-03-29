@@ -10,6 +10,9 @@ import { Logger } from '../observability/logger';
 
 const logger = new Logger({ module: 'embeddings' });
 
+/** Maximum HTTP response body size for embedding API responses (10MB). */
+const MAX_RESPONSE_SIZE = 10 * 1024 * 1024;
+
 export interface EmbeddingProvider {
   embed(text: string): Promise<number[]>;
   readonly dimension: number;
@@ -281,7 +284,10 @@ export class OllamaEmbeddingProvider implements EmbeddingProvider {
         headers: { 'Content-Type': 'application/json' },
       }, (res) => {
         let body = '';
-        res.on('data', (chunk) => { body += chunk; });
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > MAX_RESPONSE_SIZE) { req.destroy(); reject(new Error('Embedding response too large')); }
+        });
         res.on('end', () => {
           try {
             const result = JSON.parse(body);
@@ -319,7 +325,10 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
         },
       }, (res) => {
         let body = '';
-        res.on('data', (chunk) => { body += chunk; });
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > MAX_RESPONSE_SIZE) { req.destroy(); reject(new Error('Embedding response too large')); }
+        });
         res.on('end', () => {
           try {
             const result = JSON.parse(body);
@@ -357,7 +366,10 @@ export class VoyageEmbeddingProvider implements EmbeddingProvider {
         },
       }, (res) => {
         let body = '';
-        res.on('data', (chunk) => { body += chunk; });
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > MAX_RESPONSE_SIZE) { req.destroy(); reject(new Error('Embedding response too large')); }
+        });
         res.on('end', () => {
           try {
             const result = JSON.parse(body);

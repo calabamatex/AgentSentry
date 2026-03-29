@@ -13,7 +13,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { scanErrorHandling } from '../../analyzers/error-handling';
 import { scanPiiLogging } from '../../analyzers/pii-scanner';
 import { resolveConfigPath } from '../../config/resolve';
@@ -70,7 +70,7 @@ function checkBlastRadius(filePath: string): void {
   if (fs.existsSync(sessionMarker)) {
     try {
       const sessionStart = fs.readFileSync(sessionMarker, 'utf-8').trim();
-      const recentCommits = execSync(`git log --after="${sessionStart}" --oneline`, {
+      const recentCommits = execFileSync('git', ['log', '--after=' + sessionStart, '--oneline'], {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
@@ -98,7 +98,7 @@ function checkBlastRadius(filePath: string): void {
     for (const f of uniqueFiles) {
       if (fs.existsSync(f) && !f.endsWith('.db') && !f.endsWith('.db-journal') && !f.endsWith('.db-wal')) {
         try {
-          execSync(`git add "${f}"`, { stdio: 'pipe' });
+          execFileSync('git', ['add', f], { stdio: 'pipe' });
         } catch (e) {
           logger.debug('Failed to git add file', { error: e instanceof Error ? e.message : String(e), file: f });
         }
@@ -118,7 +118,7 @@ function checkBlastRadius(filePath: string): void {
 
     // Protect SHA from garbage collection
     const stashMsg = `AgentSentry auto-checkpoint — blast radius ${uniqueCount} files`;
-    execSync(`git stash store -m "${stashMsg}" ${sha}`, { stdio: 'pipe' });
+    execFileSync('git', ['stash', 'store', '-m', stashMsg, sha], { stdio: 'pipe' });
 
     console.log(`${PREFIX} Stash snapshot created: ${sha} (${uniqueCount} files)`);
   } catch (e) {

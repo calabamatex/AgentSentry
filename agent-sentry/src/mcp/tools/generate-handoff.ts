@@ -5,7 +5,7 @@
  * Called by Claude when it detects the context warning, or on demand.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { z } from 'zod';
 
 export const name = 'agent_sentry_generate_handoff';
@@ -38,9 +38,9 @@ export const argsSchema = z.object({
   session_summary: z.string().optional(),
 });
 
-function git(cmd: string): string {
+function git(...args: string[]): string {
   try {
-    return execSync(`git ${cmd}`, {
+    return execFileSync('git', args, {
       encoding: 'utf-8',
       timeout: 5000,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -56,10 +56,10 @@ export async function handler(
   try {
     const parsed = argsSchema.parse(args);
 
-    const branch = git('branch --show-current') || git('rev-parse --abbrev-ref HEAD') || 'unknown';
-    const lastCommit = git('log -1 --oneline') || 'no commits';
-    const uncommitted = git('status --short') || '';
-    const diffStat = git('diff --stat') || '';
+    const branch = git('branch', '--show-current') || git('rev-parse', '--abbrev-ref', 'HEAD') || 'unknown';
+    const lastCommit = git('log', '-1', '--oneline') || 'no commits';
+    const uncommitted = git('status', '--short') || '';
+    const diffStat = git('diff', '--stat') || '';
     const recentCommits = git('log --oneline -10').split('\n').filter(Boolean);
     const sessionId = parsed.session_id ?? `session-${Date.now()}`;
     const remaining = parsed.remaining_work ?? [];

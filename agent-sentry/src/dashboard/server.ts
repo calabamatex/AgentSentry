@@ -78,7 +78,7 @@ export class DashboardServer {
     this.options = {
       port: options?.port ?? 9200,
       host: options?.host ?? '127.0.0.1',
-      corsOrigin: options?.corsOrigin ?? '*',
+      corsOrigin: options?.corsOrigin ?? 'http://127.0.0.1:9200',
     };
 
     this.eventStream = options?.eventStream ?? new EventStream();

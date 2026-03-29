@@ -136,7 +136,7 @@ describe('DashboardServer', () => {
     const info = await server.start();
 
     const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`);
-    expect(res.headers['access-control-allow-origin']).toBe('*');
+    expect(res.headers['access-control-allow-origin']).toBe('http://127.0.0.1:9200');
   });
 
   it('throws if started twice', async () => {

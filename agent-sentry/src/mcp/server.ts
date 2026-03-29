@@ -8,6 +8,7 @@ import {
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { createStdioTransport, createHttpTransport } from './transport';
+import { shutdownSharedStore } from './shared-store';
 import { VERSION } from '../version';
 import { Logger } from '../observability/logger';
 
@@ -140,6 +141,7 @@ export async function main(): Promise<void> {
     console.error(`AgentSentry MCP HTTP server listening on port ${httpTransport.port}`);
 
     process.on('SIGINT', async () => {
+      await shutdownSharedStore();
       await httpTransport.close();
       await server.close();
       process.exit(0);

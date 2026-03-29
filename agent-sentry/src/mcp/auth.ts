@@ -3,6 +3,7 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'http';
+import { timingSafeEqual } from 'crypto';
 
 /**
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
@@ -17,14 +18,14 @@ export function validateAccessKey(key: string): boolean {
     return false;
   }
   // Constant-time comparison to prevent timing attacks
-  if (key.length !== expected.length) {
+  const keyBuf = Buffer.from(key);
+  const expectedBuf = Buffer.from(expected);
+  if (keyBuf.length !== expectedBuf.length) {
+    // Perform a dummy comparison to avoid leaking key length via timing
+    timingSafeEqual(expectedBuf, expectedBuf);
     return false;
   }
-  let mismatch = 0;
-  for (let i = 0; i < key.length; i++) {
-    mismatch |= key.charCodeAt(i) ^ expected.charCodeAt(i);
-  }
-  return mismatch === 0;
+  return timingSafeEqual(keyBuf, expectedBuf);
 }
 
 export interface RateLimitEntry {

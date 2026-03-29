@@ -13,7 +13,7 @@ vi.mock('child_process', async () => {
   const actual = await vi.importActual<typeof childProcess>('child_process');
   return {
     ...actual,
-    execSync: vi.fn(),
+    execFileSync: vi.fn(),
   };
 });
 
@@ -43,18 +43,18 @@ vi.mock('fs', async () => {
 
 import { generateHandoffResult, saveHandoffToMemory } from '../../src/cli/commands/handoff';
 
-const mockedExecSync = vi.mocked(childProcess.execSync);
+const mockedExecFileSync = vi.mocked(childProcess.execFileSync);
 
 describe('auto-save handoff (session-checkpoint integration)', () => {
   beforeEach(() => {
-    mockedExecSync.mockImplementation((cmd: string) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('branch --show-current')) return 'main';
-      if (cmdStr.includes('rev-parse --abbrev-ref')) return 'main';
-      if (cmdStr.includes('log -1 --oneline')) return 'abc1234 fix: test';
-      if (cmdStr.includes('status --short')) return ' M file.ts';
-      if (cmdStr.includes('diff --stat')) return ' file.ts | 3 ++\n 1 file changed';
-      if (cmdStr.includes('log --oneline -10')) return 'abc1234 fix: test';
+    mockedExecFileSync.mockImplementation((_cmd: string, args?: readonly string[]) => {
+      const argsStr = (args ?? []).join(' ');
+      if (argsStr.includes('branch --show-current')) return 'main';
+      if (argsStr.includes('rev-parse --abbrev-ref')) return 'main';
+      if (argsStr.includes('log -1 --oneline')) return 'abc1234 fix: test';
+      if (argsStr.includes('status --short')) return ' M file.ts';
+      if (argsStr.includes('diff --stat')) return ' file.ts | 3 ++\n 1 file changed';
+      if (argsStr.includes('log --oneline -10')) return 'abc1234 fix: test';
       return '';
     });
   });

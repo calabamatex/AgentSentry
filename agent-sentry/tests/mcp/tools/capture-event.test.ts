@@ -4,40 +4,44 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock MemoryStore before importing the handler
-vi.mock('../../../src/memory/store', () => {
-  const mockCapture = vi.fn().mockResolvedValue({
-    id: 'test-id-123',
-    timestamp: '2026-03-20T00:00:00.000Z',
-    session_id: 'test-session',
-    agent_id: 'mcp-server',
-    event_type: 'decision',
-    severity: 'low',
-    skill: 'system',
-    title: 'Test event',
-    detail: 'Test detail',
-    affected_files: [],
-    tags: [],
-    metadata: {},
-    hash: 'abc123',
-    prev_hash: '0'.repeat(64),
-  });
+const mockCaptureResult = {
+  id: 'test-id-123',
+  timestamp: '2026-03-20T00:00:00.000Z',
+  session_id: 'test-session',
+  agent_id: 'mcp-server',
+  event_type: 'decision',
+  severity: 'low',
+  skill: 'system',
+  title: 'Test event',
+  detail: 'Test detail',
+  affected_files: [],
+  tags: [],
+  metadata: {},
+  hash: 'abc123',
+  prev_hash: '0'.repeat(64),
+};
 
-  return {
-    MemoryStore: vi.fn().mockImplementation(() => ({
-      initialize: vi.fn().mockResolvedValue(undefined),
-      capture: mockCapture,
-      close: vi.fn().mockResolvedValue(undefined),
-    })),
+const { mockStore, mockCapture } = vi.hoisted(() => {
+  const mockCapture = vi.fn();
+  const mockStore = {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    capture: mockCapture,
+    close: vi.fn().mockResolvedValue(undefined),
   };
+  return { mockStore, mockCapture };
 });
 
+// Mock shared-store singleton (tools now use getSharedStore())
+vi.mock('../../../src/mcp/shared-store', () => ({
+  getSharedStore: vi.fn().mockResolvedValue(mockStore),
+}));
+
 import { handler } from '../../../src/mcp/tools/capture-event';
-import { MemoryStore } from '../../../src/memory/store';
 
 describe('agent_sentry_capture_event', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCapture.mockResolvedValue(mockCaptureResult);
   });
 
   it('should capture a valid event', async () => {
@@ -55,7 +59,7 @@ describe('agent_sentry_capture_event', () => {
     expect(parsed.severity).toBe('low');
   });
 
-  it('should initialize and close the store', async () => {
+  it('should call capture on the shared store', async () => {
     await handler({
       event_type: 'decision',
       severity: 'low',
@@ -64,9 +68,7 @@ describe('agent_sentry_capture_event', () => {
       detail: 'Test',
     });
 
-    const storeInstance = (MemoryStore as unknown as ReturnType<typeof vi.fn>).mock.results[0].value;
-    expect(storeInstance.initialize).toHaveBeenCalled();
-    expect(storeInstance.close).toHaveBeenCalled();
+    expect(mockStore.capture).toHaveBeenCalled();
   });
 
   it('should pass affected_files and tags', async () => {
@@ -80,7 +82,7 @@ describe('agent_sentry_capture_event', () => {
       tags: ['safety', 'violation'],
     });
 
-    const storeInstance = (MemoryStore as unknown as ReturnType<typeof vi.fn>).mock.results[0].value;
+    const storeInstance = mockStore;
     const captureCall = storeInstance.capture.mock.calls[0][0];
     expect(captureCall.affected_files).toEqual(['src/test.ts']);
     expect(captureCall.tags).toEqual(['safety', 'violation']);
@@ -95,7 +97,7 @@ describe('agent_sentry_capture_event', () => {
       detail: 'Test',
     });
 
-    const storeInstance = (MemoryStore as unknown as ReturnType<typeof vi.fn>).mock.results[0].value;
+    const storeInstance = mockStore;
     const captureCall = storeInstance.capture.mock.calls[0][0];
     expect(captureCall.affected_files).toEqual([]);
     expect(captureCall.tags).toEqual([]);
@@ -137,11 +139,7 @@ describe('agent_sentry_capture_event', () => {
   });
 
   it('should handle store errors gracefully', async () => {
-    const storeModule = await import('../../../src/memory/store');
-    (storeModule.MemoryStore as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(() => ({
-      initialize: vi.fn().mockRejectedValue(new Error('DB connection failed')),
-      close: vi.fn().mockResolvedValue(undefined),
-    }));
+    mockCapture.mockRejectedValueOnce(new Error('DB connection failed'));
 
     const result = await handler({
       event_type: 'decision',

@@ -6,12 +6,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as childProcess from 'child_process';
 import * as fs from 'fs';
 
-// Mock child_process.execSync before importing the command
+// Mock child_process.execFileSync before importing the command
 vi.mock('child_process', async () => {
   const actual = await vi.importActual<typeof childProcess>('child_process');
   return {
     ...actual,
-    execSync: vi.fn(),
+    execFileSync: vi.fn(),
   };
 });
 
@@ -42,17 +42,17 @@ vi.mock('../../src/memory/store', () => ({
 import { handoffCommand, generateHandoffResult, saveHandoffToMemory } from '../../src/cli/commands/handoff';
 import type { ParsedArgs } from '../../src/cli/parser';
 
-const mockedExecSync = vi.mocked(childProcess.execSync);
+const mockedExecFileSync = vi.mocked(childProcess.execFileSync);
 
 function mockGitCommands(): void {
-  mockedExecSync.mockImplementation((cmd: string) => {
-    const cmdStr = String(cmd);
-    if (cmdStr.includes('branch --show-current')) return 'main';
-    if (cmdStr.includes('rev-parse --abbrev-ref')) return 'main';
-    if (cmdStr.includes('log -1 --oneline')) return 'abc1234 fix: some recent fix';
-    if (cmdStr.includes('status --short')) return ' M src/foo.ts\n M src/bar.ts';
-    if (cmdStr.includes('diff --stat')) return ' src/foo.ts | 10 ++++---\n 1 file changed, 7 insertions(+), 3 deletions(-)';
-    if (cmdStr.includes('log --oneline -10')) return 'abc1234 fix: some recent fix\ndef5678 feat: add feature\nghi9012 chore: cleanup';
+  mockedExecFileSync.mockImplementation((_cmd: string, args?: readonly string[]) => {
+    const argsStr = (args ?? []).join(' ');
+    if (argsStr.includes('branch --show-current')) return 'main';
+    if (argsStr.includes('rev-parse --abbrev-ref')) return 'main';
+    if (argsStr.includes('log -1 --oneline')) return 'abc1234 fix: some recent fix';
+    if (argsStr.includes('status --short')) return ' M src/foo.ts\n M src/bar.ts';
+    if (argsStr.includes('diff --stat')) return ' src/foo.ts | 10 ++++---\n 1 file changed, 7 insertions(+), 3 deletions(-)';
+    if (argsStr.includes('log --oneline -10')) return 'abc1234 fix: some recent fix\ndef5678 feat: add feature\nghi9012 chore: cleanup';
     return '';
   });
 }
@@ -158,7 +158,7 @@ describe('handoff command', () => {
   });
 
   it('handles missing git gracefully', async () => {
-    mockedExecSync.mockImplementation(() => {
+    mockedExecFileSync.mockImplementation(() => {
       throw new Error('git not found');
     });
 

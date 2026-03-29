@@ -9,7 +9,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 
@@ -95,7 +95,7 @@ function stashSnapshot(config: Record<string, unknown>): string {
 
     // Protect the SHA from garbage collection by storing it in the stash reflog
     const stashMsg = `AgentSentry checkpoint — ${summary}`;
-    execSync(`git stash store -m "${stashMsg}" ${sha}`, { stdio: 'pipe' });
+    execFileSync('git', ['stash', 'store', '-m', stashMsg, sha], { stdio: 'pipe' });
 
     console.log(`${PREFIX} Snapshot created: ${sha} (${summary})`);
     return sha;

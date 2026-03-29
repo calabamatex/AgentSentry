@@ -63,6 +63,7 @@ export class SqliteProvider implements StorageProvider {
     this.db = new Database(this.dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
+    this.db.pragma('synchronous = NORMAL');
     runMigrations(this.db);
   }
 
