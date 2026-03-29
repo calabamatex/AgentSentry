@@ -1,4 +1,4 @@
-# AgentSentry v4.1.0 -- Comprehensive SDLC Analysis Report
+# AgentSentry v4.1.0-beta.1 -- Comprehensive SDLC Analysis Report
 
 **Date**: 2026-03-29
 **Repository**: calabamatex/AgentSentry

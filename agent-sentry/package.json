@@ -1,6 +1,6 @@
 {
   "name": "agent-sentry",
-  "version": "4.1.0",
+  "version": "4.1.0-beta.1",
   "description": "AgentSentry v4.0 — Memory-Aware Agent Management",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
