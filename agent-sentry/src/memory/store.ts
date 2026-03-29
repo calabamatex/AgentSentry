@@ -57,10 +57,18 @@ export class MemoryStore {
       }
     }
 
-    // Recover last hash from chain
-    const chain = await this.provider.getChain();
-    if (chain.length > 0) {
-      this.lastHash = chain[chain.length - 1].hash;
+    // Recover last hash from chain (single-row query, not full table scan)
+    if (this.provider.getLatestHash) {
+      const latestHash = await this.provider.getLatestHash();
+      if (latestHash) {
+        this.lastHash = latestHash;
+      }
+    } else {
+      // Fallback for providers without getLatestHash
+      const chain = await this.provider.getChain();
+      if (chain.length > 0) {
+        this.lastHash = chain[chain.length - 1].hash;
+      }
     }
 
     this.initialized = true;

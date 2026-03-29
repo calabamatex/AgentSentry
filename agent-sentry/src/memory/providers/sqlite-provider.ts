@@ -61,6 +61,7 @@ export class SqliteProvider implements StorageProvider {
       fs.mkdirSync(dir, { recursive: true });
     }
     this.db = new Database(this.dbPath);
+    this.db.pragma('busy_timeout = 5000');
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
     this.db.pragma('synchronous = NORMAL');

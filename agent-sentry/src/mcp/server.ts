@@ -140,12 +140,14 @@ export async function main(): Promise<void> {
     await server.connect(httpTransport.transport);
     console.error(`AgentSentry MCP HTTP server listening on port ${httpTransport.port}`);
 
-    process.on('SIGINT', async () => {
+    const shutdown = async () => {
       await shutdownSharedStore();
       await httpTransport.close();
       await server.close();
       process.exit(0);
-    });
+    };
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
   } else {
     const transport = createStdioTransport();
     await server.connect(transport);
