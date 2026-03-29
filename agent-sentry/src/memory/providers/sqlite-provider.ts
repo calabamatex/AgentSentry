@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import { StorageProvider } from './storage-provider';
 import { runMigrations } from '../migrations/sqlite-migrations';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'sqlite-provider' });
 import {
@@ -458,7 +459,7 @@ function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   try {
     return JSON.parse(value);
   } catch (e) {
-    logger.debug('JSON parse failed in safeJsonParse', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('JSON parse failed in safeJsonParse', { error: errorMessage(e) });
     return fallback;
   }
 }

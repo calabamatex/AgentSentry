@@ -7,6 +7,7 @@ import { StorageProvider } from './providers/storage-provider';
 import { createProvider, loadMemoryConfig, MemoryConfig } from './providers/provider-factory';
 import { EmbeddingProvider, NoopEmbeddingProvider, detectEmbeddingProvider } from './embeddings';
 import { Logger } from '../observability/logger';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'memory-store' });
 import {
@@ -53,7 +54,7 @@ export class MemoryStore {
         const config = this.config;
         this.embeddingProvider = await detectEmbeddingProvider(config.embedding_provider);
       } catch (e) {
-        logger.debug('Embedding provider auto-detection failed, keeping noop', { error: e instanceof Error ? e.message : String(e) });
+        logger.debug('Embedding provider auto-detection failed, keeping noop', { error: errorMessage(e) });
       }
     }
 
@@ -83,7 +84,7 @@ export class MemoryStore {
         });
       }
     } catch (e) {
-      logger.debug('Auto-prune failed', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Auto-prune failed', { error: errorMessage(e) });
     }
   }
 
@@ -115,7 +116,7 @@ export class MemoryStore {
         embedding = await this.embeddingProvider.embed(text);
       }
     } catch (e) {
-      logger.debug('Embedding generation failed, storing event without embedding', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Embedding generation failed, storing event without embedding', { error: errorMessage(e) });
     }
 
     const eventBase = {
@@ -166,7 +167,7 @@ export class MemoryStore {
           });
         }
       } catch (e) {
-        logger.debug('Vector search failed, falling back to structured search', { error: e instanceof Error ? e.message : String(e) });
+        logger.debug('Vector search failed, falling back to structured search', { error: errorMessage(e) });
       }
     }
 
@@ -251,7 +252,7 @@ export class MemoryStore {
           }
         }
       } catch (e) {
-        logger.debug('Incremental chain verification failed, falling back to full verification', { error: e instanceof Error ? e.message : String(e) });
+        logger.debug('Incremental chain verification failed, falling back to full verification', { error: errorMessage(e) });
       }
     }
 
@@ -280,7 +281,7 @@ export class MemoryStore {
           eventsVerified: previouslyVerified + chain.length,
         });
       } catch (e) {
-        logger.debug('Chain checkpoint save failed', { error: e instanceof Error ? e.message : String(e) });
+        logger.debug('Chain checkpoint save failed', { error: errorMessage(e) });
       }
     }
 
