@@ -6,6 +6,10 @@
 
 set -euo pipefail
 
+HOOK_NAME="context-estimator"
+DEBOUNCE_SECONDS=30
+source "$(dirname "${BASH_SOURCE[0]}")/hook-guard.sh" || exit 0
+
 # Consume stdin (hook input) so the pipe doesn't break
 cat > /dev/null 2>&1 || true
 
@@ -113,7 +117,7 @@ fi
 # Only print if there are notifications (keep hook quiet when healthy)
 if [[ ${#NOTIFICATIONS[@]} -gt 0 ]]; then
     for note in "${NOTIFICATIONS[@]}"; do
-        echo "$note"
+        echo "$note" >&2
     done
 fi
 

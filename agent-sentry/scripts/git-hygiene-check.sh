@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+HOOK_NAME="git-hygiene"
+DEBOUNCE_SECONDS=10
+source "$(dirname "${BASH_SOURCE[0]}")/hook-guard.sh" || exit 0
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
 PREFIX="[AgentSentry]"
@@ -136,38 +140,14 @@ MID_SESSION_CHECKPOINT_THRESHOLD=8
 WARNINGS=()
 ACTIONS_TAKEN=()
 
-# --- Auto-save: too many uncommitted files OR too long since last commit ---
-NEEDS_AUTO_SAVE=false
+# --- Advisory warnings only (NO auto-commits — they cause feedback loops) ---
 
 if [[ "$UNCOMMITTED_COUNT" -gt "$MAX_UNCOMMITTED" ]]; then
     WARNINGS+=("$UNCOMMITTED_COUNT uncommitted files detected (threshold: $MAX_UNCOMMITTED).")
-    NEEDS_AUTO_SAVE=true
 fi
 
 if [[ "$MINUTES_SINCE_COMMIT" -gt "$AUTO_COMMIT_MINUTES" ]] && [[ "$UNCOMMITTED_COUNT" -gt 0 ]]; then
     WARNINGS+=("Last commit was ${MINUTES_SINCE_COMMIT} minutes ago (threshold: ${AUTO_COMMIT_MINUTES}min).")
-    NEEDS_AUTO_SAVE=true
-fi
-
-if [[ "$NEEDS_AUTO_SAVE" == true ]]; then
-    if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
-        echo "$PREFIX ADVISORY: Auto-commit would fire (${UNCOMMITTED_COUNT} files, ${MINUTES_SINCE_COMMIT}min since last commit) but auto_commit_enabled=false."
-    elif [[ "$CHECKPOINT_MODE" = "dry-run" ]]; then
-        echo "$PREFIX DRY-RUN: Would auto-commit ${UNCOMMITTED_COUNT} file(s) (${MINUTES_SINCE_COMMIT}min since last commit). No changes made."
-    elif [[ "$CHECKPOINT_MODE" = "confirm" ]]; then
-        echo "$PREFIX CONFIRM: Would checkpoint ${UNCOMMITTED_COUNT} file(s) (${MINUTES_SINCE_COMMIT}min since last commit). Set auto_checkpoint_mode=auto to proceed."
-    else
-        git add -A 2>/dev/null || true
-        COMMIT_MSG="[agent-sentry] auto-save before modification"
-        if git commit -m "$COMMIT_MSG" --no-verify 2>/dev/null; then
-            ACTIONS_TAKEN+=("Auto-committed: \"$COMMIT_MSG\" (${UNCOMMITTED_COUNT} files, ${MINUTES_SINCE_COMMIT}min since last commit)")
-            # Reset session counter after auto-save
-            echo "0" > "$SESSION_STATE"
-            FILES_MODIFIED_COUNT=0
-            # Refresh uncommitted count
-            UNCOMMITTED_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-        fi
-    fi
 fi
 
 # --- Main/master branch warning with > 3 uncommitted changes ---
@@ -177,50 +157,15 @@ if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
     fi
 fi
 
-# --- Mid-session checkpoint: 8+ file modifications without a checkpoint ---
-if [[ "$FILES_MODIFIED_COUNT" -ge "$MID_SESSION_CHECKPOINT_THRESHOLD" ]] && [[ "$UNCOMMITTED_COUNT" -gt 0 ]]; then
-    if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
-        echo "$PREFIX ADVISORY: Mid-session checkpoint would fire ($FILES_MODIFIED_COUNT modifications) but auto_commit_enabled=false."
-    elif [[ "$CHECKPOINT_MODE" = "dry-run" ]]; then
-        echo "$PREFIX DRY-RUN: Would mid-session checkpoint ${UNCOMMITTED_COUNT} file(s) ($FILES_MODIFIED_COUNT modifications). No changes made."
-    elif [[ "$CHECKPOINT_MODE" = "confirm" ]]; then
-        echo "$PREFIX CONFIRM: Would checkpoint ${UNCOMMITTED_COUNT} file(s) ($FILES_MODIFIED_COUNT modifications). Set auto_checkpoint_mode=auto to proceed."
-    else
-        git add -A 2>/dev/null || true
-        CHECKPOINT_MSG="[agent-sentry] mid-session checkpoint"
-        if git commit -m "$CHECKPOINT_MSG" --no-verify 2>/dev/null; then
-            ACTIONS_TAKEN+=("Mid-session checkpoint: \"$CHECKPOINT_MSG\" ($FILES_MODIFIED_COUNT modifications tracked)")
-            echo "0" > "$SESSION_STATE"
-            FILES_MODIFIED_COUNT=0
-            UNCOMMITTED_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-        fi
-    fi
-fi
-
 # =========================================================================
 # Output (only when there is something to report)
 # =========================================================================
-if [[ ${#WARNINGS[@]} -gt 0 ]] || [[ ${#ACTIONS_TAKEN[@]} -gt 0 ]]; then
-    echo "$PREFIX Git Hygiene Check"
-    echo ""
-
-    if [[ ${#WARNINGS[@]} -gt 0 ]]; then
-        echo "$PREFIX Warnings:"
-        for w in "${WARNINGS[@]}"; do
-            echo "$PREFIX   - $w"
-        done
-        echo ""
-    fi
-
-    if [[ ${#ACTIONS_TAKEN[@]} -gt 0 ]]; then
-        echo "$PREFIX Actions taken:"
-        for a in "${ACTIONS_TAKEN[@]}"; do
-            echo "$PREFIX   - $a"
-        done
-        echo ""
-    fi
-
-    echo "$PREFIX Status: branch=$CURRENT_BRANCH | uncommitted=$UNCOMMITTED_COUNT | last_commit=${MINUTES_SINCE_COMMIT}min ago | session_modifications=$FILES_MODIFIED_COUNT"
+if [[ ${#WARNINGS[@]} -gt 0 ]]; then
+    echo "$PREFIX Git Hygiene Check" >&2
+    for w in "${WARNINGS[@]}"; do
+        echo "$PREFIX   - $w" >&2
+    done
+    echo "$PREFIX Status: branch=$CURRENT_BRANCH | uncommitted=$UNCOMMITTED_COUNT | last_commit=${MINUTES_SINCE_COMMIT}min ago | session_modifications=$FILES_MODIFIED_COUNT" >&2
 fi
 
 # Always allow — this hook warns and takes preventive action but never blocks
