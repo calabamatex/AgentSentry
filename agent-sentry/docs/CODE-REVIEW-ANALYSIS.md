@@ -1,4 +1,4 @@
-# AgentSentry v4.1.0 — Comprehensive Code Review & Analysis
+# AgentSentry v4.1.0-beta.1 — Comprehensive Code Review & Analysis
 
 **Date:** 2026-03-28
 **Reviewer:** Claude Code (Opus 4.6)
@@ -315,4 +315,4 @@ AgentSentry targets the emerging need for **AI agent operational oversight** —
 
 ## 8. Conclusion
 
-AgentSentry v4.1.0 is a well-architected, thoroughly-tested framework that addresses a genuine gap in the AI agent tooling landscape. Its progressive enablement model, hash-chain integrity, and MCP-native design are differentiators. The main risks are concurrency bugs in the hash chain (P0), supply-chain verification gaps (P0), and production hardening gaps (P3). At 7.35/10, it is solid for early-adopter use and approximately one hardening sprint away from production readiness.
+AgentSentry v4.1.0-beta.1 is a well-architected, thoroughly-tested framework that addresses a genuine gap in the AI agent tooling landscape. Its progressive enablement model, hash-chain integrity, and MCP-native design are differentiators. The main risks are concurrency bugs in the hash chain (P0), supply-chain verification gaps (P0), and production hardening gaps (P3). At 7.35/10, it is solid for early-adopter use and approximately one hardening sprint away from production readiness.
