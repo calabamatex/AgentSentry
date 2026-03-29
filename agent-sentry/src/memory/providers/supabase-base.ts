@@ -249,7 +249,8 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
    * Default implementation passes all IDs through.
    */
   protected filterValidIds(ids: string[]): string[] {
-    return ids;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return ids.filter((id) => UUID_RE.test(id));
   }
 
   async saveChainCheckpoint(checkpoint: {
@@ -296,9 +297,9 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
       `or=(title.ilike.${encodedQuery},detail.ilike.${encodedQuery})`,
     ];
 
-    if (options.event_type) params.push(`event_type=eq.${options.event_type}`);
-    if (options.severity) params.push(`severity=eq.${options.severity}`);
-    if (options.skill) params.push(`skill=eq.${options.skill}`);
+    if (options.event_type) params.push(`event_type=eq.${encodeURIComponent(options.event_type)}`);
+    if (options.severity) params.push(`severity=eq.${encodeURIComponent(options.severity)}`);
+    if (options.skill) params.push(`skill=eq.${encodeURIComponent(options.skill)}`);
     if (options.since) params.push(`timestamp=gte.${encodeURIComponent(options.since)}`);
     if (options.until) params.push(`timestamp=lte.${encodeURIComponent(options.until)}`);
     if (options.session_id) params.push(`session_id=eq.${encodeURIComponent(options.session_id)}`);
@@ -328,14 +329,14 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
 
   protected buildQueryParams(options: QueryOptions): string[] {
     const params: string[] = [];
-    if (options.event_type) params.push(`event_type=eq.${options.event_type}`);
-    if (options.severity) params.push(`severity=eq.${options.severity}`);
-    if (options.skill) params.push(`skill=eq.${options.skill}`);
+    if (options.event_type) params.push(`event_type=eq.${encodeURIComponent(options.event_type)}`);
+    if (options.severity) params.push(`severity=eq.${encodeURIComponent(options.severity)}`);
+    if (options.skill) params.push(`skill=eq.${encodeURIComponent(options.skill)}`);
     if (options.since) params.push(`timestamp=gte.${encodeURIComponent(options.since)}`);
     if (options.until) params.push(`timestamp=lte.${encodeURIComponent(options.until)}`);
     if (options.session_id) params.push(`session_id=eq.${encodeURIComponent(options.session_id)}`);
     if (options.agent_id) params.push(`agent_id=eq.${encodeURIComponent(options.agent_id)}`);
-    if (options.tag) params.push(`tags=cs.["${options.tag}"]`);
+    if (options.tag) params.push(`tags=cs.${encodeURIComponent(`["${options.tag}"]`)}`);
     return params;
   }
 

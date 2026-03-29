@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as https from 'https';
 import * as http from 'http';
 import { Logger } from '../observability/logger';
+import { createHash } from 'crypto';
 import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'embeddings' });
@@ -25,6 +26,10 @@ const ONNX_MODEL_FILE = 'all-MiniLM-L6-v2.onnx';
 const ONNX_TOKENIZER_FILE = 'tokenizer.json';
 const ONNX_MODEL_URL = 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx';
 const ONNX_TOKENIZER_URL = 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json';
+
+/** SHA-256 checksum for integrity verification (set to empty string to skip verification). */
+const ONNX_MODEL_SHA256 = '';
+const ONNX_TOKENIZER_SHA256 = '';
 
 export class NoopEmbeddingProvider implements EmbeddingProvider {
   readonly name = 'noop';
@@ -60,6 +65,9 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     }
     if (!fs.existsSync(tokenizerPath)) {
       await this.downloadFile(ONNX_TOKENIZER_URL, tokenizerPath);
+      if (ONNX_TOKENIZER_SHA256) {
+        await this.verifyChecksum(tokenizerPath, ONNX_TOKENIZER_SHA256);
+      }
     }
 
     try {
@@ -144,6 +152,18 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
 
   private async downloadModel(destPath: string): Promise<void> {
     await this.downloadFile(ONNX_MODEL_URL, destPath);
+    if (ONNX_MODEL_SHA256) {
+      await this.verifyChecksum(destPath, ONNX_MODEL_SHA256);
+    }
+  }
+
+  private async verifyChecksum(filePath: string, expectedHash: string): Promise<void> {
+    const fileBuffer = fs.readFileSync(filePath);
+    const actualHash = createHash('sha256').update(fileBuffer).digest('hex');
+    if (actualHash !== expectedHash) {
+      fs.unlinkSync(filePath);
+      throw new Error(`Checksum mismatch for ${path.basename(filePath)}: expected ${expectedHash}, got ${actualHash}`);
+    }
   }
 
   private async downloadFile(url: string, destPath: string): Promise<void> {
