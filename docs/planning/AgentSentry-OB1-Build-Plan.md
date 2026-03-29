@@ -1,7 +1,7 @@
 # AgentOps v4.0 — OB1 Memory Integration Build Plan
 
 **Date:** March 20, 2026
-**Source:** AgentOps-Product-Spec.md v3.0 + AgentOps-OB1-Analysis.md
+**Source:** AgentSentry-Product-Spec.md v3.0 + AgentSentry-OB1-Analysis.md
 **Build Target:** AgentOps v4.0 — Memory-Aware Agent Management
 **Stack:** TypeScript / Node.js (matching MCP ecosystem and target audience)
 
@@ -30,7 +30,7 @@ This plan upgrades AgentOps from a stateless, session-scoped monitoring system t
 | **Plugin Architect** | `architecture` | 3 (Sonnet) | Designs contribution model, metadata schemas, validation |
 | **Security Auditor** | `security-auditor` | 3 (Sonnet) | Reviews all new code for secrets, injection, data leakage |
 | **Test Engineer** | `tester` | 2 (Haiku) | TDD mock-first tests for every module |
-| **Spec Writer** | `planner` | 3 (Sonnet) | Updates AgentOps-Product-Spec.md with new sections |
+| **Spec Writer** | `planner` | 3 (Sonnet) | Updates AgentSentry-Product-Spec.md with new sections |
 
 ---
 
@@ -414,7 +414,7 @@ tests/
 | Hook integration | All hook scripts updated | Events captured on every hook firing |
 | Scaffold generation | `src/scaffold/generator.ts` updated | CONTEXT.md generated from memory store |
 | Config schema update | `config/agentops.config.schema.json` | `memory.provider` accepts "sqlite" or "supabase" |
-| Spec update | `docs/AgentOps-Product-Spec.md` §25 added | New section reviewed |
+| Spec update | `docs/AgentSentry-Product-Spec.md` §25 added | New section reviewed |
 
 ```bash
 # Phase 1 verification
@@ -586,7 +586,7 @@ tests/
 | Auth module | `src/mcp/auth.ts` | HTTP requires valid key |
 | Claude integration | README section | `claude mcp add` works |
 | Cursor integration | Example config | `.cursor/mcp.json` works |
-| Spec update | `docs/AgentOps-Product-Spec.md` §26 added | New section reviewed |
+| Spec update | `docs/AgentSentry-Product-Spec.md` §26 added | New section reviewed |
 
 ---
 
@@ -736,7 +736,7 @@ agent-sentry/
 | 4 plugin templates | `plugins/_templates/*` | Each template validates against schema |
 | Plugin schema | `config/plugin.schema.json` | JSON Schema valid |
 | Validation script | `scripts/validate-plugin.sh` | 11 checks pass on template plugins |
-| Spec update | `docs/AgentOps-Product-Spec.md` §27, §23 expanded | Reviewed |
+| Spec update | `docs/AgentSentry-Product-Spec.md` §27, §23 expanded | Reviewed |
 
 ---
 
@@ -835,7 +835,7 @@ The hash-chained audit records remain unchanged. A parallel index adds:
 
 ### 4.4 Spec Updates — Spec Writer
 
-Update `AgentOps-Product-Spec.md` to v4.0:
+Update `AgentSentry-Product-Spec.md` to v4.0:
 
 | Section | Change |
 |---------|--------|
@@ -863,7 +863,7 @@ Update `AgentOps-Product-Spec.md` to v4.0:
 | Dashboard adaptation | `agent-sentry/dashboard/*.html` | Disabled skills show upgrade prompt |
 | Auto-enrichment | `src/memory/enrichment.ts` | Local patterns run <10ms, enrichments are accurate |
 | Semantic audit | `src/memory/audit-index.ts` | Natural language audit queries return ranked results |
-| Spec v4.0 | `docs/AgentOps-Product-Spec.md` | All new sections present, version bumped |
+| Spec v4.0 | `docs/AgentSentry-Product-Spec.md` | All new sections present, version bumped |
 
 ---
 
@@ -941,7 +941,7 @@ bash agent-sentry/scripts/setup-wizard.sh --dry-run --level 5      # Level 5 con
 
 ### Spec Diff Summary
 
-After all phases complete, `AgentOps-Product-Spec.md` should show:
+After all phases complete, `AgentSentry-Product-Spec.md` should show:
 
 - Version: 4.0 (was 3.0)
 - 4 new sections (§25-28)
@@ -980,7 +980,7 @@ npx @claude-flow/cli@latest swarm init \
 # Seed shared build context
 npx @claude-flow/cli@latest memory store \
   --key "agentops-v4-context" \
-  --value "OB1 memory integration build. See AgentOps-OB1-Analysis.md for rationale." \
+  --value "OB1 memory integration build. See AgentSentry-OB1-Analysis.md for rationale." \
   --namespace agentops-build \
   --tags "context,ob1,v4"
 ```

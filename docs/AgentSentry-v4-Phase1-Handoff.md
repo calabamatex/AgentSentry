@@ -6,9 +6,9 @@
 **Prior work:** v0.2 complete (6 clean commits), v0.3 wiring done (cost-tracker, lifecycle-manager, plugin-loader)
 
 ## Build Plan Source
-Full plan: `AgentOps-OB1-Build-Plan.md` (repo root)
-Product spec: `AgentOps-Product-Spec.md` (repo root)
-OB1 analysis: `AgentOps-OB1-Analysis.md` (repo root)
+Full plan: `AgentSentry-OB1-Build-Plan.md` (repo root)
+Product spec: `AgentSentry-Product-Spec.md` (repo root)
+OB1 analysis: `AgentSentry-OB1-Analysis.md` (repo root)
 
 ## Decisions Made (This Session)
 
@@ -19,7 +19,7 @@ OB1 analysis: `AgentOps-OB1-Analysis.md` (repo root)
 | 3 | **ONNX model: download-on-first-use (Option B)** | Keeps repo small. Model cached to `agent-sentry/models/` on first `search()` call. No 23MB binary in git. |
 | 4 | **Stub Supabase, implement SQLite only** | Supabase needs env vars to test. Build the `StorageProvider` interface + SQLite provider. Supabase provider is a stub returning `NotImplementedError`. |
 | 5 | **Phase 1 only this cycle** | Context limits. Phases 2-4 deferred to subsequent sessions. |
-| 6 | **Spec at repo root** | `AgentOps-Product-Spec.md` is at `/AgentOps-Product-Spec.md`, not in `docs/`. |
+| 6 | **Spec at repo root** | `AgentSentry-Product-Spec.md` is at `/AgentSentry-Product-Spec.md`, not in `docs/`. |
 
 ## What to Build (Phase 1: Persistent Memory Store)
 
@@ -112,7 +112,7 @@ cd agentops && npm run build
 - `agent-sentry/agentops.config.json` — current config (no `memory` section yet)
 
 ## After Phase 1
-Phases 2-4 are detailed in `AgentOps-OB1-Build-Plan.md`:
+Phases 2-4 are detailed in `AgentSentry-OB1-Build-Plan.md`:
 - **Phase 2:** MCP Server (8 tools, stdio + HTTP transport)
 - **Phase 3:** Primitives library + Plugin contribution model
 - **Phase 4:** Progressive enablement (5 levels) + auto-classification enrichment

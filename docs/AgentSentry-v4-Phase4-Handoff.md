@@ -6,9 +6,9 @@
 **Prior work:** Phases 1-3 complete. Phase 4 complete. 393 tests passing, build clean.
 
 ## Build Plan Source
-Full plan: `AgentOps-OB1-Build-Plan.md` (repo root, Phase 4 at line ~781)
-Phase 2+3 handoff: `docs/AgentOps-v4-Phase2-3-Handoff.md`
-Product spec: `AgentOps-Product-Spec.md` (repo root, now v4.0)
+Full plan: `AgentSentry-OB1-Build-Plan.md` (repo root, Phase 4 at line ~781)
+Phase 2+3 handoff: `docs/AgentSentry-v4-Phase2-3-Handoff.md`
+Product spec: `AgentSentry-Product-Spec.md` (repo root, now v4.0)
 
 ## Phase 4 Completed Assets
 
@@ -48,7 +48,7 @@ Product spec: `AgentOps-Product-Spec.md` (repo root, now v4.0)
 | `getSessionTimeline()` | Chronological events for a session |
 
 ### 4.4 Product Spec Update
-`AgentOps-Product-Spec.md` updated from v3.0 to v4.0:
+`AgentSentry-Product-Spec.md` updated from v3.0 to v4.0:
 - Modified sections: §1.1, §1.4, §1.5, §3, §6, §8/§9, §11, §13, §19, §21
 - New sections: §25 (Memory), §26 (MCP), §27 (Primitives), §28 (Enablement)
 

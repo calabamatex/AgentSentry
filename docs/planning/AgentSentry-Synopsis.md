@@ -147,10 +147,10 @@ AgentOps is that layer. It's the difference between "we built something cool" an
 
 | Document | What It Is | Lines |
 |---|---|---|
-| `AgentOps-Product-Spec.md` | Complete product specification (v3.0), 23 sections + appendices — generic, stack-agnostic | 1,605 |
+| `AgentSentry-Product-Spec.md` | Complete product specification (v3.0), 23 sections + appendices — generic, stack-agnostic | 1,605 |
 | `Agent-Management-Implementation-Guide.md` | Detailed how-to for each of the 5 core skills with templates, prompts, and iteration plans | 656 |
-| `AgentOps-Architecture-Evolution.md` | Analysis of 9 architectural gaps with research-backed solutions | 763 |
-| `AgentOps-Synopsis.md` | This document — project overview for agentic developers | ~170 |
+| `AgentSentry-Architecture-Evolution.md` | Analysis of 9 architectural gaps with research-backed solutions | 763 |
+| `AgentSentry-Synopsis.md` | This document — project overview for agentic developers | ~170 |
 | `From-Vibe-Coding-to-Agent-Management.md` | Original synopsis of the 5 skills (source transcript distillation) | 132 |
 | `agent-management-guide.html` | Interactive HTML guide with expandable sections, progress tracking, and copyable templates | 1,041 |
 | `agentops-dashboard.html` | Full dashboard prototype with skill drill-downs, trends, and agent monitoring | 787 |

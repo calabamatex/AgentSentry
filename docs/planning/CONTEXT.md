@@ -20,8 +20,8 @@ This session completed all 4 build phases of AgentOps v4.0, plus P0 scaling fixe
 | Enablement | `agent-sentry/src/enablement/engine.ts` |
 | Enrichment | `agent-sentry/src/memory/enrichment.ts` |
 | Config | `agent-sentry/agentops.config.json` |
-| Build Plan | `AgentOps-OB1-Build-Plan.md` |
-| Product Spec | `AgentOps-Product-Spec.md` |
+| Build Plan | `AgentSentry-OB1-Build-Plan.md` |
+| Product Spec | `AgentSentry-Product-Spec.md` |
 
 ## Constraints
 

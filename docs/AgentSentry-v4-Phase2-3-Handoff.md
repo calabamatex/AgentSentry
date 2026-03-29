@@ -6,9 +6,9 @@
 **Prior work:** Phase 1 complete (Persistent Memory Store) — 44 tests passing, build clean
 
 ## Build Plan Source
-Full plan: `AgentOps-OB1-Build-Plan.md` (repo root, Phases 2+3 start at line ~454)
-Phase 1 handoff: `docs/AgentOps-v4-Phase1-Handoff.md`
-Product spec: `AgentOps-Product-Spec.md` (repo root)
+Full plan: `AgentSentry-OB1-Build-Plan.md` (repo root, Phases 2+3 start at line ~454)
+Phase 1 handoff: `docs/AgentSentry-v4-Phase1-Handoff.md`
+Product spec: `AgentSentry-Product-Spec.md` (repo root)
 
 ## Phase 1 Completed Assets
 
@@ -231,4 +231,4 @@ bash scripts/validate-plugin.sh plugins/_templates/monitor
 - If running as a swarm: use `hierarchical` topology, one agent per phase, shared memory namespace `agentops-build`
 
 ## After Phase 2+3
-Phase 4 (Progressive Enablement + Auto-Classification) is detailed in `AgentOps-OB1-Build-Plan.md` starting at line ~781. It requires both Phases 2 and 3 complete.
+Phase 4 (Progressive Enablement + Auto-Classification) is detailed in `AgentSentry-OB1-Build-Plan.md` starting at line ~781. It requires both Phases 2 and 3 complete.

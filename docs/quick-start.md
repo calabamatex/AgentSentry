@@ -127,7 +127,7 @@ If you use Claude Code, create a `CLAUDE.md` at your project root with project-s
 
 ## 5. Configure for Claude Code
 
-Add the AgentOps hook entries to `.claude/settings.json` in your project. Create the file if it does not exist. Below is the minimal AgentOps-specific configuration -- merge these entries into any existing hooks you already have:
+Add the AgentOps hook entries to `.claude/settings.json` in your project. Create the file if it does not exist. Below is the minimal AgentSentry-specific configuration -- merge these entries into any existing hooks you already have:
 
 ```json
 {

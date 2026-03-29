@@ -326,10 +326,10 @@ MIT -- see [LICENSE](LICENSE) for details.
 - [Getting Started Guide](agent-sentry/docs/getting-started.md)
 - [First Session Walkthrough](agent-sentry/docs/first-session.md)
 - [API Reference](agent-sentry/docs/api-reference.md)
-- [Product Specification](docs/planning/AgentOps-Product-Spec.md) -- Full v4.1.0-beta spec covering architecture, skills, memory, MCP, and integrations
-- [Architecture Evolution](docs/planning/AgentOps-Architecture-Evolution.md) -- Design decisions and architectural history
+- [Product Specification](docs/planning/AgentSentry-Product-Spec.md) -- Full v4.1.0-beta spec covering architecture, skills, memory, MCP, and integrations
+- [Architecture Evolution](docs/planning/AgentSentry-Architecture-Evolution.md) -- Design decisions and architectural history
 - [Implementation Guide](docs/planning/Agent-Management-Implementation-Guide.md) -- Practical guide for managing AI agents
-- [Synopsis](docs/planning/AgentOps-Synopsis.md) -- Non-technical project overview
+- [Synopsis](docs/planning/AgentSentry-Synopsis.md) -- Non-technical project overview
 - [Memory Model](agent-sentry/docs/architecture/memory-model.md) -- Hash chains, search, and storage providers
 - [Enablement Model](agent-sentry/docs/architecture/enablement-model.md) -- 5 levels with skill mapping
 - [MCP Integration](agent-sentry/docs/architecture/mcp-integration.md) -- Tools, transports, and auth

@@ -1,7 +1,7 @@
 # AgentOps for RuFlo — Implementation Plan
 
 **Created:** March 19, 2026
-**Source Spec:** AgentOps-RuFlo-Spec.md v3.0
+**Source Spec:** AgentSentry-RuFlo-Spec.md v3.0
 **Target Repo:** https://github.com/ruvnet/ruflo/tree/main
 
 ---
