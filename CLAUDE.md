@@ -217,6 +217,15 @@ npx @claude-flow/cli@latest doctor --fix
 - CLI tools handle coordination via Bash: swarm init, memory, hooks, routing
 - NEVER use CLI tools as a substitute for Task tool agents
 
+## Branch Hygiene
+
+- Feature branches MUST be merged to main or cleaned up before a session ends
+- Infrastructure fixes (hooks, gitignore, CI) go DIRECTLY on main — never on a feature branch
+- Never leave orphaned branches — if work is incomplete, document it in the commit message
+- Consciousness research lives at `calabamatex/consciouness-research`, NOT in this repo
+- Hook-written runtime data goes to `~/.agent-sentry/data/` — NEVER git-tracked
+- Before creating a new branch, check `git branch -r` for existing unmerged branches
+
 ## Support
 
 - Documentation: https://github.com/ruvnet/claude-flow
