@@ -55,3 +55,8 @@ vendor/
 
 # AgentSentry hook-written runtime data (NEVER track these)
 agent-sentry/dashboard/data/*.json
+
+# Claude-flow runtime data inside subpackages
+agent-sentry/.claude-flow/data/
+agent-sentry/.claude-flow/logs/
+agent-sentry/.claude-flow/sessions/
