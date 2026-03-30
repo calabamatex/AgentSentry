@@ -151,7 +151,7 @@ The provider reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the envir
 ## 4. Verify Connection
 
 ```bash
-npx agentsentry health
+npx @calabamatex/agentsentry health
 ```
 
 You should see the Supabase provider listed with a successful connection status.

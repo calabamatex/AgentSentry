@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 
 const lines = [
-  { text: '$ npx agentsentry scan --file config.ts', className: 'text-green-400' },
+  { text: '$ npx @calabamatex/agentsentry scan --file config.ts', className: 'text-green-400' },
   { text: '', className: '' },
   { text: '  Scanning config.ts...', className: 'text-gray-400' },
   { text: '', className: '' },

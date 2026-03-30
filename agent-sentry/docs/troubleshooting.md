@@ -35,9 +35,9 @@ mkdir -p agent-sentry/data
 sqlite3 agent-sentry/data/ops.db "PRAGMA integrity_check;"
 
 # If corrupted, export and reimport
-npx agentsentry export > backup.json
+npx @calabamatex/agentsentry export > backup.json
 rm agent-sentry/data/ops.db
-npx agentsentry import < backup.json
+npx @calabamatex/agentsentry import < backup.json
 ```
 
 ## Supabase Connection Issues
@@ -88,7 +88,7 @@ The ONNX model (`all-MiniLM-L6-v2`) is bundled in `agent-sentry/models/`.
 
 ```bash
 rm -rf agent-sentry/models/
-npm install agentsentry
+npm install @calabamatex/agentsentry
 ```
 
 ## MCP Server Issues
@@ -125,14 +125,14 @@ export AGENT_SENTRY_ACCESS_KEY=your-secret-key
 lsof -i :9200
 
 # Use a different port
-npx agentsentry dashboard --port 9300
+npx @calabamatex/agentsentry dashboard --port 9300
 ```
 
 ### Dashboard shows no data
 
 **Fix:**
 
-1. Ensure the memory store has events: `npx agentsentry memory`
+1. Ensure the memory store has events: `npx @calabamatex/agentsentry memory`
 2. Check that the MCP server is running and capturing events
 3. Verify the dashboard is connected to the same database path
 
@@ -183,7 +183,7 @@ npm run build
 ### Check system health
 
 ```bash
-npx agentsentry health
+npx @calabamatex/agentsentry health
 ```
 
 This reports: store stats, chain integrity, embedding state, and enablement level.
@@ -192,13 +192,13 @@ This reports: store stats, chain integrity, embedding state, and enablement leve
 
 ```bash
 rm -rf agent-sentry/data/ops.db
-npx agentsentry init
+npx @calabamatex/agentsentry init
 ```
 
 ### Get version
 
 ```bash
-npx agentsentry health | head -1
+npx @calabamatex/agentsentry health | head -1
 ```
 
 Or programmatically:

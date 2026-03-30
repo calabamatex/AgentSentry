@@ -15,7 +15,7 @@ bash agent-sentry/scripts/setup-wizard.sh
 Or set the enablement level directly:
 
 ```bash
-npx agentsentry enable 2
+npx @calabamatex/agentsentry enable 2
 ```
 
 ## Sections

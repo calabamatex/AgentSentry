@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-npm install agentsentry
+npm install @calabamatex/agentsentry
 ```
 
 ## Basic Usage
@@ -95,28 +95,28 @@ AgentSentry reads configuration from `agent-sentry/agent-sentry.config.json`:
 
 ```bash
 # Capture an event
-npx agentsentry capture --type decision --severity low --title "Deployed v2"
+npx @calabamatex/agentsentry capture --type decision --severity low --title "Deployed v2"
 
 # Search event history
-npx agentsentry search "authentication bug"
+npx @calabamatex/agentsentry search "authentication bug"
 
 # List recent events
-npx agentsentry list --limit 20 --type incident
+npx @calabamatex/agentsentry list --limit 20 --type incident
 
 # Get stats
-npx agentsentry stats
+npx @calabamatex/agentsentry stats
 
 # Verify chain integrity
-npx agentsentry verify
+npx @calabamatex/agentsentry verify
 
 # Run health check
-npx agentsentry health
+npx @calabamatex/agentsentry health
 
 # Scan for secrets
-npx agentsentry scan --path src/
+npx @calabamatex/agentsentry scan --path src/
 
 # Start MCP server
-npx agentsentry serve
+npx @calabamatex/agentsentry serve
 ```
 
 ## Dashboard
@@ -135,7 +135,7 @@ console.log(`Dashboard running at ${info.url}`);
 Or from the CLI:
 
 ```bash
-npx agentsentry dashboard --port 9200
+npx @calabamatex/agentsentry dashboard --port 9200
 ```
 
 The dashboard exposes these endpoints:

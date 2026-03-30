@@ -1,5 +1,5 @@
 {
-  "name": "agentsentry",
+  "name": "@calabamatex/agentsentry",
   "version": "4.1.0-beta.1",
   "description": "AgentSentry v4.1.0-beta — Memory-Aware Agent Management",
   "main": "dist/src/index.js",

@@ -103,7 +103,7 @@ export default function DocsPage() {
                 </h3>
               </div>
               <div className="mt-3 ml-10">
-                <CodeBlock>npm install agentsentry</CodeBlock>
+                <CodeBlock>npm install @calabamatex/agentsentry</CodeBlock>
               </div>
             </li>
 
@@ -117,7 +117,7 @@ export default function DocsPage() {
                 </h3>
               </div>
               <div className="mt-3 ml-10">
-                <CodeBlock>npx agentsentry init --level 2</CodeBlock>
+                <CodeBlock>npx @calabamatex/agentsentry init --level 2</CodeBlock>
               </div>
             </li>
 
@@ -133,9 +133,9 @@ export default function DocsPage() {
               <div className="mt-3 ml-10">
                 <CodeBlock>{`{
   "mcpServers": {
-    "agentsentry": {
+    "@calabamatex/agentsentry": {
       "command": "npx",
-      "args": ["agentsentry", "serve"]
+      "args": ["@calabamatex/agentsentry", "serve"]
     }
   }
 }`}</CodeBlock>
@@ -152,7 +152,7 @@ export default function DocsPage() {
                 </h3>
               </div>
               <div className="mt-3 ml-10">
-                <CodeBlock>npx agentsentry health</CodeBlock>
+                <CodeBlock>npx @calabamatex/agentsentry health</CodeBlock>
               </div>
             </li>
           </ol>

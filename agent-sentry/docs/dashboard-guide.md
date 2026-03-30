@@ -7,7 +7,7 @@ AgentSentry includes a built-in monitoring dashboard served over HTTP with no ex
 ## Quick Start
 
 ```bash
-npx agentsentry dashboard
+npx @calabamatex/agentsentry dashboard
 ```
 
 Opens a browser to `http://127.0.0.1:9200` with the single-page dashboard.
@@ -15,8 +15,8 @@ Opens a browser to `http://127.0.0.1:9200` with the single-page dashboard.
 ### Options
 
 ```bash
-npx agentsentry dashboard --port 9300    # Custom port
-npx agentsentry dashboard --host 0.0.0.0 # Listen on all interfaces
+npx @calabamatex/agentsentry dashboard --port 9300    # Custom port
+npx @calabamatex/agentsentry dashboard --host 0.0.0.0 # Listen on all interfaces
 ```
 
 ## Endpoints
@@ -98,7 +98,7 @@ await dashboard.stop();
 For terminal-based monitoring without the dashboard:
 
 ```bash
-npx agentsentry stream
+npx @calabamatex/agentsentry stream
 ```
 
 This streams events to stdout in real-time.

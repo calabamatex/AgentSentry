@@ -42,7 +42,7 @@ export default function DemoPage() {
           Ready to try it yourself?
         </h2>
         <code className="bg-gray-900 text-green-400 font-mono px-4 py-3 rounded-lg inline-block text-sm">
-          npm install agentsentry
+          npm install @calabamatex/agentsentry
         </code>
         <div className="mt-6">
           <Link

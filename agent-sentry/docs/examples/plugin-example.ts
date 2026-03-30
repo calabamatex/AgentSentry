@@ -83,6 +83,6 @@ export async function activate(store: MemoryStore, config: PluginConfig) {
 //
 // 4. Install with CLI:
 //
-//   npx agentsentry plugin install ./plugins/community/high-severity-alert
+//   npx @calabamatex/agentsentry plugin install ./plugins/community/high-severity-alert
 //
 // See docs/plugin-tutorial.md for the full guide.
