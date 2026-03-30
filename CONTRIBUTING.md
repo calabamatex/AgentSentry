@@ -85,7 +85,7 @@ Open an issue at [github.com/calabamatex/AgentSentry/issues](https://github.com/
 - Steps to reproduce
 - Expected vs actual behavior
 - Node.js version and OS
-- AgentSentry version (`npx agent-sentry health`)
+- AgentSentry version (`npx agentsentry health`)
 
 ## License
 

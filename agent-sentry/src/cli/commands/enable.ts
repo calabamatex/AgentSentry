@@ -1,7 +1,7 @@
 /**
  * enable.ts — CLI command: progressive enablement onboarding.
  *
- * `npx agent-sentry enable --level N` activates the specified enablement level,
+ * `npx agentsentry enable --level N` activates the specified enablement level,
  * prints what skills it enables, and stores the level change in MemoryStore.
  */
 

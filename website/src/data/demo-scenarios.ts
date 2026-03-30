@@ -17,7 +17,7 @@ export const demoScenarios: DemoScenario[] = [
     title: 'Quick Setup',
     description: 'Initialize AgentSentry in 60 seconds',
     lines: [
-      { type: 'command', text: '$ npx agent-sentry init --level 2' },
+      { type: 'command', text: '$ npx agentsentry init --level 2' },
       { type: 'output', text: 'AgentSentry v4.1.0-beta.1 — Initializing...' },
       { type: 'output', text: '' },
       { type: 'output', text: '  Enablement Level: 2 (Clear Head)' },
@@ -37,7 +37,7 @@ export const demoScenarios: DemoScenario[] = [
     title: 'Health Check',
     description: 'Verify system status and integrity',
     lines: [
-      { type: 'command', text: '$ npx agent-sentry health' },
+      { type: 'command', text: '$ npx agentsentry health' },
       { type: 'output', text: '' },
       { type: 'output', text: '  AgentSentry Health Report' },
       { type: 'output', text: '  ──────────────────────────' },
@@ -55,7 +55,7 @@ export const demoScenarios: DemoScenario[] = [
     title: 'Secret Detection',
     description: 'Catch secrets before they hit production',
     lines: [
-      { type: 'command', text: '$ npx agent-sentry scan --file src/config.ts' },
+      { type: 'command', text: '$ npx agentsentry scan --file src/config.ts' },
       { type: 'output', text: '' },
       { type: 'output', text: '  Scanning src/config.ts...' },
       { type: 'output', text: '' },
@@ -76,7 +76,7 @@ export const demoScenarios: DemoScenario[] = [
     title: 'Memory Search',
     description: 'Recall context from previous sessions',
     lines: [
-      { type: 'command', text: '$ npx agent-sentry memory search "auth token refresh"' },
+      { type: 'command', text: '$ npx agentsentry memory search "auth token refresh"' },
       { type: 'output', text: '' },
       { type: 'output', text: '  Searching 142 events across 12 sessions...' },
       { type: 'output', text: '' },
@@ -96,7 +96,7 @@ export const demoScenarios: DemoScenario[] = [
     title: 'Risk Scoring',
     description: 'Assess change risk before committing',
     lines: [
-      { type: 'command', text: '$ npx agent-sentry size-task' },
+      { type: 'command', text: '$ npx agentsentry size-task' },
       { type: 'output', text: '' },
       { type: 'output', text: '  Analyzing staged changes...' },
       { type: 'output', text: '' },

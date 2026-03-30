@@ -103,7 +103,7 @@ export default function DocsPage() {
                 </h3>
               </div>
               <div className="mt-3 ml-10">
-                <CodeBlock>npm install agent-sentry</CodeBlock>
+                <CodeBlock>npm install agentsentry</CodeBlock>
               </div>
             </li>
 
@@ -117,7 +117,7 @@ export default function DocsPage() {
                 </h3>
               </div>
               <div className="mt-3 ml-10">
-                <CodeBlock>npx agent-sentry init --level 2</CodeBlock>
+                <CodeBlock>npx agentsentry init --level 2</CodeBlock>
               </div>
             </li>
 
@@ -133,9 +133,9 @@ export default function DocsPage() {
               <div className="mt-3 ml-10">
                 <CodeBlock>{`{
   "mcpServers": {
-    "agent-sentry": {
+    "agentsentry": {
       "command": "npx",
-      "args": ["agent-sentry", "serve"]
+      "args": ["agentsentry", "serve"]
     }
   }
 }`}</CodeBlock>
@@ -152,7 +152,7 @@ export default function DocsPage() {
                 </h3>
               </div>
               <div className="mt-3 ml-10">
-                <CodeBlock>npx agent-sentry health</CodeBlock>
+                <CodeBlock>npx agentsentry health</CodeBlock>
               </div>
             </li>
           </ol>

@@ -17,7 +17,7 @@
 ## Install
 
 ```bash
-npm install agent-sentry
+npm install agentsentry
 ```
 
 Or clone and use directly:
@@ -78,7 +78,7 @@ What makes it different: AgentSentry *remembers*. Every decision, violation, inc
 ### Option 1: npm Package
 
 ```bash
-npm install agent-sentry
+npm install agentsentry
 ```
 
 ```typescript
@@ -122,7 +122,7 @@ Or in `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "agent-sentry": {
+    "agentsentry": {
       "command": "node",
       "args": ["agent-sentry/dist/src/mcp/server.js"]
     }
@@ -292,19 +292,19 @@ agent-sentry/
 ## CLI Commands
 
 ```bash
-npx agent-sentry init           # Interactive project setup wizard
-npx agent-sentry config          # View or update agent-sentry.config.json
-npx agent-sentry enable <level>  # Set enablement level (1-5)
-npx agent-sentry health          # System health and embedding status
-npx agent-sentry memory          # Query persistent memory store
-npx agent-sentry metrics         # Session and cost metrics
-npx agent-sentry dashboard       # Launch monitoring dashboard
-npx agent-sentry stream          # Live event stream
-npx agent-sentry plugin          # Plugin management
-npx agent-sentry handoff         # Generate session handoff message
-npx agent-sentry prune           # Clean up old events from memory store
-npx agent-sentry export          # Export memory store data
-npx agent-sentry import          # Import memory store data
+npx agentsentry init           # Interactive project setup wizard
+npx agentsentry config          # View or update agent-sentry.config.json
+npx agentsentry enable <level>  # Set enablement level (1-5)
+npx agentsentry health          # System health and embedding status
+npx agentsentry memory          # Query persistent memory store
+npx agentsentry metrics         # Session and cost metrics
+npx agentsentry dashboard       # Launch monitoring dashboard
+npx agentsentry stream          # Live event stream
+npx agentsentry plugin          # Plugin management
+npx agentsentry handoff         # Generate session handoff message
+npx agentsentry prune           # Clean up old events from memory store
+npx agentsentry export          # Export memory store data
+npx agentsentry import          # Import memory store data
 ```
 
 ## Slash Commands

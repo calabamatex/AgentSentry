@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     q: 'How do I upgrade enablement levels?',
-    a: 'Run npx agent-sentry enable for an interactive wizard, or set --level on init. Each level adds skills incrementally \u2014 no disruption to existing workflows.',
+    a: 'Run npx agentsentry enable for an interactive wizard, or set --level on init. Each level adds skills incrementally \u2014 no disruption to existing workflows.',
   },
 ];
 

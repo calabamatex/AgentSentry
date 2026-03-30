@@ -1,11 +1,11 @@
 {
-  "name": "agent-sentry",
+  "name": "agentsentry",
   "version": "4.1.0-beta.1",
   "description": "AgentSentry v4.1.0-beta — Memory-Aware Agent Management",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "agent-sentry": "./dist/src/cli/index.js"
+    "agentsentry": "./dist/src/cli/index.js"
   },
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "keywords": [
-    "agent-sentry",
+    "agentsentry",
     "agent",
     "observability",
     "memory",
