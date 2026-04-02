@@ -135,6 +135,64 @@ describe('Transport', () => {
       }
     });
 
+    it('should reject requests when REQUIRE_AUTH is set but no accessKey param provided', async () => {
+      const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
+      const originalRequireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
+
+      delete process.env.AGENT_SENTRY_ACCESS_KEY;
+      process.env.AGENT_SENTRY_REQUIRE_AUTH = 'true';
+
+      try {
+        httpTransport = createHttpTransport(0); // no accessKey param
+        await httpTransport.ready;
+        const addr = httpTransport.server.address();
+        if (!addr || typeof addr === 'string') return;
+
+        const response = await fetch(`http://127.0.0.1:${addr.port}/health`);
+        expect(response.status).toBe(401);
+      } finally {
+        if (originalKey === undefined) {
+          delete process.env.AGENT_SENTRY_ACCESS_KEY;
+        } else {
+          process.env.AGENT_SENTRY_ACCESS_KEY = originalKey;
+        }
+        if (originalRequireAuth === undefined) {
+          delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
+        } else {
+          process.env.AGENT_SENTRY_REQUIRE_AUTH = originalRequireAuth;
+        }
+      }
+    });
+
+    it('should reject requests when REQUIRE_AUTH=1 but no accessKey param provided', async () => {
+      const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
+      const originalRequireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
+
+      delete process.env.AGENT_SENTRY_ACCESS_KEY;
+      process.env.AGENT_SENTRY_REQUIRE_AUTH = '1';
+
+      try {
+        httpTransport = createHttpTransport(0); // no accessKey param
+        await httpTransport.ready;
+        const addr = httpTransport.server.address();
+        if (!addr || typeof addr === 'string') return;
+
+        const response = await fetch(`http://127.0.0.1:${addr.port}/health`);
+        expect(response.status).toBe(401);
+      } finally {
+        if (originalKey === undefined) {
+          delete process.env.AGENT_SENTRY_ACCESS_KEY;
+        } else {
+          process.env.AGENT_SENTRY_ACCESS_KEY = originalKey;
+        }
+        if (originalRequireAuth === undefined) {
+          delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
+        } else {
+          process.env.AGENT_SENTRY_REQUIRE_AUTH = originalRequireAuth;
+        }
+      }
+    });
+
     it('should handle CORS preflight', async () => {
       httpTransport = createHttpTransport(0);
       await httpTransport.ready;

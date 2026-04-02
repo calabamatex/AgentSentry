@@ -63,8 +63,9 @@ export function createHttpTransport(
       return;
     }
 
-    // Access key validation
-    if (accessKey) {
+    // Access key validation — enforce REQUIRE_AUTH even when no accessKey param is passed
+    const requireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
+    if (accessKey || requireAuth === 'true' || requireAuth === '1') {
       const headerKey = req.headers['x-agent-sentry-key'] as string | undefined;
       const providedKey = headerKey ?? '';
 

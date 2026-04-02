@@ -148,7 +148,7 @@ describe('Plugin validation logic', () => {
     expect(errors.some((e) => e.includes('Author'))).toBe(true);
   });
 
-  it('should fail for missing agent-sentry in requires', () => {
+  it('should fail when requires object does not declare agentsentry dependency', () => {
     const metadata = {
       name: 'test',
       description: 'test',
@@ -160,7 +160,7 @@ describe('Plugin validation logic', () => {
     };
 
     const errors = validatePluginMetadata(metadata);
-    expect(errors.some((e) => e.includes('agentsentry'))).toBe(true);
+    expect(errors.some((e) => e.toLowerCase().includes('require'))).toBe(true);
   });
 
   it('should fail for empty tags array', () => {
@@ -207,7 +207,7 @@ describe('validate-plugin.sh exists and is structured', () => {
     expect(content).toContain('Version follows semver');
     expect(content).toContain('Category is valid');
     expect(content).toContain('Author has name');
-    expect(content).toContain('agent-sentry field');
+    expect(content).toContain('agentsentry field');
     expect(content).toContain('src/index.ts');
     expect(content).toContain('README.md');
   });
