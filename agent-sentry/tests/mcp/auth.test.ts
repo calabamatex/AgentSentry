@@ -7,13 +7,19 @@ import { validateAccessKey, createRateLimiter } from '../../src/mcp/auth';
 import { IncomingMessage, ServerResponse } from 'http';
 
 describe('validateAccessKey', () => {
-  const originalEnv = process.env.AGENT_SENTRY_ACCESS_KEY;
+  const originalAccessKey = process.env.AGENT_SENTRY_ACCESS_KEY;
+  const originalRequireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
 
   afterEach(() => {
-    if (originalEnv === undefined) {
+    if (originalAccessKey === undefined) {
       delete process.env.AGENT_SENTRY_ACCESS_KEY;
     } else {
-      process.env.AGENT_SENTRY_ACCESS_KEY = originalEnv;
+      process.env.AGENT_SENTRY_ACCESS_KEY = originalAccessKey;
+    }
+    if (originalRequireAuth === undefined) {
+      delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
+    } else {
+      process.env.AGENT_SENTRY_REQUIRE_AUTH = originalRequireAuth;
     }
   });
 
@@ -46,6 +52,24 @@ describe('validateAccessKey', () => {
     process.env.AGENT_SENTRY_ACCESS_KEY = 'key-with-$pecial!chars@123';
     expect(validateAccessKey('key-with-$pecial!chars@123')).toBe(true);
     expect(validateAccessKey('key-with-$pecial!chars@124')).toBe(false);
+  });
+
+  it('should return false when AGENT_SENTRY_REQUIRE_AUTH=true and no key is configured', () => {
+    delete process.env.AGENT_SENTRY_ACCESS_KEY;
+    process.env.AGENT_SENTRY_REQUIRE_AUTH = 'true';
+    expect(validateAccessKey('anything')).toBe(false);
+  });
+
+  it('should return false when AGENT_SENTRY_REQUIRE_AUTH=1 and no key is configured', () => {
+    delete process.env.AGENT_SENTRY_ACCESS_KEY;
+    process.env.AGENT_SENTRY_REQUIRE_AUTH = '1';
+    expect(validateAccessKey('anything')).toBe(false);
+  });
+
+  it('should still allow open access when AGENT_SENTRY_REQUIRE_AUTH is not set', () => {
+    delete process.env.AGENT_SENTRY_ACCESS_KEY;
+    delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
+    expect(validateAccessKey('anything')).toBe(true);
   });
 });
 

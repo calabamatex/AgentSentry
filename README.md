@@ -176,6 +176,8 @@ When running as an MCP server, AgentSentry exposes 10 tools:
 | `agent_sentry_generate_handoff` | Generates a structured handoff message for session continuity |
 | `agent_sentry_health` | Current health scores, KPIs, and skill-level status |
 
+> **Security note:** By default, the MCP server accepts all requests when `AGENT_SENTRY_ACCESS_KEY` is not set (convenient for local development). For production or network-exposed deployments, set `AGENT_SENTRY_REQUIRE_AUTH=true` to reject all unauthenticated requests when no access key is configured.
+
 ---
 
 ## Progressive Enablement

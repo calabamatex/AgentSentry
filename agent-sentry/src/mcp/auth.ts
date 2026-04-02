@@ -14,8 +14,16 @@ let authWarningLogged = false;
 export function validateAccessKey(key: string): boolean {
   const expected = process.env.AGENT_SENTRY_ACCESS_KEY;
   if (!expected) {
+    const requireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
+    if (requireAuth === 'true' || requireAuth === '1') {
+      if (!authWarningLogged) {
+        console.error('[AgentSentry] AGENT_SENTRY_REQUIRE_AUTH is set but AGENT_SENTRY_ACCESS_KEY is not configured — rejecting all requests. Set AGENT_SENTRY_ACCESS_KEY to enable authenticated access.');
+        authWarningLogged = true;
+      }
+      return false;
+    }
     if (!authWarningLogged) {
-      console.error('[AgentSentry] WARNING: No AGENT_SENTRY_ACCESS_KEY set — MCP server accepting all requests without authentication. Set AGENT_SENTRY_ACCESS_KEY to enable auth.');
+      console.error('[AgentSentry] WARNING: No AGENT_SENTRY_ACCESS_KEY set — MCP server accepting all requests without authentication. Set AGENT_SENTRY_ACCESS_KEY to enable auth, or AGENT_SENTRY_REQUIRE_AUTH=true to reject unauthenticated requests.');
       authWarningLogged = true;
     }
     return true;
