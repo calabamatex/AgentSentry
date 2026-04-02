@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/calabamatex/AgentSentry/actions/workflows/ci.yml/badge.svg)](https://github.com/calabamatex/AgentSentry/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-1113%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#)
 
 **Memory-aware management and safety framework for AI agents.**
 
@@ -262,7 +262,7 @@ npm run benchmark
 ```bash
 npm install        # Install dependencies
 npm run build      # Compile TypeScript
-npm test           # Run tests (1113 passing)
+npm test           # Run all tests
 npm run benchmark  # Run performance benchmarks
 ```
 
