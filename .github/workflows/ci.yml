@@ -69,22 +69,22 @@ jobs:
           mkdir /tmp/test-install && cd /tmp/test-install
           npm init -y
           npm install $GITHUB_WORKSPACE/agent-sentry/agent-sentry-*.tgz --ignore-scripts
-      - name: Verify require('agent-sentry') works
+      - name: Verify require('@calabamatex/agentsentry') works
         run: |
           cd /tmp/test-install
-          node -e "const a = require('agent-sentry'); console.log('Import OK:', Object.keys(a).length, 'exports')"
+          node -e "const a = require('@calabamatex/agentsentry'); console.log('Import OK:', Object.keys(a).length, 'exports')"
       - name: Verify MCP server entry point is valid
         run: |
           cd /tmp/test-install
-          node -c node_modules/agent-sentry/dist/src/mcp/server.js
+          node -c node_modules/@calabamatex/agentsentry/dist/src/mcp/server.js
       - name: Verify CLI entry point is valid
         run: |
           cd /tmp/test-install
-          node -c node_modules/agent-sentry/dist/src/cli/index.js
+          node -c node_modules/@calabamatex/agentsentry/dist/src/cli/index.js
       - name: Verify config resolution module exists
         run: |
           cd /tmp/test-install
-          node -e "const { resolveConfigPath } = require('agent-sentry'); console.log('Config path:', resolveConfigPath() || 'defaults')"
+          node -e "const { resolveConfigPath } = require('@calabamatex/agentsentry'); console.log('Config path:', resolveConfigPath() || 'defaults')"
 
   doc-validation:
     runs-on: ubuntu-latest

@@ -23,8 +23,8 @@ npm install @calabamatex/agentsentry
 Or clone and use directly:
 
 ```bash
-git clone https://github.com/calabamatex/AgenticManagement.git
-cd AgenticManagement/agent-sentry && npm install && npm run build
+git clone https://github.com/calabamatex/AgentSentry.git
+cd AgentSentry/agent-sentry && npm install && npm run build
 ```
 
 **Requirements:** Node.js >= 18
@@ -82,7 +82,7 @@ npm install @calabamatex/agentsentry
 ```
 
 ```typescript
-import { MemoryStore, createProvider } from 'agent-sentry';
+import { MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 const store = new MemoryStore({
   provider: createProvider({ provider: 'sqlite', database_path: './ops.db' }),
