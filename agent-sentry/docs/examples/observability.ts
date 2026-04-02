@@ -14,7 +14,7 @@ import {
   memoryUsageCheck,
   eventLoopCheck,
   MetricsCollector,
-} from 'agent-sentry';
+} from '@calabamatex/agentsentry';
 
 async function main() {
   // --- Logger ---

@@ -9,7 +9,7 @@ npm install @calabamatex/agentsentry
 ## Basic Usage
 
 ```typescript
-import { MemoryStore, createProvider } from 'agent-sentry';
+import { MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 // Create a store with the default SQLite provider
 const store = new MemoryStore({
@@ -124,7 +124,7 @@ npx @calabamatex/agentsentry serve
 Start the built-in dashboard to get a live SSE event feed, health status, metrics, and plugin overview:
 
 ```typescript
-import { DashboardServer } from 'agent-sentry';
+import { DashboardServer } from '@calabamatex/agentsentry';
 
 const dashboard = new DashboardServer({ port: 9200 });
 const info = await dashboard.start();

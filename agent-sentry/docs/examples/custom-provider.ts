@@ -12,7 +12,7 @@ import type {
   EventType,
   Severity,
   Skill,
-} from 'agent-sentry';
+} from '@calabamatex/agentsentry';
 
 // The StorageProvider interface requires these methods:
 interface StorageProvider {
@@ -117,7 +117,7 @@ class InMemoryProvider implements StorageProvider {
 
 // Usage with MemoryStore:
 //
-// import { MemoryStore } from 'agent-sentry';
+// import { MemoryStore } from '@calabamatex/agentsentry';
 //
 // const store = new MemoryStore({ provider: new InMemoryProvider() });
 // await store.initialize();

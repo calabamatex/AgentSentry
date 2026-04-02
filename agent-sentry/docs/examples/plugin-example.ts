@@ -26,8 +26,8 @@ const metadata = {
 };
 
 // 2. Plugin entry point (index.ts)
-import { MemoryStore, createProvider } from 'agent-sentry';
-import type { OpsEvent } from 'agent-sentry';
+import { MemoryStore, createProvider } from '@calabamatex/agentsentry';
+import type { OpsEvent } from '@calabamatex/agentsentry';
 
 interface PluginConfig {
   threshold: 'medium' | 'high' | 'critical';

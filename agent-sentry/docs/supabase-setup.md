@@ -138,7 +138,7 @@ Update `agent-sentry.config.json`:
 Or programmatically:
 
 ```typescript
-import { MemoryStore, createProvider } from 'agent-sentry';
+import { MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 const store = new MemoryStore({
   provider: createProvider({ provider: 'supabase' }),
@@ -161,7 +161,7 @@ You should see the Supabase provider listed with a successful connection status.
 For high-throughput use cases, use the pooled provider:
 
 ```typescript
-import { PooledSupabaseProvider } from 'agent-sentry';
+import { PooledSupabaseProvider } from '@calabamatex/agentsentry';
 
 const provider = new PooledSupabaseProvider({
   url: process.env.SUPABASE_URL!,

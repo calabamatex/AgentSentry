@@ -5,7 +5,7 @@
  * built-in tools plus your own custom tools.
  */
 
-import { createMcpServer, MemoryStore, createProvider } from 'agent-sentry';
+import { createMcpServer, MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 async function main() {
   // 1. Create a memory store

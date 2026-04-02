@@ -11,8 +11,8 @@ import {
   AgentCoordinator,
   MemoryStore,
   createProvider,
-} from 'agent-sentry';
-import type { AgentInfo, CoordinatorOptions } from 'agent-sentry';
+} from '@calabamatex/agentsentry';
+import type { AgentInfo, CoordinatorOptions } from '@calabamatex/agentsentry';
 
 async function main() {
   // 1. Create a shared memory store

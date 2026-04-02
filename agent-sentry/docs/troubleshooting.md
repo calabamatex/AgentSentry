@@ -204,6 +204,6 @@ npx @calabamatex/agentsentry health | head -1
 Or programmatically:
 
 ```typescript
-import { VERSION } from 'agent-sentry';
+import { VERSION } from '@calabamatex/agentsentry';
 console.log(VERSION);
 ```

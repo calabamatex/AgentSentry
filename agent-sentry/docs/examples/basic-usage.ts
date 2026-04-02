@@ -5,7 +5,7 @@
  * Run: npx ts-node docs/examples/basic-usage.ts
  */
 
-import { MemoryStore, createProvider } from 'agent-sentry';
+import { MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 async function main() {
   // 1. Create a MemoryStore backed by SQLite

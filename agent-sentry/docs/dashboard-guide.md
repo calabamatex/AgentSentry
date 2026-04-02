@@ -58,7 +58,7 @@ Multiple filters can be combined.
 ## Programmatic Usage
 
 ```typescript
-import { DashboardServer, EventStream, MemoryStore, createProvider } from 'agent-sentry';
+import { DashboardServer, EventStream, MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 const store = new MemoryStore({
   provider: createProvider({ provider: 'sqlite', database_path: './ops.db' }),
