@@ -38,12 +38,8 @@ Thumbs.db
 *.db-wal
 *.db-shm
 
-# RuFlo runtime data
-.claude-flow/data/
-.claude-flow/logs/
-.claude-flow/sessions/
-
-# Swarm runtime state
+# Orchestration runtime state (not needed by contributors)
+.claude-flow/
 .swarm/
 .ruflo-state/
 
@@ -56,7 +52,5 @@ vendor/
 # AgentSentry hook-written runtime data (NEVER track these)
 agent-sentry/dashboard/data/*.json
 
-# Claude-flow runtime data inside subpackages
-agent-sentry/.claude-flow/data/
-agent-sentry/.claude-flow/logs/
-agent-sentry/.claude-flow/sessions/
+# Claude-flow in subpackages
+agent-sentry/.claude-flow/

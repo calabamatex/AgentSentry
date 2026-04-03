@@ -281,6 +281,8 @@ npm run benchmark  # Run performance benchmarks
 
 ## Project Structure
 
+> **Note:** The npm package source lives in `agent-sentry/`. Run all `npm` commands from that directory.
+
 ```
 agent-sentry/
   src/
