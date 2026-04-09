@@ -80,6 +80,21 @@ export type { Lease, LeaseManagerOptions } from './coordination/lease';
 export { DashboardServer } from './dashboard/server';
 export type { DashboardServerOptions, DashboardServerInfo } from './dashboard/server';
 
+// Safe Primitives
+export { safeJsonParse, safeJsonStringify, SafeJsonError } from './utils/safe-json';
+export { atomicWriteSync, safeReadSync, ensureDirectorySafe, isSymlink, SafeIoError } from './utils/safe-io';
+
+// Authority Enforcement
+export { evaluateAuthority, validatePolicy } from './enforcement/engine';
+export type {
+  AuthorityPolicy,
+  PolicyRule,
+  PolicyCondition,
+  ActionContext,
+  EnforcementResult,
+  EnforcementAction,
+} from './enforcement/types';
+
 // Performance Optimization (M8)
 export { LRUCache, CachedStorageProvider } from './memory/cache';
 export type { LRUCacheOptions, CacheStats } from './memory/cache';
