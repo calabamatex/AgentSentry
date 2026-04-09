@@ -11,6 +11,7 @@ import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
+import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
 
 const logger = new Logger({ module: 'cli-enable' });
 import {
@@ -157,7 +158,7 @@ export const enableCommand: CommandDefinition = {
 function loadEnablementLevel(): number {
   try {
     const cfgPath = getConfigPath();
-    const raw = safeJsonParse<Record<string, any>>(fs.readFileSync(cfgPath, 'utf8'));
+    const raw = safeJsonParse<Record<string, any>>(safeReadSync(cfgPath).toString('utf-8'));
     const level = raw?.enablement?.level;
     if (typeof level === 'number' && level >= 1 && level <= 5) return level;
   } catch (e) {

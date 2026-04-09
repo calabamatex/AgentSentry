@@ -11,6 +11,7 @@ import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
+import { atomicWriteSync, safeReadSync, ensureDirectorySafe } from '../../utils/safe-io';
 
 const logger = new Logger({ module: 'cli-config' });
 
@@ -109,7 +110,7 @@ export const configCommand: CommandDefinition = {
 
 function loadFullConfig(): Record<string, unknown> {
   try {
-    return safeJsonParse<Record<string, unknown>>(fs.readFileSync(getConfigPath(), 'utf8'));
+    return safeJsonParse<Record<string, unknown>>(safeReadSync(getConfigPath()).toString('utf-8'));
   } catch (e) {
     logger.debug('Failed to load config file', { error: e instanceof Error ? e.message : String(e) });
     return { memory: {} };
@@ -118,11 +119,7 @@ function loadFullConfig(): Record<string, unknown> {
 
 function saveConfig(config: Record<string, unknown>): void {
   const cfgPath = getConfigPath();
-  const dir = path.dirname(cfgPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(cfgPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  atomicWriteSync(cfgPath, JSON.stringify(config, null, 2) + '\n');
 }
 
 function getNestedValue(obj: Record<string, unknown>, dotPath: string): unknown {
