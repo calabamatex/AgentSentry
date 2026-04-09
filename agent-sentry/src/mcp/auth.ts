@@ -3,21 +3,61 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'http';
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'mcp-auth' });
+
+/**
+ * When set to true (v0.6.0+), unauthenticated requests are rejected by default.
+ * Set AGENT_SENTRY_NO_AUTH=true to opt out (local dev only).
+ */
+const AUTH_REQUIRED_BY_DEFAULT = false;
+
+/** Track whether we've already logged the deprecation warning this session. */
+let deprecationWarned = false;
 
 /**
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
- * Returns true if the key matches or if no key is configured (open access).
+ * Returns true if the key matches or if no key is configured (with deprecation path).
  */
 export function validateAccessKey(key: string): boolean {
   const expected = process.env.AGENT_SENTRY_ACCESS_KEY;
   if (!expected) {
+    // Check for explicit opt-out
+    const noAuth = process.env.AGENT_SENTRY_NO_AUTH;
+    if (noAuth === 'true' || noAuth === '1') {
+      return true;
+    }
+
+    if (AUTH_REQUIRED_BY_DEFAULT) {
+      logger.error('Authentication required but no AGENT_SENTRY_ACCESS_KEY set. '
+        + 'Set AGENT_SENTRY_NO_AUTH=true to opt out (local dev only).');
+      return false;
+    }
+
+    // v0.5.x: allow with deprecation warning (once per session)
+    if (!deprecationWarned) {
+      deprecationWarned = true;
+      logger.warn('MCP server running without authentication. '
+        + 'Set AGENT_SENTRY_ACCESS_KEY to enable auth. '
+        + 'Starting in v0.6.0, authentication will be REQUIRED by default. '
+        + 'To opt out (local dev only): set AGENT_SENTRY_NO_AUTH=true');
+    }
     return true;
   }
   if (!key) {
     return false;
   }
-  // Constant-time comparison to prevent timing attacks
+  // Constant-time comparison to prevent timing attacks.
+  // Even on length mismatch we do a dummy comparison to avoid leaking
+  // key length via timing.
   if (key.length !== expected.length) {
+    // Dummy comparison against expected to burn constant time
+    let dummy = 0;
+    for (let i = 0; i < expected.length; i++) {
+      dummy |= expected.charCodeAt(i) ^ expected.charCodeAt(i);
+    }
+    void dummy;
     return false;
   }
   let mismatch = 0;
@@ -25,6 +65,14 @@ export function validateAccessKey(key: string): boolean {
     mismatch |= key.charCodeAt(i) ^ expected.charCodeAt(i);
   }
   return mismatch === 0;
+}
+
+/**
+ * Reset the deprecation warning state.
+ * @internal Exported for testing only.
+ */
+export function _resetDeprecationWarning(): void {
+  deprecationWarned = false;
 }
 
 export interface RateLimitEntry {

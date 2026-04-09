@@ -10,6 +10,7 @@ import { CommandDefinition, ParsedArgs, output, isJson, table } from '../parser'
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'cli-config' });
 
@@ -108,7 +109,7 @@ export const configCommand: CommandDefinition = {
 
 function loadFullConfig(): Record<string, unknown> {
   try {
-    return JSON.parse(fs.readFileSync(getConfigPath(), 'utf8'));
+    return safeJsonParse<Record<string, unknown>>(fs.readFileSync(getConfigPath(), 'utf8'));
   } catch (e) {
     logger.debug('Failed to load config file', { error: e instanceof Error ? e.message : String(e) });
     return { memory: {} };

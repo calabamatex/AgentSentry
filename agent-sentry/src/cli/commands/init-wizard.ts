@@ -10,6 +10,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import * as readline from 'readline';
 import { generateConfigForLevel, getActiveSkills, LEVEL_NAMES } from '../../enablement/engine';
+import { safeJsonParse } from '../../utils/safe-json';
 
 export interface HealthSummary {
   criticals: string[];
@@ -81,7 +82,7 @@ export function wireHooksIntoSettings(): boolean {
 
   try {
     if (fs.existsSync(settingsPath)) {
-      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      settings = safeJsonParse<Record<string, unknown>>(fs.readFileSync(settingsPath, 'utf-8'));
     } else {
       // Create .claude dir if needed
       const dir = path.dirname(settingsPath);

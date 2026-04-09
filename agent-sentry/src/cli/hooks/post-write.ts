@@ -18,6 +18,7 @@ import { scanErrorHandling } from '../../analyzers/error-handling';
 import { scanPiiLogging } from '../../analyzers/pii-scanner';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'hook-post-write' });
 
@@ -34,7 +35,7 @@ function readConfig(): Record<string, unknown> {
     return {};
   }
   try {
-    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return safeJsonParse<Record<string, unknown>>(fs.readFileSync(configPath, 'utf-8'));
   } catch (e) {
     logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
     return {};
@@ -136,7 +137,7 @@ async function main(): Promise<void> {
 
   let input: HookInput;
   try {
-    input = JSON.parse(raw);
+    input = safeJsonParse<HookInput>(raw);
   } catch (e) {
     logger.warn('Failed to parse hook input from stdin', { error: e instanceof Error ? e.message : String(e) });
     process.exit(0);

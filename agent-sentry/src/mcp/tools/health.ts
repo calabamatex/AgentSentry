@@ -9,6 +9,7 @@ import { getActiveSkills, generateConfigForLevel, validateLevelMatchesSkills, LE
 import type { EnablementConfig } from '../../enablement/engine';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'mcp-health' });
 
@@ -126,7 +127,7 @@ export async function handler(
       const cfgPath = resolveConfigPath();
       if (cfgPath) {
         const fsModule = await import('fs');
-        const raw = JSON.parse(fsModule.readFileSync(cfgPath, 'utf8'));
+        const raw = safeJsonParse<Record<string, any>>(fsModule.readFileSync(cfgPath, 'utf8'));
         if (raw.enablement?.level && typeof raw.enablement.level === 'number') {
           enablementLevel = raw.enablement.level;
         }
@@ -146,7 +147,7 @@ export async function handler(
       const cfgPath2 = resolveConfigPath();
       if (cfgPath2) {
         const fsModule2 = await import('fs');
-        const rawConfig = JSON.parse(fsModule2.readFileSync(cfgPath2, 'utf8'));
+        const rawConfig = safeJsonParse<Record<string, any>>(fsModule2.readFileSync(cfgPath2, 'utf8'));
         if (rawConfig.enablement?.skills) {
           const drift = validateLevelMatchesSkills(enablementLevel, rawConfig.enablement.skills as EnablementConfig['skills']);
           enablementInfo.config_drift = {

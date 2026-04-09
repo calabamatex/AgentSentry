@@ -11,6 +11,7 @@ import { SupabaseBaseProvider, SupabaseRequestOptions } from './supabase-base';
 import { Logger } from '../../observability/logger';
 import { retry } from '../../observability/circuit-breaker';
 import { OpsEvent, QueryOptions } from '../schema';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'supabase-provider' });
 
@@ -176,7 +177,7 @@ export class SupabaseProvider extends SupabaseBaseProvider {
 
             if (options.returnHeaders) {
               try {
-                const data = body ? JSON.parse(body) : null;
+                const data = body ? safeJsonParse(body) : null;
                 resolve({ data, headers: res.headers } as unknown as T);
               } catch (e) {
                 logger.debug('Failed to parse response body with headers', { error: e instanceof Error ? e.message : String(e) });
@@ -186,7 +187,7 @@ export class SupabaseProvider extends SupabaseBaseProvider {
             }
 
             try {
-              resolve(body ? JSON.parse(body) : (null as unknown as T));
+              resolve(body ? safeJsonParse<T>(body) : (null as unknown as T));
             } catch (e) {
               logger.debug('Failed to parse response body', { error: e instanceof Error ? e.message : String(e) });
               resolve(null as unknown as T);

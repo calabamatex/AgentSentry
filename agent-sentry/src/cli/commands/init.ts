@@ -12,6 +12,7 @@ import { resolveConfigPath } from '../../config/resolve';
 import { generateConfigForLevel, getActiveSkills, LEVEL_NAMES, ALL_SKILLS } from '../../enablement/engine';
 import { VERSION } from '../../version';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
 import { isGitRepo, promptForLevel, wireHooksIntoSettings, runHealthAudit, appendAgentSentryRulesToClaudeMd } from './init-wizard';
 import type { HealthSummary } from './init-wizard';
 
@@ -159,7 +160,7 @@ export const initCommand: CommandDefinition = {
       } else {
         // Config exists — update enablement level
         try {
-          const existing = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          const existing = safeJsonParse<Record<string, any>>(fs.readFileSync(configPath, 'utf8'));
           if (!existing.enablement || typeof existing.enablement !== 'object') {
             existing.enablement = {};
           }

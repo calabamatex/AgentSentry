@@ -10,6 +10,7 @@ import * as path from 'path';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'cli-enable' });
 import {
@@ -156,7 +157,7 @@ export const enableCommand: CommandDefinition = {
 function loadEnablementLevel(): number {
   try {
     const cfgPath = getConfigPath();
-    const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    const raw = safeJsonParse<Record<string, any>>(fs.readFileSync(cfgPath, 'utf8'));
     const level = raw?.enablement?.level;
     if (typeof level === 'number' && level >= 1 && level <= 5) return level;
   } catch (e) {
@@ -169,7 +170,7 @@ function saveEnablementLevel(level: number): void {
   const cfgPath = getConfigPath();
   let config: Record<string, unknown> = {};
   try {
-    config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    config = safeJsonParse<Record<string, unknown>>(fs.readFileSync(cfgPath, 'utf8'));
   } catch (e) {
     logger.debug('Config file not found, starting fresh', { error: e instanceof Error ? e.message : String(e) });
   }

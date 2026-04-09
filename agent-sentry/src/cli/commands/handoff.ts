@@ -17,6 +17,7 @@ import { execSync } from 'child_process';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { Logger } from '../../observability/logger';
 import { formatHandoff, buildHandoffPrompt } from './handoff-templates';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'cli-handoff' });
 
@@ -225,7 +226,7 @@ function readTodoState(): TodoItem[] {
     if (!todoFile) return [];
 
     const content = fs.readFileSync(path.join(todosDir, todoFile), 'utf-8');
-    const parsed = JSON.parse(content);
+    const parsed = safeJsonParse(content);
     if (!Array.isArray(parsed)) return [];
 
     return parsed

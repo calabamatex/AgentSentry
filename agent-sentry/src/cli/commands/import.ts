@@ -9,6 +9,7 @@ import * as path from 'path';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { MemoryStore } from '../../memory/store';
 import { validateEventInput, OpsEventInput } from '../../memory/schema';
+import { safeJsonParse } from '../../utils/safe-json';
 
 async function getStore(): Promise<MemoryStore> {
   const store = new MemoryStore();
@@ -23,13 +24,13 @@ function parseEvents(content: string, format: string): unknown[] {
       .filter((line) => line.trim().length > 0)
       .map((line, i) => {
         try {
-          return JSON.parse(line);
+          return safeJsonParse(line);
         } catch {
           throw new Error(`Invalid JSON on line ${i + 1}`);
         }
       });
   }
-  const parsed = JSON.parse(content);
+  const parsed = safeJsonParse(content);
   if (!Array.isArray(parsed)) {
     throw new Error('JSON input must be an array of events');
   }
