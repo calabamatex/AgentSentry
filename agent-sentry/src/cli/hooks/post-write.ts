@@ -19,6 +19,7 @@ import { scanPiiLogging } from '../../analyzers/pii-scanner';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
+import { safeReadSync } from '../../utils/safe-io';
 
 const logger = new Logger({ module: 'hook-post-write' });
 
@@ -35,7 +36,7 @@ function readConfig(): Record<string, unknown> {
     return {};
   }
   try {
-    return safeJsonParse<Record<string, unknown>>(fs.readFileSync(configPath, 'utf-8'));
+    return safeJsonParse<Record<string, unknown>>(safeReadSync(configPath).toString('utf-8'));
   } catch (e) {
     logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
     return {};
@@ -54,7 +55,7 @@ function checkBlastRadius(filePath: string): void {
   // Count unique files
   let lines: string[];
   try {
-    lines = fs.readFileSync(trackingFile, 'utf-8').split('\n').filter(Boolean);
+    lines = safeReadSync(trackingFile).toString('utf-8').split('\n').filter(Boolean);
   } catch (e) {
     logger.debug('Failed to read blast-radius tracking file', { error: e instanceof Error ? e.message : String(e) });
     return;
@@ -70,7 +71,7 @@ function checkBlastRadius(filePath: string): void {
 
   if (fs.existsSync(sessionMarker)) {
     try {
-      const sessionStart = fs.readFileSync(sessionMarker, 'utf-8').trim();
+      const sessionStart = safeReadSync(sessionMarker).toString('utf-8').trim();
       const recentCommits = execSync(`git log --after="${sessionStart}" --oneline`, {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -148,7 +149,7 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = safeReadSync(filePath).toString('utf-8');
 
   // 1. Error Handling Enforcer
   const errorFindings = scanErrorHandling(content, filePath);

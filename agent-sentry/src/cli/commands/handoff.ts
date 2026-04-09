@@ -80,7 +80,7 @@ function readMemoryFiles(projectDir?: string): { index: string; handoffs: string
   // Read MEMORY.md index
   const indexPath = path.join(memoryDir, 'MEMORY.md');
   if (fs.existsSync(indexPath)) {
-    index = fs.readFileSync(indexPath, 'utf-8');
+    index = safeReadSync(indexPath).toString('utf-8');
   }
 
   // Read all handoff files
@@ -226,7 +226,7 @@ function readTodoState(): TodoItem[] {
 
     if (!todoFile) return [];
 
-    const content = fs.readFileSync(path.join(todosDir, todoFile), 'utf-8');
+    const content = safeReadSync(path.join(todosDir, todoFile)).toString('utf-8');
     const parsed = safeJsonParse(content);
     if (!Array.isArray(parsed)) return [];
 
@@ -300,7 +300,7 @@ export function saveHandoffToMemory(result: HandoffResult): string | undefined {
   const filename = `project_handoff_auto_${timestamp}.md`;
   const filePath = path.join(memoryDir, filename);
   const formatted = formatHandoff(result);
-  fs.writeFileSync(filePath, formatted + '\n', 'utf-8');
+  atomicWriteSync(filePath, formatted + '\n');
   return filePath;
 }
 
