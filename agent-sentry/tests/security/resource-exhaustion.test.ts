@@ -19,6 +19,14 @@ function createStore(): MemoryStore {
   });
 }
 
+function eventBase() {
+  return {
+    timestamp: new Date().toISOString(),
+    session_id: 'test-session',
+    agent_id: 'test-agent',
+  };
+}
+
 describe('Resource exhaustion', () => {
   let store: MemoryStore;
 
@@ -34,6 +42,7 @@ describe('Resource exhaustion', () => {
     const largeDetail = 'x'.repeat(1_000_000); // 1MB string (not 10MB to keep test fast)
 
     const event = await store.capture({
+      ...eventBase(),
       event_type: 'decision',
       severity: 'low',
       skill: 'context_health',
@@ -41,6 +50,7 @@ describe('Resource exhaustion', () => {
       detail: largeDetail,
       affected_files: [],
       tags: [],
+      metadata: {},
     });
 
     expect(event.id).toBeDefined();
@@ -55,6 +65,7 @@ describe('Resource exhaustion', () => {
     const manyTags = Array.from({ length: 1000 }, (_, i) => `tag-${i}`);
 
     const event = await store.capture({
+      ...eventBase(),
       event_type: 'decision',
       severity: 'low',
       skill: 'context_health',
@@ -62,6 +73,7 @@ describe('Resource exhaustion', () => {
       detail: 'Test event with many tags',
       affected_files: [],
       tags: manyTags,
+      metadata: {},
     });
 
     expect(event.id).toBeDefined();
@@ -80,6 +92,7 @@ describe('Resource exhaustion', () => {
     }
 
     const event = await store.capture({
+      ...eventBase(),
       event_type: 'decision',
       severity: 'low',
       skill: 'context_health',

@@ -19,6 +19,14 @@ function createStore(): MemoryStore {
   });
 }
 
+function eventBase() {
+  return {
+    timestamp: new Date().toISOString(),
+    session_id: 'test-session',
+    agent_id: 'test-agent',
+  };
+}
+
 describe('SQL injection', () => {
   let store: MemoryStore;
 
@@ -33,6 +41,7 @@ describe('SQL injection', () => {
 
     // Attempt SQL injection via title field
     const event = await store.capture({
+      ...eventBase(),
       event_type: 'decision',
       severity: 'low',
       skill: 'context_health',
@@ -40,6 +49,7 @@ describe('SQL injection', () => {
       detail: 'SQL injection attempt',
       affected_files: [],
       tags: [],
+      metadata: {},
     });
 
     // If we get here, the injection was parameterized properly
@@ -47,7 +57,7 @@ describe('SQL injection', () => {
     expect(event.title).toBe("'; DROP TABLE ops_events; --");
 
     // Verify the table still works
-    const results = await store.searchEvents({ query: 'DROP TABLE' });
+    const results = await store.search('DROP TABLE');
     expect(results.length).toBe(1); // Found the event, table not dropped
   });
 
@@ -57,6 +67,7 @@ describe('SQL injection', () => {
     await store.initialize();
 
     await store.capture({
+      ...eventBase(),
       event_type: 'decision',
       severity: 'low',
       skill: 'context_health',
@@ -64,12 +75,11 @@ describe('SQL injection', () => {
       detail: 'Test',
       affected_files: [],
       tags: [],
+      metadata: {},
     });
 
     // Attempt SQL injection in search
-    const results = await store.searchEvents({
-      query: "' OR '1'='1",
-    });
+    const results = await store.search("' OR '1'='1");
 
     // Should not return all rows — parameterized query prevents injection
     // It should search for the literal string
@@ -83,6 +93,7 @@ describe('SQL injection', () => {
 
     // Insert event with normal tags
     await store.capture({
+      ...eventBase(),
       event_type: 'decision',
       severity: 'low',
       skill: 'context_health',
@@ -90,10 +101,11 @@ describe('SQL injection', () => {
       detail: 'Test',
       affected_files: [],
       tags: ["'; DROP TABLE ops_events; --"],
+      metadata: {},
     });
 
     // Verify store still works
-    const stats = await store.getStats();
+    const stats = await store.stats();
     expect(stats.total_events).toBeGreaterThanOrEqual(1);
   });
 });
@@ -140,6 +152,7 @@ describe('XSS in event content', () => {
     await store.initialize();
 
     const event = await store.capture({
+      ...eventBase(),
       event_type: 'decision',
       severity: 'low',
       skill: 'context_health',
@@ -147,6 +160,7 @@ describe('XSS in event content', () => {
       detail: '<img onerror="alert(1)" src="x">',
       affected_files: [],
       tags: [],
+      metadata: {},
     });
 
     // Content is stored literally — no execution context

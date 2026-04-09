@@ -141,7 +141,7 @@ function matchesCondition(
       fieldValue = context.metadata?.[condition.field] as string | undefined;
   }
 
-  if (fieldValue === undefined) return false;
+  if (fieldValue === undefined || typeof fieldValue !== 'string') return false;
 
   switch (condition.operator) {
     case 'contains':
