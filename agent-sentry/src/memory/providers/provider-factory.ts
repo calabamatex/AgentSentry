@@ -2,14 +2,13 @@
  * provider-factory.ts — Auto-detect or config-driven provider selection.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
 import { StorageProvider } from './storage-provider';
 import { SqliteProvider } from './sqlite-provider';
 import { SupabaseProvider } from './supabase-provider';
 import { resolveConfigPath, resolveDatabasePath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
+import { safeReadSync } from '../../utils/safe-io';
 
 const logger = new Logger({ module: 'provider-factory' });
 export interface MemoryConfig {
@@ -40,7 +39,7 @@ export function loadMemoryConfig(configPath?: string): MemoryConfig {
     return { ...DEFAULT_CONFIG };
   }
   try {
-    const raw = safeJsonParse<Record<string, unknown>>(fs.readFileSync(cfgPath, 'utf8'));
+    const raw = safeJsonParse<Record<string, unknown>>(safeReadSync(cfgPath).toString('utf-8'));
     if (raw.memory) {
       return { ...DEFAULT_CONFIG, ...raw.memory };
     }
