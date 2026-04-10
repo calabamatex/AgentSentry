@@ -31,6 +31,16 @@ vi.mock('child_process', async () => {
   };
 });
 
+vi.mock('../../../src/utils/safe-io', async () => {
+  const actual = await vi.importActual<typeof import('../../../src/utils/safe-io')>('../../../src/utils/safe-io');
+  return {
+    ...actual,
+    atomicWriteSync: vi.fn(),
+    safeReadSync: vi.fn(),
+  };
+});
+
+import { atomicWriteSync, safeReadSync } from '../../../src/utils/safe-io';
 import {
   isGitRepo,
   wireHooksIntoSettings,
@@ -45,6 +55,8 @@ const mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>;
 const mockWriteFileSync = fs.writeFileSync as ReturnType<typeof vi.fn>;
 const mockMkdirSync = fs.mkdirSync as ReturnType<typeof vi.fn>;
 const mockExecSync = child_process.execSync as ReturnType<typeof vi.fn>;
+const mockAtomicWriteSync = atomicWriteSync as ReturnType<typeof vi.fn>;
+const mockSafeReadSync = safeReadSync as unknown as ReturnType<typeof vi.fn>;
 
 describe('isGitRepo', () => {
   beforeEach(() => {
@@ -81,6 +93,8 @@ describe('wireHooksIntoSettings', () => {
     mockExistsSync.mockReset();
     mockReadFileSync.mockReset();
     mockWriteFileSync.mockReset();
+    mockAtomicWriteSync.mockReset();
+    mockSafeReadSync.mockReset();
     mockMkdirSync.mockReset();
   });
 
@@ -92,9 +106,9 @@ describe('wireHooksIntoSettings', () => {
 
     expect(result).toBe(true);
     expect(mockMkdirSync).toHaveBeenCalled();
-    expect(mockWriteFileSync).toHaveBeenCalled();
+    expect(mockAtomicWriteSync).toHaveBeenCalled();
 
-    const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]);
+    const written = JSON.parse(mockAtomicWriteSync.mock.calls[0][1]);
     expect(written.hooks).toBeDefined();
     expect(written.hooks.SessionStart).toBeInstanceOf(Array);
     expect(written.hooks.UserPromptSubmit).toBeInstanceOf(Array);
@@ -103,12 +117,12 @@ describe('wireHooksIntoSettings', () => {
 
   it('adds hooks to existing settings without hooks', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockReturnValue(JSON.stringify({ someKey: 'value' }));
+    mockSafeReadSync.mockReturnValue(Buffer.from(JSON.stringify({ someKey: 'value' })));
 
     const result = wireHooksIntoSettings();
 
     expect(result).toBe(true);
-    const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]);
+    const written = JSON.parse(mockAtomicWriteSync.mock.calls[0][1]);
     expect(written.someKey).toBe('value');
     expect(written.hooks.SessionStart).toBeInstanceOf(Array);
   });
@@ -122,12 +136,12 @@ describe('wireHooksIntoSettings', () => {
       },
     };
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockReturnValue(JSON.stringify(existing));
+    mockSafeReadSync.mockReturnValue(Buffer.from(JSON.stringify(existing)));
 
     const result = wireHooksIntoSettings();
 
     expect(result).toBe(false);
-    expect(mockWriteFileSync).not.toHaveBeenCalled();
+    expect(mockAtomicWriteSync).not.toHaveBeenCalled();
   });
 
   it('adds only missing hooks when some are already present', () => {
@@ -138,12 +152,12 @@ describe('wireHooksIntoSettings', () => {
       },
     };
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockReturnValue(JSON.stringify(existing));
+    mockSafeReadSync.mockReturnValue(Buffer.from(JSON.stringify(existing)));
 
     const result = wireHooksIntoSettings();
 
     expect(result).toBe(true);
-    const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]);
+    const written = JSON.parse(mockAtomicWriteSync.mock.calls[0][1]);
     // SessionStart should still have 1 entry (not duplicated)
     expect(written.hooks.SessionStart).toHaveLength(1);
     // New hooks should be added
@@ -153,9 +167,7 @@ describe('wireHooksIntoSettings', () => {
 
   it('returns false when settings file is invalid JSON', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => {
-      throw new SyntaxError('bad json');
-    });
+    mockSafeReadSync.mockReturnValue(Buffer.from('not valid json'));
 
     const result = wireHooksIntoSettings();
     expect(result).toBe(false);
@@ -167,6 +179,7 @@ describe('runHealthAudit', () => {
     mockExecSync.mockReset();
     mockExistsSync.mockReset();
     mockReadFileSync.mockReset();
+    mockSafeReadSync.mockReset();
   });
 
   it('returns critical when not a git repo', () => {
@@ -218,7 +231,7 @@ describe('runHealthAudit', () => {
       if (typeof p === 'string' && p.endsWith('CLAUDE.md')) return true;
       return false;
     });
-    mockReadFileSync.mockReturnValue('# My Project\n\nSome content without security or error handling.');
+    mockSafeReadSync.mockReturnValue(Buffer.from('# My Project\n\nSome content without security or error handling.'));
 
     const result = runHealthAudit();
 
@@ -236,7 +249,7 @@ describe('runHealthAudit', () => {
       if (typeof p === 'string' && p.endsWith('CLAUDE.md')) return true;
       return false;
     });
-    mockReadFileSync.mockReturnValue('# My Project\nError Handling section here');
+    mockSafeReadSync.mockReturnValue(Buffer.from('# My Project\nError Handling section here'));
 
     const result = runHealthAudit();
 
@@ -254,7 +267,7 @@ describe('runHealthAudit', () => {
       if (typeof p === 'string' && p.endsWith('CLAUDE.md')) return true;
       return false;
     });
-    mockReadFileSync.mockReturnValue('# My Project\nSecurity section here');
+    mockSafeReadSync.mockReturnValue(Buffer.from('# My Project\nSecurity section here'));
 
     const result = runHealthAudit();
 
@@ -299,8 +312,8 @@ describe('runHealthAudit', () => {
     // All files exist
     mockExistsSync.mockReturnValue(true);
     // CLAUDE.md has all needed content
-    mockReadFileSync.mockReturnValue(
-      '# Project\n\nagent-sentry rules here\n\n## Security\n\n## Error Handling\n',
+    mockSafeReadSync.mockReturnValue(
+      Buffer.from('# Project\n\nagent-sentry rules here\n\n## Security\n\n## Error Handling\n'),
     );
 
     const result = runHealthAudit();

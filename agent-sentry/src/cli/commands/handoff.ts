@@ -18,6 +18,8 @@ import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { Logger } from '../../observability/logger';
 import { errorMessage } from '../../utils/error-message';
 import { formatHandoff, buildHandoffPrompt } from './handoff-templates';
+import { safeJsonParse } from '../../utils/safe-json';
+import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
 
 const logger = new Logger({ module: 'cli-handoff' });
 
@@ -79,7 +81,7 @@ function readMemoryFiles(projectDir?: string): { index: string; handoffs: string
   // Read MEMORY.md index
   const indexPath = path.join(memoryDir, 'MEMORY.md');
   if (fs.existsSync(indexPath)) {
-    index = fs.readFileSync(indexPath, 'utf-8');
+    index = safeReadSync(indexPath).toString('utf-8');
   }
 
   // Read all handoff files
@@ -225,8 +227,8 @@ function readTodoState(): TodoItem[] {
 
     if (!todoFile) return [];
 
-    const content = fs.readFileSync(path.join(todosDir, todoFile), 'utf-8');
-    const parsed = JSON.parse(content);
+    const content = safeReadSync(path.join(todosDir, todoFile)).toString('utf-8');
+    const parsed = safeJsonParse(content);
     if (!Array.isArray(parsed)) return [];
 
     return parsed
@@ -299,7 +301,7 @@ export function saveHandoffToMemory(result: HandoffResult): string | undefined {
   const filename = `project_handoff_auto_${timestamp}.md`;
   const filePath = path.join(memoryDir, filename);
   const formatted = formatHandoff(result);
-  fs.writeFileSync(filePath, formatted + '\n', 'utf-8');
+  atomicWriteSync(filePath, formatted + '\n');
   return filePath;
 }
 

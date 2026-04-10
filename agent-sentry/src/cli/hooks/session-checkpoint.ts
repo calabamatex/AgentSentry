@@ -12,6 +12,8 @@ import * as path from 'path';
 import { execSync, execFileSync } from 'child_process';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
+import { safeReadSync } from '../../utils/safe-io';
 import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-session-checkpoint' });
@@ -25,7 +27,7 @@ function readConfig(): Record<string, unknown> {
     return {};
   }
   try {
-    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return safeJsonParse<Record<string, unknown>>(safeReadSync(configPath).toString('utf-8'));
   } catch (e) {
     logger.debug('Failed to read config file', { error: errorMessage(e) });
     return {};

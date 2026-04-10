@@ -10,6 +10,8 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import * as readline from 'readline';
 import { generateConfigForLevel, getActiveSkills, LEVEL_NAMES } from '../../enablement/engine';
+import { safeJsonParse } from '../../utils/safe-json';
+import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
 
 export interface HealthSummary {
   criticals: string[];
@@ -81,7 +83,7 @@ export function wireHooksIntoSettings(): boolean {
 
   try {
     if (fs.existsSync(settingsPath)) {
-      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      settings = safeJsonParse<Record<string, unknown>>(safeReadSync(settingsPath).toString('utf-8'));
     } else {
       // Create .claude dir if needed
       const dir = path.dirname(settingsPath);
@@ -143,7 +145,7 @@ export function wireHooksIntoSettings(): boolean {
   }
 
   if (modified) {
-    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+    atomicWriteSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
 
   return modified;
@@ -197,7 +199,7 @@ export function runHealthAudit(): HealthSummary {
   if (!fs.existsSync(claudeMd)) {
     results.warnings.push('CLAUDE.md missing. Create one with project rules.');
   } else {
-    const content = fs.readFileSync(claudeMd, 'utf-8');
+    const content = safeReadSync(claudeMd).toString('utf-8');
     if (!/agent.sentry/i.test(content)) {
       results.advisories.push('CLAUDE.md has no AgentSentry rules.');
     }

@@ -28,7 +28,16 @@ vi.mock('fs', async () => {
   };
 });
 
+vi.mock('../../../src/utils/safe-io', async () => {
+  const actual = await vi.importActual<typeof import('../../../src/utils/safe-io')>('../../../src/utils/safe-io');
+  return {
+    ...actual,
+    atomicWriteSync: vi.fn(),
+  };
+});
+
 import * as fs from 'fs';
+import { atomicWriteSync } from '../../../src/utils/safe-io';
 import { exportCommand } from '../../../src/cli/commands/export';
 import type { ParsedArgs } from '../../../src/cli/parser';
 
@@ -173,12 +182,11 @@ describe('exportCommand', () => {
 
     await exportCommand.run(makeArgs({ output: '/tmp/export-test.json' }));
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      '/tmp/export-test.json',
-      expect.any(String),
-      'utf-8',
-    );
-    const written = (fs.writeFileSync as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    const mockAtomicWrite = atomicWriteSync as ReturnType<typeof vi.fn>;
+    expect(mockAtomicWrite).toHaveBeenCalled();
+    const writtenPath = mockAtomicWrite.mock.calls[0][0];
+    const written = mockAtomicWrite.mock.calls[0][1];
+    expect(writtenPath).toContain('export-test.json');
     expect(JSON.parse(written)).toEqual(events);
     expect(stderrChunks.join('')).toContain('Exported 1 event(s) as json to /tmp/export-test.json');
   });

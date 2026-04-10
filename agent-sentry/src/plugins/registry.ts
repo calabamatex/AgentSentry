@@ -9,6 +9,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'fs';
 import { join, resolve } from 'path';
 import { Logger } from '../observability/logger';
+import { safeJsonParse } from '../utils/safe-json';
 import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'plugin-registry' });
@@ -123,7 +124,7 @@ export class PluginRegistry {
 
         try {
           const raw = readFileSync(metadataPath, 'utf-8');
-          const manifest = JSON.parse(raw) as PluginManifest;
+          const manifest = safeJsonParse<PluginManifest>(raw);
 
           // Ensure hooks defaults to empty array
           if (!manifest.hooks) manifest.hooks = [];
@@ -226,7 +227,7 @@ export class PluginRegistry {
     }
 
     const metadataPath = join(sourcePath, 'metadata.json');
-    const manifest = JSON.parse(readFileSync(metadataPath, 'utf-8')) as PluginManifest;
+    const manifest = safeJsonParse<PluginManifest>(readFileSync(metadataPath, 'utf-8'));
 
     if (options?.category) {
       manifest.category = options.category as PluginManifest['category'];
@@ -317,7 +318,7 @@ export class PluginRegistry {
 
     let manifest: unknown;
     try {
-      manifest = JSON.parse(readFileSync(metadataPath, 'utf-8'));
+      manifest = safeJsonParse(readFileSync(metadataPath, 'utf-8'));
     } catch (e) {
       logger.warn('Plugin metadata.json is not valid JSON', { error: errorMessage(e) });
       return { valid: false, errors: ['metadata.json is not valid JSON'] };
@@ -455,7 +456,7 @@ export class PluginRegistry {
 
     try {
       const raw = readFileSync(statePath, 'utf-8');
-      const state = JSON.parse(raw) as RegistryState;
+      const state = safeJsonParse<RegistryState>(raw);
       // State is applied during scan() via getSavedPluginState
       this._loadedState = state;
     } catch (e) {

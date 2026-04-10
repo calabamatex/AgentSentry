@@ -11,6 +11,8 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
+import { safeReadSync } from '../../utils/safe-io';
 import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-session-start' });
@@ -48,10 +50,11 @@ function readConfig(): { claudeMdMaxLines: number; agentsMdMaxLines: number } {
     return { claudeMdMaxLines: 300, agentsMdMaxLines: 300 };
   }
   try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const config = safeJsonParse<Record<string, Record<string, unknown>>>(safeReadSync(configPath).toString('utf-8'));
+    const rulesFile = config.rules_file;
     return {
-      claudeMdMaxLines: config.rules_file?.claude_md_max_lines ?? config.rules_file?.max_lines ?? 300,
-      agentsMdMaxLines: config.rules_file?.agents_md_max_lines ?? config.rules_file?.max_lines ?? 300,
+      claudeMdMaxLines: (rulesFile?.claude_md_max_lines ?? rulesFile?.max_lines ?? 300) as number,
+      agentsMdMaxLines: (rulesFile?.agents_md_max_lines ?? rulesFile?.max_lines ?? 300) as number,
     };
   } catch (e) {
     logger.debug('Failed to read config file', { error: errorMessage(e) });
@@ -91,7 +94,7 @@ function checkClaudeMd(repoRoot: string, maxLines: number, results: CheckResults
     return;
   }
 
-  const content = fs.readFileSync(claudeMd, 'utf-8');
+  const content = safeReadSync(claudeMd).toString('utf-8');
   const lineCount = content.split('\n').length;
 
   if (lineCount > maxLines) {
@@ -117,7 +120,7 @@ function checkAgentsMd(repoRoot: string, maxLines: number, results: CheckResults
     return;
   }
 
-  const lineCount = fs.readFileSync(agentsMd, 'utf-8').split('\n').length;
+  const lineCount = safeReadSync(agentsMd).toString('utf-8').split('\n').length;
   if (lineCount > maxLines) {
     results.warnings.push(`AGENTS.md is ${lineCount} lines (recommended: <${maxLines}).`);
   }

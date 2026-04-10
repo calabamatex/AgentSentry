@@ -12,6 +12,7 @@ import { ConnectionPool, ConnectionPoolOptions } from './connection-pool';
 import { Logger } from '../../observability/logger';
 import { errorMessage } from '../../utils/error-message';
 import { OpsEvent } from '../schema';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'connection-pool' });
 
@@ -141,7 +142,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
 
             if (options.returnHeaders) {
               try {
-                const data = body ? JSON.parse(body) : null;
+                const data = body ? safeJsonParse(body) : null;
                 resolve({ data, headers: res.headers } as unknown as T);
               } catch (e) {
                 logger.debug('Failed to parse response body with headers', { error: errorMessage(e) });
@@ -151,7 +152,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
             }
 
             try {
-              resolve(body ? JSON.parse(body) : (null as unknown as T));
+              resolve(body ? safeJsonParse<T>(body) : (null as unknown as T));
             } catch (e) {
               logger.debug('Failed to parse response body', { error: errorMessage(e) });
               resolve(null as unknown as T);

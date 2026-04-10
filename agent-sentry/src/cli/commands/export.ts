@@ -4,10 +4,10 @@
  * Exports events in JSON or NDJSON format to stdout or a file.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { CommandDefinition, ParsedArgs, isJson } from '../parser';
 import { MemoryStore } from '../../memory/store';
+import { atomicWriteSync } from '../../utils/safe-io';
 
 async function getStore(): Promise<MemoryStore> {
   const store = new MemoryStore();
@@ -58,7 +58,7 @@ export const exportCommand: CommandDefinition = {
 
       if (outputFile) {
         const resolved = path.resolve(outputFile);
-        fs.writeFileSync(resolved, content, 'utf-8');
+        atomicWriteSync(resolved, content);
         process.stderr.write(`Exported ${events.length} event(s) as ${format} to ${resolved}\n`);
       } else {
         process.stdout.write(content);

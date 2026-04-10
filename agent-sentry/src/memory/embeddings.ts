@@ -7,6 +7,8 @@ import * as path from 'path';
 import * as https from 'https';
 import * as http from 'http';
 import { Logger } from '../observability/logger';
+import { safeJsonParse } from '../utils/safe-json';
+import { safeReadSync } from '../utils/safe-io';
 import { createHash } from 'crypto';
 import { errorMessage } from '../utils/error-message';
 
@@ -102,7 +104,7 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- onnxruntime-node is an optional peer dependency loaded dynamically
       const ort = require('onnxruntime-node') as { InferenceSession: { create(path: string): Promise<{ run(feeds: Record<string, unknown>): Promise<Record<string, { data: Float32Array }>> }> }; Tensor: new (type: string, data: BigInt64Array, shape: number[]) => unknown };
       this.session = await ort.InferenceSession.create(modelPath);
-      const tokenizerData = JSON.parse(fs.readFileSync(tokenizerPath, 'utf8'));
+      const tokenizerData = safeJsonParse<{ model?: { vocab?: Record<string, number> } }>(safeReadSync(tokenizerPath).toString('utf-8'));
       this.tokenizer = tokenizerData;
     } catch (err) {
       this.session = null;
@@ -339,8 +341,8 @@ export class OllamaEmbeddingProvider implements EmbeddingProvider {
         });
         res.on('end', () => {
           try {
-            const result = JSON.parse(body);
-            resolve(result.embedding || []);
+            const result = safeJsonParse<Record<string, unknown>>(body);
+            resolve((result.embedding as number[]) || []);
           } catch (err) {
             reject(err);
           }
@@ -380,8 +382,9 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
         });
         res.on('end', () => {
           try {
-            const result = JSON.parse(body);
-            resolve(result.data?.[0]?.embedding || []);
+            const result = safeJsonParse<Record<string, unknown>>(body);
+            const dataArr = result.data as Array<Record<string, unknown>> | undefined;
+            resolve((dataArr?.[0]?.embedding as number[]) || []);
           } catch (err) {
             reject(err);
           }
@@ -421,8 +424,9 @@ export class VoyageEmbeddingProvider implements EmbeddingProvider {
         });
         res.on('end', () => {
           try {
-            const result = JSON.parse(body);
-            resolve(result.data?.[0]?.embedding || []);
+            const result = safeJsonParse<Record<string, unknown>>(body);
+            const dataArr = result.data as Array<Record<string, unknown>> | undefined;
+            resolve((dataArr?.[0]?.embedding as number[]) || []);
           } catch (err) {
             reject(err);
           }

@@ -10,6 +10,8 @@ import * as path from 'path';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
+import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
 import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'cli-enable' });
@@ -157,7 +159,7 @@ export const enableCommand: CommandDefinition = {
 function loadEnablementLevel(): number {
   try {
     const cfgPath = getConfigPath();
-    const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    const raw = safeJsonParse<Record<string, any>>(safeReadSync(cfgPath).toString('utf-8'));
     const level = raw?.enablement?.level;
     if (typeof level === 'number' && level >= 1 && level <= 5) return level;
   } catch (e) {
@@ -170,7 +172,7 @@ function saveEnablementLevel(level: number): void {
   const cfgPath = getConfigPath();
   let config: Record<string, unknown> = {};
   try {
-    config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    config = safeJsonParse<Record<string, unknown>>(safeReadSync(cfgPath).toString('utf-8'));
   } catch (e) {
     logger.debug('Config file not found, starting fresh', { error: errorMessage(e) });
   }
@@ -183,11 +185,7 @@ function saveEnablementLevel(level: number): void {
   (config.enablement as Record<string, unknown>).skills = canonical.skills;
   (config.enablement as Record<string, unknown>).updated_at = new Date().toISOString();
 
-  const dir = path.dirname(cfgPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(cfgPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  atomicWriteSync(cfgPath, JSON.stringify(config, null, 2) + '\n');
 }
 
 function printCurrentLevel(

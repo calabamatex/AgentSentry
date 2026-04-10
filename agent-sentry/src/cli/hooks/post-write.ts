@@ -18,6 +18,8 @@ import { scanErrorHandling } from '../../analyzers/error-handling';
 import { scanPiiLogging } from '../../analyzers/pii-scanner';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
+import { safeJsonParse } from '../../utils/safe-json';
+import { safeReadSync } from '../../utils/safe-io';
 import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-post-write' });
@@ -35,7 +37,7 @@ function readConfig(): Record<string, unknown> {
     return {};
   }
   try {
-    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return safeJsonParse<Record<string, unknown>>(safeReadSync(configPath).toString('utf-8'));
   } catch (e) {
     logger.debug('Failed to read config file', { error: errorMessage(e) });
     return {};
@@ -54,7 +56,7 @@ function checkBlastRadius(filePath: string): void {
   // Count unique files
   let lines: string[];
   try {
-    lines = fs.readFileSync(trackingFile, 'utf-8').split('\n').filter(Boolean);
+    lines = safeReadSync(trackingFile).toString('utf-8').split('\n').filter(Boolean);
   } catch (e) {
     logger.debug('Failed to read blast-radius tracking file', { error: errorMessage(e) });
     return;
@@ -70,7 +72,7 @@ function checkBlastRadius(filePath: string): void {
 
   if (fs.existsSync(sessionMarker)) {
     try {
-      const sessionStart = fs.readFileSync(sessionMarker, 'utf-8').trim();
+      const sessionStart = safeReadSync(sessionMarker).toString('utf-8').trim();
       const recentCommits = execFileSync('git', ['log', '--after=' + sessionStart, '--oneline'], {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -137,7 +139,7 @@ async function main(): Promise<void> {
 
   let input: HookInput;
   try {
-    input = JSON.parse(raw);
+    input = safeJsonParse<HookInput>(raw);
   } catch (e) {
     logger.warn('Failed to parse hook input from stdin', { error: errorMessage(e) });
     process.exit(0);
@@ -148,7 +150,7 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = safeReadSync(filePath).toString('utf-8');
 
   // 1. Error Handling Enforcer
   const errorFindings = scanErrorHandling(content, filePath);

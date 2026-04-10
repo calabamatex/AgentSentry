@@ -7,7 +7,7 @@ import { timingSafeEqual } from 'crypto';
 
 /**
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
- * Returns true if the key matches or if no key is configured (open access).
+ * Returns true if the key matches or if no key is configured (with deprecation path).
  */
 let authWarningLogged = false;
 
@@ -40,6 +40,14 @@ export function validateAccessKey(key: string): boolean {
     return false;
   }
   return timingSafeEqual(keyBuf, expectedBuf);
+}
+
+/**
+ * Reset the auth warning state.
+ * @internal Exported for testing only.
+ */
+export function _resetDeprecationWarning(): void {
+  authWarningLogged = false;
 }
 
 export interface RateLimitEntry {

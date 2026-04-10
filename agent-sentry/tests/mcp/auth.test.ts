@@ -3,12 +3,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { validateAccessKey, createRateLimiter } from '../../src/mcp/auth';
+import { validateAccessKey, createRateLimiter, _resetDeprecationWarning } from '../../src/mcp/auth';
 import { IncomingMessage, ServerResponse } from 'http';
 
 describe('validateAccessKey', () => {
   const originalAccessKey = process.env.AGENT_SENTRY_ACCESS_KEY;
   const originalRequireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
+
+  beforeEach(() => {
+    _resetDeprecationWarning();
+  });
 
   afterEach(() => {
     if (originalAccessKey === undefined) {
