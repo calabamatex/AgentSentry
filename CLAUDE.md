@@ -1,4 +1,4 @@
-# Claude Code Configuration - RuFlo V3
+# Claude Code Configuration — AgentSentry
 
 ## Behavioral Rules (Always Enforced)
 
@@ -7,36 +7,8 @@
 - ALWAYS prefer editing an existing file to creating a new one
 - NEVER proactively create documentation files (*.md) or README files unless explicitly requested
 - NEVER save working files, text/mds, or tests to the root folder
-- Never continuously check status after spawning a swarm — wait for results
 - ALWAYS read a file before editing it
 - NEVER commit secrets, credentials, or .env files
-
-## RuFlo Orchestration (MANDATORY)
-
-RuFlo (https://github.com/ruvnet/ruflo/) is the REQUIRED orchestration layer for all multi-agent code creation in this project. This is not optional.
-
-### When RuFlo coordination is REQUIRED
-- Any task spawning 2+ agents in parallel
-- Any multi-file change spanning 3+ files
-- Any milestone or phase-level work
-- Any cross-session continuation of prior work
-
-### What MUST happen before spawning agents
-1. **Initialize swarm**: Call `mcp__claude-flow__swarm_init` with hierarchical topology
-2. **Store task context**: Call `mcp__claude-flow__memory_store` with milestone/task description
-3. **Orchestrate tasks**: Call `mcp__claude-flow__task_orchestrate` for formal decomposition
-4. Then spawn agents via Agent tool in the SAME message
-
-### What MUST happen after agents complete
-1. **Store outcomes**: Call `mcp__claude-flow__memory_store` with results, patterns learned, errors encountered
-2. **Log intelligence**: Store patterns that would help future sessions (e.g., "path resolution from tests/ to root is 2 levels")
-3. Then verify build + tests
-
-### When RuFlo is NOT required
-- Single-file edits (use Edit tool directly)
-- Read-only research (use Grep/Read/Glob)
-- Git operations (use Bash directly)
-- Answering questions (no tools needed)
 
 ## File Organization
 
@@ -53,29 +25,22 @@ RuFlo (https://github.com/ruvnet/ruflo/) is the REQUIRED orchestration layer for
 - Follow Domain-Driven Design with bounded contexts
 - Keep files under 500 lines
 - Use typed interfaces for all public APIs
-- Prefer TDD London School (mock-first) for new code
 - Use event sourcing for state changes
 - Ensure input validation at system boundaries
 
 ### Project Config
 
 - **Topology**: hierarchical-mesh
-- **Max Agents**: 15
-- **Memory**: hybrid
+- **Memory**: SQLite (local), Supabase (experimental/remote)
 - **Vector Search**: Linear scan with cosine similarity (bounded to 10k most recent embeddings)
-- **Neural**: Enabled
 
 ## Build & Test
 
 ```bash
-# Build
-npm run build
-
-# Test
-npm test
-
-# Lint
-npm run lint
+npm run build    # Compile TypeScript
+npm test         # Run all tests (vitest)
+npm run lint     # ESLint
+npm run benchmark # Performance benchmarks
 ```
 
 - ALWAYS run tests after making code changes
@@ -95,143 +60,20 @@ npm run lint
 - NEVER commit .env files or any file containing secrets
 - Always validate user input at system boundaries
 - Always sanitize file paths to prevent directory traversal
-- Run `npx @claude-flow/cli@latest security scan` after security-related changes
 
-## Concurrency: 1 MESSAGE = ALL RELATED OPERATIONS
+## Concurrency Guidelines
 
-- All operations MUST be concurrent/parallel in a single message
-- Use Claude Code's Task tool for spawning agents, not just MCP
-- ALWAYS batch ALL todos in ONE TodoWrite call (5-10+ minimum)
-- ALWAYS spawn ALL agents in ONE message with full instructions via Task tool
-- ALWAYS batch ALL file reads/writes/edits in ONE message
-- ALWAYS batch ALL Bash commands in ONE message
+- Batch related operations into a single message when possible
+- When spawning multiple agents, put all agent calls in ONE message for parallel execution
+- After spawning agents, wait for results — do not poll
 
-## Swarm Orchestration
+## Branch Hygiene
 
-- MUST initialize the swarm using CLI tools when starting complex tasks
-- MUST spawn concurrent agents using Claude Code's Task tool
-- Never use CLI tools alone for execution — Task tool agents do the actual work
-- MUST call CLI tools AND Task tool in ONE message for complex work
+- Feature branches MUST be merged to main or cleaned up before a session ends
+- Infrastructure fixes (hooks, gitignore, CI) go DIRECTLY on main
+- Never leave orphaned branches — document incomplete work in commit messages
+- Before creating a new branch, check `git branch -r` for existing unmerged branches
 
-### 3-Tier Model Routing (ADR-026)
+---
 
-| Tier | Handler | Latency | Cost | Use Cases |
-|------|---------|---------|------|-----------|
-| **1** | Agent Booster (WASM) | <1ms | $0 | Simple transforms (var→const, add types) — Skip LLM |
-| **2** | Haiku | ~500ms | $0.0002 | Simple tasks, low complexity (<30%) |
-| **3** | Sonnet/Opus | 2-5s | $0.003-0.015 | Complex reasoning, architecture, security (>30%) |
-
-- Always check for `[AGENT_BOOSTER_AVAILABLE]` or `[TASK_MODEL_RECOMMENDATION]` before spawning agents
-- Use Edit tool directly when `[AGENT_BOOSTER_AVAILABLE]`
-
-## Swarm Configuration & Anti-Drift
-
-- ALWAYS use hierarchical topology for coding swarms
-- Keep maxAgents at 6-8 for tight coordination
-- Use specialized strategy for clear role boundaries
-- Use `raft` consensus for hive-mind (leader maintains authoritative state)
-- Run frequent checkpoints via `post-task` hooks
-- Keep shared memory namespace for all agents
-
-```bash
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
-```
-
-## Swarm Execution Rules
-
-- ALWAYS use `run_in_background: true` for all agent Task calls
-- ALWAYS put ALL agent Task calls in ONE message for parallel execution
-- After spawning, STOP — do NOT add more tool calls or check status
-- Never poll TaskOutput or check swarm status — trust agents to return
-- When agent results arrive, review ALL results before proceeding
-
-## V3 CLI Commands
-
-### Core Commands
-
-| Command | Subcommands | Description |
-|---------|-------------|-------------|
-| `init` | 4 | Project initialization |
-| `agent` | 8 | Agent lifecycle management |
-| `swarm` | 6 | Multi-agent swarm coordination |
-| `memory` | 11 | AgentDB memory with HNSW search |
-| `task` | 6 | Task creation and lifecycle |
-| `session` | 7 | Session state management |
-| `hooks` | 17 | Self-learning hooks + 12 workers |
-| `hive-mind` | 6 | Byzantine fault-tolerant consensus |
-
-### Quick CLI Examples
-
-```bash
-npx @claude-flow/cli@latest init --wizard
-npx @claude-flow/cli@latest agent spawn -t coder --name my-coder
-npx @claude-flow/cli@latest swarm init --v3-mode
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-npx @claude-flow/cli@latest doctor --fix
-```
-
-## Available Agents (60+ Types)
-
-### Core Development
-`coder`, `reviewer`, `tester`, `planner`, `researcher`
-
-### Specialized
-`security-architect`, `security-auditor`, `memory-specialist`, `performance-engineer`
-
-### Swarm Coordination
-`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
-
-### GitHub & Repository
-`pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`
-
-### SPARC Methodology
-`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`
-
-## Memory Commands Reference
-
-```bash
-# Store (REQUIRED: --key, --value; OPTIONAL: --namespace, --ttl, --tags)
-npx @claude-flow/cli@latest memory store --key "pattern-auth" --value "JWT with refresh" --namespace patterns
-
-# Search (REQUIRED: --query; OPTIONAL: --namespace, --limit, --threshold)
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-
-# List (OPTIONAL: --namespace, --limit)
-npx @claude-flow/cli@latest memory list --namespace patterns --limit 10
-
-# Retrieve (REQUIRED: --key; OPTIONAL: --namespace)
-npx @claude-flow/cli@latest memory retrieve --key "pattern-auth" --namespace patterns
-```
-
-## Quick Setup
-
-```bash
-claude mcp add claude-flow -- npx -y @claude-flow/cli@latest
-npx @claude-flow/cli@latest daemon start
-npx @claude-flow/cli@latest doctor --fix
-```
-
-## Claude Code vs CLI Tools
-
-- Claude Code's Task tool handles ALL execution: agents, file ops, code generation, git
-- CLI tools handle coordination via Bash: swarm init, memory, hooks, routing
-- NEVER use CLI tools as a substitute for Task tool agents
-
-## Support
-
-- Documentation: https://github.com/ruvnet/claude-flow
-- Issues: https://github.com/ruvnet/claude-flow/issues
-
-
-## AgentSentry — Directive Compliance
-
-When AgentSentry hook output contains ACTION or RECOMMEND directives, execute the
-specified tool or command immediately. Do not substitute alternatives or defer action.
-
-- **ACTION directives** are mandatory: run the exact tool/command specified.
-- **RECOMMEND directives** are strongly advised: follow unless you have an explicit
-  user instruction that contradicts them.
-- **BLOCKED directives** from Stop hooks are enforced automatically — the agent cannot
-  continue until the blocking condition is resolved.
-
-This is a standing order at enablement Level 3+ (House Rules).
+> **Note for contributors:** This project uses [claude-flow](https://github.com/ruvnet/ruflo/) for multi-agent orchestration in CI and automated testing workflows. The orchestration layer is optional for development — you can work on AgentSentry using standard Claude Code or any editor without it.

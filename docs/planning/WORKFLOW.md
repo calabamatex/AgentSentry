@@ -1,4 +1,4 @@
-# AgentOps — Workflow Log
+# AgentSentry — Workflow Log
 
 ## 2026-03-20 — v4.0 Complete Build
 

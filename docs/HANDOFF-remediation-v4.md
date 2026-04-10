@@ -7,7 +7,7 @@ Executed a 14-phase remediation plan addressing all critical, high, and medium i
 ## What Was Done
 
 ### Critical (Phases 1-2)
-- **CI/CD Fixed**: All 29+ `agentops/` references in `.github/workflows/ci.yml` and `publish.yml` updated to `agent-sentry/`. Smoke tests now require `agent-sentry` instead of `agentops`. Remaining `agentops` references in `.githooks/`, `.claude/`, and `docs/` also updated.
+- **CI/CD Fixed**: All 29+ `agent-sentry/` references in `.github/workflows/ci.yml` and `publish.yml` updated to `agent-sentry/`. Smoke tests now require `agent-sentry` instead of `agent-sentry`. Remaining `agent-sentry` references in `.githooks/`, `.claude/`, and `docs/` also updated.
 - **Lock Race Conditions Fixed**: Added `coordination_locks` SQLite table with UNIQUE constraint (migration V4). `AgentCoordinator.acquireLock()` now uses `INSERT OR IGNORE` for true CAS semantics when a provider is supplied. Falls back to event-sourced locks otherwise. `LeaseManager.get()` tie-breaking improved for same-timestamp events.
 
 ### High (Phases 3-4)

@@ -5,8 +5,8 @@
  * Run: npx ts-node docs/examples/batch-operations.ts
  */
 
-import { MemoryStore, createProvider, BatchProcessor } from 'agent-sentry';
-import type { OpsEventInput } from 'agent-sentry';
+import { MemoryStore, createProvider, BatchProcessor } from '@calabamatex/agentsentry';
+import type { OpsEventInput } from '@calabamatex/agentsentry';
 
 async function main() {
   const store = new MemoryStore({

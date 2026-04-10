@@ -16,7 +16,7 @@ interface PluginMetadata {
   category: string;
   author: { name: string; github?: string; email?: string };
   version: string;
-  requires: { 'agent-sentry': string; primitives?: string[] };
+  requires: { 'agentsentry': string; primitives?: string[] };
   hooks?: string[];
   mcp_tools?: string[];
   tags: string[];
@@ -94,7 +94,7 @@ describe('Template metadata files', () => {
         expect(metadata.author.name).toBeDefined();
         expect(metadata.version).toBeDefined();
         expect(metadata.requires).toBeDefined();
-        expect(metadata.requires['agent-sentry']).toBeDefined();
+        expect(metadata.requires['agentsentry']).toBeDefined();
         expect(metadata.tags).toBeDefined();
         expect(metadata.tags.length).toBeGreaterThanOrEqual(1);
       });

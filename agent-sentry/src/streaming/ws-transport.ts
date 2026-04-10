@@ -11,6 +11,7 @@ import * as net from 'net';
 import * as crypto from 'crypto';
 import { EventStream, StreamClient, StreamEvent, StreamFilter } from './event-stream';
 import { Logger } from '../observability/logger';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'ws-transport' });
 
@@ -19,7 +20,7 @@ const logger = new Logger({ module: 'ws-transport' });
 // ---------------------------------------------------------------------------
 
 /** RFC 6455 Section 4.2.2 — magic GUID for Sec-WebSocket-Accept. */
-export const WS_MAGIC_GUID = '258EAFA5-E914-47DA-95CA-5AB5FC11B36';
+export const WS_MAGIC_GUID = '258EAFA5-E914-47DA-95CA-5AB5DC11B365';
 
 // WebSocket opcodes
 const OPCODE_TEXT = 0x01;
@@ -97,7 +98,7 @@ export class WsTransport {
 
     // Destroy all tracked WebSocket sockets so the server can close promptly.
     for (const socket of this.sockets) {
-      try { socket.destroy(); } catch (e) { logger.debug('Socket destroy failed during stop', { error: e instanceof Error ? e.message : String(e) }); }
+      try { socket.destroy(); } catch (e) { logger.debug('Socket destroy failed during stop', { error: errorMessage(e) }); }
     }
     this.sockets.clear();
 
@@ -179,7 +180,7 @@ export class WsTransport {
         try {
           socket.write(frame);
         } catch (e) {
-          logger.debug('WebSocket frame write failed', { error: e instanceof Error ? e.message : String(e) });
+          logger.debug('WebSocket frame write failed', { error: errorMessage(e) });
         }
       },
       close: (): void => {
@@ -193,7 +194,7 @@ export class WsTransport {
           socket.write(closeFrame);
           socket.end();
         } catch (e) {
-          logger.debug('WebSocket close frame send failed', { error: e instanceof Error ? e.message : String(e) });
+          logger.debug('WebSocket close frame send failed', { error: errorMessage(e) });
         }
       },
     };
@@ -207,11 +208,18 @@ export class WsTransport {
       return client;
     }
 
-    // Buffer for incomplete frames
+    // Buffer for incomplete frames (capped at 1MB to prevent OOM)
+    const MAX_PENDING_BUFFER = 1024 * 1024;
     let pendingBuffer = Buffer.alloc(0);
 
     socket.on('data', (data: Buffer) => {
       pendingBuffer = Buffer.concat([pendingBuffer, data]);
+
+      if (pendingBuffer.length > MAX_PENDING_BUFFER) {
+        logger.warn('WebSocket pending buffer exceeded limit, closing connection', { clientId, size: pendingBuffer.length });
+        socket.destroy();
+        return;
+      }
 
       while (pendingBuffer.length >= 2) {
         const result = this.decodeFrame(pendingBuffer);
@@ -226,7 +234,7 @@ export class WsTransport {
           const closeFrame = Buffer.alloc(2);
           closeFrame[0] = 0x80 | OPCODE_CLOSE;
           closeFrame[1] = 0;
-          try { socket.write(closeFrame); } catch (e) { logger.debug('Close frame echo failed', { error: e instanceof Error ? e.message : String(e) }); }
+          try { socket.write(closeFrame); } catch (e) { logger.debug('Close frame echo failed', { error: errorMessage(e) }); }
           socket.end();
           return;
         }
@@ -234,7 +242,7 @@ export class WsTransport {
         if (result.opcode === OPCODE_PING) {
           // Respond with pong
           const pong = this.encodePongFrame(result.payload);
-          try { socket.write(pong); } catch (e) { logger.debug('Pong frame write failed', { error: e instanceof Error ? e.message : String(e) }); }
+          try { socket.write(pong); } catch (e) { logger.debug('Pong frame write failed', { error: errorMessage(e) }); }
           continue;
         }
 

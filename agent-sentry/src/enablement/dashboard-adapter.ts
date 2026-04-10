@@ -40,7 +40,7 @@ const SKILL_TITLES: Record<string, string> = {
   save_points: 'Save Points',
   context_health: 'Context Health',
   standing_orders: 'Standing Orders',
-  directive_compliance: 'Directive Compliance',
+  directive_compliance: 'Hook Safety',
   small_bets: 'Small Bets',
   proactive_safety: 'Proactive Safety',
 };

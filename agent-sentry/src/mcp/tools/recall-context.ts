@@ -5,8 +5,9 @@
  * to surface relevant prior work context.
  */
 
+import { z } from 'zod';
 import { ContextRecaller } from '../../memory/intelligence';
-import { MemoryStore } from '../../memory/store';
+import { getSharedStore } from '../shared-store';
 
 export const name = 'agent_sentry_recall_context';
 
@@ -33,34 +34,32 @@ export const inputSchema = {
   required: ['query'] as string[],
 };
 
+export const argsSchema = z.object({
+  query: z.string(),
+  max_results: z.number().optional(),
+  lookback_days: z.number().optional(),
+});
+
 export async function handler(
   args: Record<string, unknown>,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  const query = args.query as string;
-  if (!query || typeof query !== 'string') {
-    return {
-      content: [{ type: 'text', text: 'Error: query is required and must be a string' }],
-    };
-  }
-
-  const maxResults = typeof args.max_results === 'number' ? args.max_results : 5;
-  const lookbackDays = typeof args.lookback_days === 'number' ? args.lookback_days : 90;
-
   try {
-    const store = new MemoryStore();
+    const parsed = argsSchema.parse(args);
+
+    const store = await getSharedStore();
     const recaller = new ContextRecaller(store);
 
-    const result = await recaller.recall(query, { maxResults, lookbackDays });
-
-    await store.close();
+    const maxResults = parsed.max_results ?? 5;
+    const lookbackDays = parsed.lookback_days ?? 90;
+    const result = await recaller.recall(parsed.query, { maxResults, lookbackDays });
 
     if (result.results.length === 0) {
       return {
-        content: [{ type: 'text', text: `No relevant prior context found for: "${query}"` }],
+        content: [{ type: 'text', text: `No relevant prior context found for: "${parsed.query}"` }],
       };
     }
 
-    const sections: string[] = [`Found ${result.results.length} relevant session(s) for: "${query}"\n`];
+    const sections: string[] = [`Found ${result.results.length} relevant session(s) for: "${parsed.query}"\n`];
 
     for (const r of result.results) {
       sections.push(`--- Session: ${r.session_id} (relevance: ${r.relevance_score.toFixed(2)}) ---`);

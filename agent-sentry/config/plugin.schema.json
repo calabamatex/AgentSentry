@@ -18,9 +18,9 @@
     "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "requires": {
       "type": "object",
-      "required": ["agent-sentry"],
+      "required": ["agentsentry"],
       "properties": {
-        "agent-sentry": { "type": "string" },
+        "agentsentry": { "type": "string" },
         "primitives": { "type": "array", "items": { "type": "string" } }
       }
     },

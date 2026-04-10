@@ -10,6 +10,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, cpSync
 import { join, resolve } from 'path';
 import { Logger } from '../observability/logger';
 import { safeJsonParse } from '../utils/safe-json';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'plugin-registry' });
 
@@ -24,7 +25,7 @@ export interface PluginManifest {
   author: { name: string; github?: string };
   version: string;
   requires: {
-    'agent-sentry': string;
+    'agentsentry': string;
     primitives?: string[];
   };
   hooks: string[];
@@ -112,7 +113,7 @@ export class PluginRegistry {
           .filter((d) => d.isDirectory())
           .map((d) => d.name);
       } catch (e) {
-        logger.warn('Failed to read plugin directory', { error: e instanceof Error ? e.message : String(e), dir });
+        logger.warn('Failed to read plugin directory', { error: errorMessage(e), dir });
         continue;
       }
 
@@ -140,7 +141,7 @@ export class PluginRegistry {
 
           this.plugins.set(manifest.name, installed);
         } catch (e) {
-          logger.warn('Failed to parse plugin metadata', { error: e instanceof Error ? e.message : String(e), path: metadataPath });
+          logger.warn('Failed to parse plugin metadata', { error: errorMessage(e), path: metadataPath });
         }
       }
     }
@@ -319,7 +320,7 @@ export class PluginRegistry {
     try {
       manifest = safeJsonParse(readFileSync(metadataPath, 'utf-8'));
     } catch (e) {
-      logger.warn('Plugin metadata.json is not valid JSON', { error: e instanceof Error ? e.message : String(e) });
+      logger.warn('Plugin metadata.json is not valid JSON', { error: errorMessage(e) });
       return { valid: false, errors: ['metadata.json is not valid JSON'] };
     }
 
@@ -370,8 +371,8 @@ export class PluginRegistry {
     // Requires
     if (m.requires && typeof m.requires === 'object') {
       const requires = m.requires as Record<string, unknown>;
-      if (!('agent-sentry' in requires)) {
-        errors.push('Requires must include agent-sentry version');
+      if (!('agentsentry' in requires)) {
+        errors.push('Requires must include agentsentry version');
       }
     }
 
@@ -459,7 +460,7 @@ export class PluginRegistry {
       // State is applied during scan() via getSavedPluginState
       this._loadedState = state;
     } catch (e) {
-      logger.warn('Failed to load plugin registry state file', { error: e instanceof Error ? e.message : String(e) });
+      logger.warn('Failed to load plugin registry state file', { error: errorMessage(e) });
     }
 
     this.stateLoaded = true;

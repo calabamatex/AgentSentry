@@ -39,7 +39,7 @@ export const dashboardCommand: CommandDefinition = {
 
     // Clean shutdown
     const cleanup = (): void => {
-      server.stop().then(() => {
+      void server.stop().then(() => {
         process.stdout.write('\nDashboard stopped.\n');
         process.exit(0);
       });
@@ -52,7 +52,7 @@ export const dashboardCommand: CommandDefinition = {
     const keepAlive = setInterval(() => {}, 60_000);
     process.on('beforeExit', () => {
       clearInterval(keepAlive);
-      server.stop();
+      void server.stop();
     });
   },
 };

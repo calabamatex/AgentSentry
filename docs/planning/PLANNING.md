@@ -1,8 +1,8 @@
-# AgentOps v4.0 — Architecture & Planning
+# AgentSentry v4.0 — Architecture & Planning
 
 ## Architecture Overview
 
-AgentOps is a standalone agent management framework with four layers:
+AgentSentry is a standalone agent management framework with four layers:
 
 1. **Shell Scripts** — Hook-based automation (pre/post tool use, session lifecycle)
 2. **TypeScript Primitives** — 7 composable modules (risk scoring, secret detection, etc.)

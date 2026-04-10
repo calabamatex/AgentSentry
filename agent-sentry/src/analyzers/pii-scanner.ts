@@ -30,6 +30,13 @@ const PII_FIELDS: Array<{ name: string; pattern: RegExp; severity: 'medium' | 'h
   { name: 'secret', pattern: /\bsecret\b/i, severity: 'high' },
   { name: 'token', pattern: /\btoken\b/i, severity: 'high' },
   { name: 'API key', pattern: /\b(api_?key|apiKey)\b/i, severity: 'high' },
+  { name: 'address', pattern: /\b(address|street_?address|mailing_?address)\b/i, severity: 'medium' },
+  { name: 'date of birth', pattern: /\b(dob|date_?of_?birth|dateOfBirth|birth_?date|birthDate)\b/i, severity: 'high' },
+  { name: 'IP address', pattern: /\b(ip_?address|ipAddress|client_?ip|clientIp|remote_?addr)\b/i, severity: 'medium' },
+  { name: 'national ID', pattern: /\b(national_?id|passport|driver_?license|driverLicense)\b/i, severity: 'high' },
+  { name: 'bank account', pattern: /\b(bank_?account|iban|routing_?number|account_?number)\b/i, severity: 'high' },
+  { name: 'medical', pattern: /\b(diagnosis|medical_?record|health_?data|patient_?id)\b/i, severity: 'high' },
+  { name: 'location', pattern: /\b(latitude|longitude|geo_?location|geoLocation|coordinates)\b/i, severity: 'medium' },
 ];
 
 /**

@@ -14,6 +14,7 @@ import { VERSION } from '../../version';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
+import { errorMessage } from '../../utils/error-message';
 import { isGitRepo, promptForLevel, wireHooksIntoSettings, runHealthAudit, appendAgentSentryRulesToClaudeMd } from './init-wizard';
 import type { HealthSummary } from './init-wizard';
 
@@ -171,7 +172,7 @@ export const initCommand: CommandDefinition = {
           existing.enablement.updated_at = new Date().toISOString();
           atomicWriteSync(configPath, JSON.stringify(existing, null, 2) + '\n');
         } catch (e) {
-          logger.debug('Failed to update existing config', { error: e instanceof Error ? e.message : String(e) });
+          logger.debug('Failed to update existing config', { error: errorMessage(e) });
         }
       }
     } else {
@@ -326,7 +327,7 @@ export const initCommand: CommandDefinition = {
       });
       await store.close();
     } catch (e) {
-      logger.debug('Failed to store init event', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to store init event', { error: errorMessage(e) });
     }
   },
 };

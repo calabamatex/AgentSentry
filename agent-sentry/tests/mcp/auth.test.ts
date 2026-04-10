@@ -7,23 +7,23 @@ import { validateAccessKey, createRateLimiter, _resetDeprecationWarning } from '
 import { IncomingMessage, ServerResponse } from 'http';
 
 describe('validateAccessKey', () => {
-  const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
-  const originalNoAuth = process.env.AGENT_SENTRY_NO_AUTH;
+  const originalAccessKey = process.env.AGENT_SENTRY_ACCESS_KEY;
+  const originalRequireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
 
   beforeEach(() => {
     _resetDeprecationWarning();
   });
 
   afterEach(() => {
-    if (originalKey === undefined) {
+    if (originalAccessKey === undefined) {
       delete process.env.AGENT_SENTRY_ACCESS_KEY;
     } else {
-      process.env.AGENT_SENTRY_ACCESS_KEY = originalKey;
+      process.env.AGENT_SENTRY_ACCESS_KEY = originalAccessKey;
     }
-    if (originalNoAuth === undefined) {
-      delete process.env.AGENT_SENTRY_NO_AUTH;
+    if (originalRequireAuth === undefined) {
+      delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
     } else {
-      process.env.AGENT_SENTRY_NO_AUTH = originalNoAuth;
+      process.env.AGENT_SENTRY_REQUIRE_AUTH = originalRequireAuth;
     }
   });
 
@@ -58,45 +58,22 @@ describe('validateAccessKey', () => {
     expect(validateAccessKey('key-with-$pecial!chars@124')).toBe(false);
   });
 
-  it('should allow with AGENT_SENTRY_NO_AUTH=true when no key is set', () => {
+  it('should return false when AGENT_SENTRY_REQUIRE_AUTH=true and no key is configured', () => {
     delete process.env.AGENT_SENTRY_ACCESS_KEY;
-    process.env.AGENT_SENTRY_NO_AUTH = 'true';
-    expect(validateAccessKey('')).toBe(true);
+    process.env.AGENT_SENTRY_REQUIRE_AUTH = 'true';
+    expect(validateAccessKey('anything')).toBe(false);
   });
 
-  it('should allow with AGENT_SENTRY_NO_AUTH=1 when no key is set', () => {
+  it('should return false when AGENT_SENTRY_REQUIRE_AUTH=1 and no key is configured', () => {
     delete process.env.AGENT_SENTRY_ACCESS_KEY;
-    process.env.AGENT_SENTRY_NO_AUTH = '1';
-    expect(validateAccessKey('')).toBe(true);
+    process.env.AGENT_SENTRY_REQUIRE_AUTH = '1';
+    expect(validateAccessKey('anything')).toBe(false);
   });
 
-  it('should still validate key even when AGENT_SENTRY_NO_AUTH is set', () => {
-    process.env.AGENT_SENTRY_ACCESS_KEY = 'my-key';
-    process.env.AGENT_SENTRY_NO_AUTH = 'true';
-    // When a key IS configured, it must match regardless of NO_AUTH
-    expect(validateAccessKey('wrong')).toBe(false);
-    expect(validateAccessKey('my-key')).toBe(true);
-  });
-
-  it('should perform dummy comparison on length mismatch to avoid timing leak', () => {
-    process.env.AGENT_SENTRY_ACCESS_KEY = 'short';
-    // This should return false but still take roughly constant time
-    const start = performance.now();
-    for (let i = 0; i < 1000; i++) {
-      validateAccessKey('much-much-much-longer-key-than-expected');
-    }
-    const longTime = performance.now() - start;
-
-    const start2 = performance.now();
-    for (let i = 0; i < 1000; i++) {
-      validateAccessKey('x');
-    }
-    const shortTime = performance.now() - start2;
-
-    // Both should complete, and the ratio shouldn't be extreme
-    // (This is a weak timing test — just ensures both paths execute)
-    expect(longTime).toBeGreaterThan(0);
-    expect(shortTime).toBeGreaterThan(0);
+  it('should still allow open access when AGENT_SENTRY_REQUIRE_AUTH is not set', () => {
+    delete process.env.AGENT_SENTRY_ACCESS_KEY;
+    delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
+    expect(validateAccessKey('anything')).toBe(true);
   });
 });
 

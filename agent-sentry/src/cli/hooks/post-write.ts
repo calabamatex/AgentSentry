@@ -13,13 +13,14 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { scanErrorHandling } from '../../analyzers/error-handling';
 import { scanPiiLogging } from '../../analyzers/pii-scanner';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { safeReadSync } from '../../utils/safe-io';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-post-write' });
 
@@ -38,7 +39,7 @@ function readConfig(): Record<string, unknown> {
   try {
     return safeJsonParse<Record<string, unknown>>(safeReadSync(configPath).toString('utf-8'));
   } catch (e) {
-    logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read config file', { error: errorMessage(e) });
     return {};
   }
 }
@@ -57,7 +58,7 @@ function checkBlastRadius(filePath: string): void {
   try {
     lines = safeReadSync(trackingFile).toString('utf-8').split('\n').filter(Boolean);
   } catch (e) {
-    logger.debug('Failed to read blast-radius tracking file', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read blast-radius tracking file', { error: errorMessage(e) });
     return;
   }
   const uniqueFiles = [...new Set(lines)];
@@ -72,13 +73,13 @@ function checkBlastRadius(filePath: string): void {
   if (fs.existsSync(sessionMarker)) {
     try {
       const sessionStart = safeReadSync(sessionMarker).toString('utf-8').trim();
-      const recentCommits = execSync(`git log --after="${sessionStart}" --oneline`, {
+      const recentCommits = execFileSync('git', ['log', '--after=' + sessionStart, '--oneline'], {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       if (recentCommits) needsCheckpoint = false;
     } catch (e) {
-      logger.debug('Git log check failed, git may not be available', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Git log check failed, git may not be available', { error: errorMessage(e) });
     }
   }
 
@@ -100,9 +101,9 @@ function checkBlastRadius(filePath: string): void {
     for (const f of uniqueFiles) {
       if (fs.existsSync(f) && !f.endsWith('.db') && !f.endsWith('.db-journal') && !f.endsWith('.db-wal')) {
         try {
-          execSync(`git add "${f}"`, { stdio: 'pipe' });
+          execFileSync('git', ['add', f], { stdio: 'pipe' });
         } catch (e) {
-          logger.debug('Failed to git add file', { error: e instanceof Error ? e.message : String(e), file: f });
+          logger.debug('Failed to git add file', { error: errorMessage(e), file: f });
         }
       }
     }
@@ -120,11 +121,11 @@ function checkBlastRadius(filePath: string): void {
 
     // Protect SHA from garbage collection
     const stashMsg = `AgentSentry auto-checkpoint — blast radius ${uniqueCount} files`;
-    execSync(`git stash store -m "${stashMsg}" ${sha}`, { stdio: 'pipe' });
+    execFileSync('git', ['stash', 'store', '-m', stashMsg, sha], { stdio: 'pipe' });
 
     console.log(`${PREFIX} Stash snapshot created: ${sha} (${uniqueCount} files)`);
   } catch (e) {
-    logger.debug('Stash snapshot failed during blast-radius checkpoint', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Stash snapshot failed during blast-radius checkpoint', { error: errorMessage(e) });
   }
 }
 
@@ -140,7 +141,7 @@ async function main(): Promise<void> {
   try {
     input = safeJsonParse<HookInput>(raw);
   } catch (e) {
-    logger.warn('Failed to parse hook input from stdin', { error: e instanceof Error ? e.message : String(e) });
+    logger.warn('Failed to parse hook input from stdin', { error: errorMessage(e) });
     process.exit(0);
   }
 

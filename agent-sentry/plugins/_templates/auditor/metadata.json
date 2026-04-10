@@ -4,11 +4,11 @@
   "category": "auditor",
   "author": {
     "name": "AgentSentry Team",
-    "github": "agent-sentry"
+    "github": "agentsentry"
   },
   "version": "1.0.0",
   "requires": {
-    "agent-sentry": ">=4.0.0",
+    "agentsentry": ">=0.5.0",
     "primitives": ["rules-validation", "secret-detection", "risk-scoring"]
   },
   "hooks": ["PreToolUse", "PostToolUse"],

@@ -127,4 +127,30 @@ describe('scanForSecrets', () => {
     expect(pkFinding).toBeDefined();
     expect(pkFinding?.severity).toBe('critical');
   });
+
+  it('should detect database connection strings', () => {
+    const content = 'const db = "postgresql://admin:hunter2@localhost:5432/mydb";';
+    const findings = scanForSecrets(content);
+    expect(findings.length).toBeGreaterThan(0);
+    expect(findings.some(f => f.type === 'connection_string')).toBe(true);
+  });
+
+  it('should detect JWT tokens', () => {
+    const content = 'const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";';
+    const findings = scanForSecrets(content);
+    expect(findings.length).toBeGreaterThan(0);
+    expect(findings.some(f => f.description.includes('JWT'))).toBe(true);
+  });
+
+  it('should detect hardcoded Bearer tokens', () => {
+    const content = 'Authorization: "Bearer sk-abc123def456ghi789jkl012mno345pqr"';
+    const findings = scanForSecrets(content);
+    expect(findings.length).toBeGreaterThan(0);
+  });
+
+  it('should detect AWS secret access keys', () => {
+    const content = 'AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"';
+    const findings = scanForSecrets(content);
+    expect(findings.length).toBeGreaterThan(0);
+  });
 });

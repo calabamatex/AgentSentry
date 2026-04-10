@@ -1,0 +1,3 @@
+# Hook-written runtime data — never track
+*.json
+!.gitkeep

@@ -1,6 +1,6 @@
-# AgentOps v4.0 -- End-to-End Tutorial
+# AgentSentry -- End-to-End Tutorial
 
-This tutorial walks you through the complete AgentOps experience in a single
+This tutorial walks you through the complete AgentSentry experience in a single
 session. Every command is copy-pasteable. By the end you will have a working
 MCP server, captured events in a tamper-evident hash chain, validated rules
 compliance, scored a task's risk, and queried your audit trail.
@@ -36,10 +36,10 @@ The build compiles TypeScript into `dist/`. The MCP server entry point lands at
 
 ## Step 2: Wire the MCP Server (1 min)
 
-Register AgentOps as an MCP server so your client can call its tools:
+Register AgentSentry as an MCP server so your client can call its tools:
 
 ```bash
-claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
+claude mcp add agent-sentry -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 Verify it registered:
@@ -48,25 +48,27 @@ Verify it registered:
 claude mcp list
 ```
 
-You should see `agentops` in the output. The server exposes eight tools:
+You should see `agent-sentry` in the output. The server exposes ten tools:
 
 | Tool | Purpose |
 |---|---|
-| `agentops_capture_event` | Record decisions, violations, incidents |
-| `agentops_check_rules` | Validate changes against CLAUDE.md rules |
-| `agentops_size_task` | Score a task's risk and complexity |
-| `agentops_search_history` | Query the event audit trail |
-| `agentops_health` | System health dashboard |
-| `agentops_check_git` | Git hygiene checks |
-| `agentops_check_context` | Context window health |
-| `agentops_scan_security` | Security scanning |
+| `agent_sentry_capture_event` | Record decisions, violations, incidents |
+| `agent_sentry_check_rules` | Validate changes against CLAUDE.md rules |
+| `agent_sentry_size_task` | Score a task's risk and complexity |
+| `agent_sentry_search_history` | Query the event audit trail |
+| `agent_sentry_health` | System health dashboard |
+| `agent_sentry_check_git` | Git hygiene checks |
+| `agent_sentry_check_context` | Context window health |
+| `agent_sentry_scan_security` | Security scanning |
+| `agent_sentry_recall_context` | Cross-session context recall |
+| `agent_sentry_generate_handoff` | Session handoff message generation |
 
 ---
 
 ## Step 3: Choose Your Enablement Level (1 min)
 
-AgentOps uses progressive enablement -- you pick how many safety skills to
-activate. The setup wizard writes configuration to `agentops.config.json`.
+AgentSentry uses progressive enablement -- you pick how many safety skills to
+activate. The setup wizard writes configuration to `agent-sentry.config.json`.
 It is a config generator only; it does not install hooks or register MCP
 servers.
 
@@ -97,7 +99,7 @@ bash agent-sentry/scripts/setup-wizard.sh --level 3 --dry-run
 
 ## Step 4: Capture Your First Event (2 min)
 
-Use the `agentops_capture_event` tool to record a decision:
+Use the `agent_sentry_capture_event` tool to record a decision:
 
 ```json
 {
@@ -117,7 +119,7 @@ and `hash`.
 **How the hash chain works:** each event's `hash` field is a SHA-256 digest
 of its contents combined with the previous event's hash (`prev_hash`). This
 creates a tamper-evident chain -- if any past event is modified, every
-subsequent hash becomes invalid. The `agentops_health` tool verifies this
+subsequent hash becomes invalid. The `agent_sentry_health` tool verifies this
 chain on demand.
 
 ---
@@ -147,7 +149,7 @@ If violations are found, address them before proceeding.
 
 ## Step 6: Score a Change's Risk (1 min)
 
-Use `agentops_size_task` to estimate the risk of a task before starting:
+Use `agent_sentry_size_task` to estimate the risk of a task before starting:
 
 ```json
 {
@@ -177,7 +179,7 @@ Higher risk tasks get recommendations for thorough testing and staged rollout.
 
 ## Step 7: Search Your Audit Trail (1 min)
 
-Query past events with `agentops_search_history`:
+Query past events with `agent_sentry_search_history`:
 
 ```json
 {
@@ -205,7 +207,7 @@ similarity. Otherwise it falls back to text matching.
 
 ## Step 8: Check Session Health (1 min)
 
-Call `agentops_health` with no arguments:
+Call `agent_sentry_health` with no arguments:
 
 ```json
 {}
@@ -228,7 +230,7 @@ A top-level `status` field reads `healthy`, `degraded`, or `error`. The
 
 ## Step 9: Activate a Plugin (optional, 2 min)
 
-AgentOps has a plugin system. The `commit-monitor` plugin ships as an example
+AgentSentry has a plugin system. The `commit-monitor` plugin ships as an example
 at `agent-sentry/plugins/core/commit-monitor/`.
 
 Its `metadata.json` declares:
@@ -240,7 +242,7 @@ Its `metadata.json` declares:
   "category": "monitor",
   "version": "1.0.0",
   "requires": {
-    "agentops": ">=4.0.0",
+    "agentsentry": ">=0.5.0",
     "primitives": ["checkpoint-and-branch", "event-capture"]
   },
   "hooks": ["PostToolUse", "SessionStart"],
@@ -250,7 +252,7 @@ Its `metadata.json` declares:
 
 Key fields:
 
-- **requires.agentops**: minimum AgentOps version
+- **requires.agentsentry**: minimum AgentSentry version
 - **requires.primitives**: which core primitives the plugin depends on
 - **hooks**: lifecycle hooks the plugin subscribes to
 - **category**: plugin type (monitor, auditor, dashboard, integration)
@@ -283,7 +285,7 @@ node agent-sentry/dist/src/mcp/server.js --http --port 3100
 ```
 
 This starts a Streamable HTTP server with CORS support. Set the
-`AGENTOPS_ACCESS_KEY` environment variable to enable key-based authentication
+`AGENT_SENTRY_ACCESS_KEY` environment variable to enable key-based authentication
 and rate limiting.
 
 **Build a custom plugin.** Plugin templates live in
@@ -300,14 +302,14 @@ future release. The current default is SQLite (local, zero-config).
 
 | Action | Tool / Command |
 |---|---|
-| Capture an event | `agentops_capture_event` |
-| Check rules | `agentops_check_rules` |
-| Score task risk | `agentops_size_task` |
-| Search history | `agentops_search_history` |
-| Health check | `agentops_health` |
-| Git hygiene | `agentops_check_git` |
-| Context health | `agentops_check_context` |
-| Security scan | `agentops_scan_security` |
+| Capture an event | `agent_sentry_capture_event` |
+| Check rules | `agent_sentry_check_rules` |
+| Score task risk | `agent_sentry_size_task` |
+| Search history | `agent_sentry_search_history` |
+| Health check | `agent_sentry_health` |
+| Git hygiene | `agent_sentry_check_git` |
+| Context health | `agent_sentry_check_context` |
+| Security scan | `agent_sentry_scan_security` |
 | Setup wizard | `bash agent-sentry/scripts/setup-wizard.sh --level N` |
 | Validate plugin | `bash agent-sentry/scripts/validate-plugin.sh <path>` |
 | HTTP server | `node agent-sentry/dist/src/mcp/server.js --http --port 3100` |

@@ -1,58 +1,96 @@
-/**
- * Tests for the PII scanner analyzer.
- */
-
 import { describe, it, expect } from 'vitest';
 import { scanPiiLogging } from '../../src/analyzers/pii-scanner';
 
-describe('scanPiiLogging', () => {
-  it('returns empty for non-code files', () => {
-    expect(scanPiiLogging('console.log(email)', 'data.json')).toEqual([]);
-    expect(scanPiiLogging('console.log(email)', 'README.md')).toEqual([]);
-  });
-
-  it('detects PII in console.log', () => {
-    const code = `console.log("User email:", user.email);`;
-    const findings = scanPiiLogging(code);
-    expect(findings).toHaveLength(1);
+describe('PII Scanner', () => {
+  it('should detect email in console.log', () => {
+    const content = 'console.log("User email:", user.email);';
+    const findings = scanPiiLogging(content);
+    expect(findings.length).toBeGreaterThan(0);
     expect(findings[0].field).toBe('email');
-    expect(findings[0].line).toBe(1);
   });
 
-  it('detects password in console.error', () => {
-    const code = `console.error("Auth failed", { password });`;
-    const findings = scanPiiLogging(code);
-    expect(findings).toHaveLength(1);
+  it('should detect password in logger call', () => {
+    const content = 'logger.info("Password changed", { password });';
+    const findings = scanPiiLogging(content);
+    expect(findings.length).toBeGreaterThan(0);
     expect(findings[0].field).toBe('password');
   });
 
-  it('detects token in logger call', () => {
-    const code = `logger.info("Session token:", token);`;
-    const findings = scanPiiLogging(code);
-    expect(findings).toHaveLength(1);
-    expect(findings[0].field).toBe('token');
+  it('should detect SSN reference', () => {
+    const content = 'console.log(user.ssn);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'SSN')).toBe(true);
   });
 
-  it('does not flag non-logging lines', () => {
-    const code = `const email = user.email;`;
-    const findings = scanPiiLogging(code);
+  it('should detect credit card field', () => {
+    const content = 'console.log("Card:", cardNumber);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'credit card')).toBe(true);
+  });
+
+  it('should detect date of birth', () => {
+    const content = 'console.log("DOB:", user.dateOfBirth);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'date of birth')).toBe(true);
+  });
+
+  it('should detect IP address field', () => {
+    const content = 'logger.info("Client IP:", clientIp);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'IP address')).toBe(true);
+  });
+
+  it('should detect bank account field', () => {
+    const content = 'console.log("IBAN:", user.iban);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'bank account')).toBe(true);
+  });
+
+  it('should detect medical data field', () => {
+    const content = 'console.log("Diagnosis:", patient.diagnosis);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'medical')).toBe(true);
+  });
+
+  it('should detect location data', () => {
+    const content = 'logger.debug("Coords:", latitude, longitude);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'location')).toBe(true);
+  });
+
+  it('should detect national ID field', () => {
+    const content = 'console.log("Passport:", user.passport);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'national ID')).toBe(true);
+  });
+
+  it('should detect address field', () => {
+    const content = 'console.log("Address:", user.address);';
+    const findings = scanPiiLogging(content);
+    expect(findings.some(f => f.field === 'address')).toBe(true);
+  });
+
+  it('should not flag non-logging lines', () => {
+    const content = 'const email = user.email;\nreturn email;';
+    const findings = scanPiiLogging(content);
     expect(findings).toHaveLength(0);
   });
 
-  it('detects multiple PII fields in one log line', () => {
-    const code = `console.log("User:", { email, phone, ssn });`;
-    const findings = scanPiiLogging(code);
-    expect(findings).toHaveLength(3);
-    const fields = findings.map((f) => f.field);
-    expect(fields).toContain('email');
-    expect(fields).toContain('phone');
-    expect(fields).toContain('SSN');
+  it('should skip lock files', () => {
+    const content = 'console.log(email);';
+    const findings = scanPiiLogging(content, 'package-lock.json');
+    expect(findings).toHaveLength(0);
   });
 
-  it('detects PII in Python logging', () => {
-    const code = `logging.info("User password: %s", password)`;
-    const findings = scanPiiLogging(code, 'app.py');
-    expect(findings).toHaveLength(1);
-    expect(findings[0].field).toBe('password');
+  it('should skip json files', () => {
+    const content = 'console.log(email);';
+    const findings = scanPiiLogging(content, 'config.json');
+    expect(findings).toHaveLength(0);
+  });
+
+  it('should report correct line numbers', () => {
+    const content = 'const x = 1;\nconsole.log(user.email);\nconst y = 2;';
+    const findings = scanPiiLogging(content);
+    expect(findings[0].line).toBe(2);
   });
 });

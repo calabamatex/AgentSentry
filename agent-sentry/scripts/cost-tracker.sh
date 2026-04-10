@@ -6,16 +6,19 @@
 
 set -euo pipefail
 
+HOOK_NAME="cost-tracker"
+DEBOUNCE_SECONDS=5
+source "$(dirname "${BASH_SOURCE[0]}")/hook-guard.sh" || exit 0
+
 PREFIX="[AgentSentry]"
 TMPBASE="${TMPDIR:-/tmp}/agent-sentry"
 COST_STATE="$TMPBASE/cost-state"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
-DASHBOARD_DATA="$SCRIPT_DIR/../dashboard/data"
-COST_LOG="$DASHBOARD_DATA/cost-log.json"
+COST_LOG="$AS_RUNTIME_DATA_DIR/cost-log.ndjson"
 
 # Ensure directories exist
-mkdir -p "$TMPBASE" "$DASHBOARD_DATA"
+mkdir -p "$TMPBASE"
 
 # --- Read hook input from stdin (non-blocking) ---
 hook_input=""
@@ -166,10 +169,10 @@ at_limit="$(awk "BEGIN { print ($new_total >= $SESSION_BUDGET) ? 1 : 0 }")"
 
 if [[ "$at_limit" == "1" ]]; then
     budget_status="exceeded"
-    echo "$PREFIX WARN: Session budget EXCEEDED (\$$new_total / \$$SESSION_BUDGET). Budget exceeded. Only critical operations allowed."
+    echo "$PREFIX WARN: Session budget EXCEEDED (\$$new_total / \$$SESSION_BUDGET). Budget exceeded. Only critical operations allowed." >&2
 elif [[ "$at_warn" == "1" ]]; then
     budget_status="warning"
-    echo "$PREFIX WARN: Approaching session budget — \$$new_total / \$$SESSION_BUDGET (${budget_pct}% used)."
+    echo "$PREFIX WARN: Approaching session budget — \$$new_total / \$$SESSION_BUDGET (${budget_pct}% used)." >&2
 fi
 
 # --- Monthly budget tracking (lightweight — file-based) ---
@@ -190,9 +193,9 @@ monthly_at_warn="$(awk "BEGIN { print ($new_monthly >= $MONTHLY_BUDGET * $WARN_T
 monthly_at_limit="$(awk "BEGIN { print ($new_monthly >= $MONTHLY_BUDGET) ? 1 : 0 }")"
 
 if [[ "$monthly_at_limit" == "1" ]]; then
-    echo "$PREFIX WARN: Monthly budget EXCEEDED (\$$new_monthly / \$$MONTHLY_BUDGET). Only critical operations allowed."
+    echo "$PREFIX WARN: Monthly budget EXCEEDED (\$$new_monthly / \$$MONTHLY_BUDGET). Only critical operations allowed." >&2
 elif [[ "$monthly_at_warn" == "1" ]]; then
-    echo "$PREFIX WARN: Approaching monthly budget — \$$new_monthly / \$$MONTHLY_BUDGET (${monthly_pct}% used)."
+    echo "$PREFIX WARN: Approaching monthly budget — \$$new_monthly / \$$MONTHLY_BUDGET (${monthly_pct}% used)." >&2
 fi
 
 # --- Append cost event as NDJSON ---

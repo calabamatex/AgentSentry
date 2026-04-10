@@ -108,3 +108,6 @@ export { QueryOptimizer, PreparedStatementCache } from './memory/query-optimizer
 export type { QueryPlan, TableStats } from './memory/query-optimizer';
 export { BenchmarkSuite } from './memory/benchmark';
 export type { BenchmarkResult, BenchmarkReport } from './memory/benchmark';
+
+// Utils
+export { errorMessage } from './utils/error-message';

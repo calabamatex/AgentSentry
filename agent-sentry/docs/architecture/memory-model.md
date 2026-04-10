@@ -173,3 +173,12 @@ The `EventEnricher` class in `enrichment.ts` runs post-capture analysis on event
 - **Severity context**: For high/critical events, checks the current git branch. Critical events on `main`/`master` get "immediate action required"; high events on feature branches note "mitigated by feature branch isolation".
 
 Enrichment results are merged across all providers via `mergeResults()`, which unions tags and related events and takes the first non-null root cause hint and severity context.
+
+---
+
+## Known Limitations
+
+- **Vector search is O(n).** The current implementation uses linear cosine similarity scan, bounded at 10,000 most recent embeddings. For stores exceeding this threshold, search will only consider the most recent 10,000 events. An ANN/HNSW index is planned for a future release.
+- **Embedding model size.** The bundled ONNX all-MiniLM-L6-v2 model produces 384-dimensional embeddings. Higher-quality models (e.g., all-mpnet-base-v2) could improve search relevance but would increase memory usage.
+- **Supabase provider.** The remote PostgreSQL provider is experimental. It uses raw PostgREST HTTP calls instead of an SDK, and is not recommended for production use.
+- **No cross-store search.** Each MemoryStore instance operates independently. There is no built-in mechanism to search across multiple stores or databases.

@@ -12,6 +12,7 @@ import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { atomicWriteSync, safeReadSync, ensureDirectorySafe } from '../../utils/safe-io';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'cli-config' });
 
@@ -112,7 +113,7 @@ function loadFullConfig(): Record<string, unknown> {
   try {
     return safeJsonParse<Record<string, unknown>>(safeReadSync(getConfigPath()).toString('utf-8'));
   } catch (e) {
-    logger.debug('Failed to load config file', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to load config file', { error: errorMessage(e) });
     return { memory: {} };
   }
 }

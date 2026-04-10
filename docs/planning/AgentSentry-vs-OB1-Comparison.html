@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentSentry vs Open Brain (OB1) — Full Comparison</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e2e4ea;
+    --muted: #8b8fa3;
+    --accent: #6c8cff;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --teal: #2dd4bf;
+    --purple: #a78bfa;
+    --orange: #fb923c;
+    --agent-sentry-color: #6c8cff;
+    --ob1: #2dd4bf;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a1d27 0%, #1e2235 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 32px 32px;
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .header h1 .vs { color: var(--muted); font-weight: 400; }
+  .header h1 .ao { color: var(--agent-sentry-color); }
+  .header h1 .ob { color: var(--ob1); }
+  .header .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.strong { background: var(--green); }
+  .dot.moderate { background: var(--amber); }
+  .dot.limited { background: var(--red); }
+  .dot.na { background: var(--muted); opacity: 0.4; }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 4px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .nav button {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .nav button:hover { color: var(--text); background: rgba(108,140,255,0.08); }
+  .nav button.active {
+    color: var(--accent);
+    background: rgba(108,140,255,0.12);
+    border-color: rgba(108,140,255,0.3);
+  }
+
+  /* Content */
+  .content { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .section-desc {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 28px;
+    font-size: 14px;
+  }
+  thead th {
+    text-align: left;
+    padding: 10px 14px;
+    background: rgba(108,140,255,0.06);
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  thead th:nth-child(2) { color: var(--agent-sentry-color); }
+  thead th:nth-child(3) { color: var(--ob1); }
+  tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:hover { background: rgba(108,140,255,0.03); }
+  td:first-child {
+    font-weight: 500;
+    color: var(--text);
+    min-width: 160px;
+  }
+  td:nth-child(2), td:nth-child(3) {
+    color: var(--muted);
+  }
+
+  /* Rating badges */
+  .rating {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .rating.strong { background: rgba(74,222,128,0.15); color: var(--green); }
+  .rating.moderate { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .rating.limited { background: rgba(248,113,113,0.15); color: var(--red); }
+  .rating.na { background: rgba(139,143,163,0.1); color: var(--muted); }
+
+  /* Verdict cards */
+  .verdict-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .verdict-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .verdict-card h3 {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .verdict-card.ao { border-top: 3px solid var(--agent-sentry-color); }
+  .verdict-card.ao h3 { color: var(--agent-sentry-color); }
+  .verdict-card.ob { border-top: 3px solid var(--ob1); }
+  .verdict-card.ob h3 { color: var(--ob1); }
+  .verdict-card p { color: var(--muted); font-size: 13px; }
+
+  /* Score summary */
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .score-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .score-item .label { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .score-item .scores { display: flex; justify-content: center; gap: 16px; }
+  .score-item .score { font-size: 20px; font-weight: 700; }
+  .score-item .score.ao { color: var(--agent-sentry-color); }
+  .score-item .score.ob { color: var(--ob1); }
+  .score-item .score-label { font-size: 10px; color: var(--muted); }
+
+  /* Notes */
+  .note {
+    background: rgba(108,140,255,0.06);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Winner indicator */
+  .winner {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    font-weight: 600;
+  }
+  .winner.ao { background: rgba(108,140,255,0.15); color: var(--agent-sentry-color); }
+  .winner.ob { background: rgba(45,212,191,0.15); color: var(--ob1); }
+  .winner.tie { background: rgba(251,191,36,0.12); color: var(--amber); }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .verdict-row { grid-template-columns: 1fr; }
+    .score-grid { grid-template-columns: 1fr 1fr; }
+    table { font-size: 13px; }
+    td, th { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="ao">AgentSentry</span> <span class="vs">vs</span> <span class="ob">Open Brain (OB1)</span></h1>
+  <p class="subtitle">A full-spectrum comparison across architecture, usability, security, extensibility, and strategic fit — for agentic developers evaluating both systems.</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="dot strong"></span> Strong</div>
+  <div class="legend-item"><span class="dot moderate"></span> Moderate</div>
+  <div class="legend-item"><span class="dot limited"></span> Limited / Absent</div>
+  <div class="legend-item"><span class="dot na"></span> Not Applicable</div>
+</div>
+
+<div class="nav" id="nav">
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="usability">Ease of Use</button>
+  <button data-tab="architecture">Architecture</button>
+  <button data-tab="security">Security</button>
+  <button data-tab="memory">Memory & Data</button>
+  <button data-tab="extensibility">Extensibility</button>
+  <button data-tab="tooling">Tool Compatibility</button>
+  <button data-tab="community">Community</button>
+  <button data-tab="strategic">Strategic Fit</button>
+  <button data-tab="verdict">Verdict</button>
+</div>
+
+<div class="content">
+
+<!-- ============ OVERVIEW ============ -->
+<div class="section active" id="overview">
+  <h2 class="section-title">At a Glance</h2>
+  <p class="section-desc">These are fundamentally different tools solving different problems. The comparison is useful because they overlap in audience (agentic developers) and infrastructure philosophy (things AI tools need but don't ship with).</p>
+
+  <div class="score-grid">
+    <div class="score-item">
+      <div class="label">Ease of Use</div>
+      <div class="scores">
+        <div><div class="score ao">B+</div><div class="score-label">AgentSentry</div></div>
+        <div><div class="score ob">A-</div><div class="score-label">OB1</div></div>
+      </div>
+    </div>
+    <div class="score-item">
+      <div class="label">Architecture</div>
+      <div class="scores">
+        <div><div class="score ao">A</div><div class="score-label">AgentSentry</div></div>
+        <div><div class="score ob">A-</div><div class="score-label">OB1</div></div>
+      </div>
+    </div>
+    <div class="score-item">
+      <div class="label">Security</div>
+      <div class="scores">
+        <div><div class="score ao">A+</div><div class="score-label">AgentSentry</div></div>
+        <div><div class="score ob">B+</div><div class="score-label">OB1</div></div>
+      </div>
+    </div>
+    <div class="score-item">
+      <div class="label">Memory & Data</div>
+      <div class="scores">
+        <div><div class="score ao">C+</div><div class="score-label">AgentSentry</div></div>
+        <div><div class="score ob">A</div><div class="score-label">OB1</div></div>
+      </div>
+    </div>
+    <div class="score-item">
+      <div class="label">Extensibility</div>
+      <div class="scores">
+        <div><div class="score ao">A-</div><div class="score-label">AgentSentry</div></div>
+        <div><div class="score ob">A</div><div class="score-label">OB1</div></div>
+      </div>
+    </div>
+    <div class="score-item">
+      <div class="label">Tool Compatibility</div>
+      <div class="scores">
+        <div><div class="score ao">B+</div><div class="score-label">AgentSentry</div></div>
+        <div><div class="score ob">A</div><div class="score-label">OB1</div></div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Dimension</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Core Purpose</td>
+        <td>Agent <strong>management & safety</strong> — monitors what your AI agents do and enforces hygiene</td>
+        <td>Agent <strong>memory & knowledge</strong> — gives your AI tools a shared, persistent brain</td>
+      </tr>
+      <tr>
+        <td>One-Line Pitch</td>
+        <td>"The general contractor watching your agents so they don't wreck the house"</td>
+        <td>"One database, one MCP server — any AI you use can plug in"</td>
+      </tr>
+      <tr>
+        <td>Problem Domain</td>
+        <td>Preventing data loss, context drift, blast radius, security gaps, compliance violations</td>
+        <td>Preventing knowledge loss, context fragmentation, tool silos, thought scattering</td>
+      </tr>
+      <tr>
+        <td>Target Audience</td>
+        <td>Agentic developers managing AI coding agents on real projects</td>
+        <td>Anyone using multiple AI tools who wants persistent, cross-tool memory</td>
+      </tr>
+      <tr>
+        <td>Maturity Stage</td>
+        <td>Specification + prototypes (dashboard, learning guide). Not yet built.</td>
+        <td>Shipped. Working MCP server, community contributions, active repo.</td>
+      </tr>
+      <tr>
+        <td>Tech Stack</td>
+        <td>Shell scripts, JSON config, HTML dashboard. Stack-agnostic.</td>
+        <td>TypeScript/Deno, Supabase (PostgreSQL + pgvector), OpenRouter APIs</td>
+      </tr>
+      <tr>
+        <td>License</td>
+        <td>Not yet specified</td>
+        <td>FSL-1.1-MIT (functional source, no commercial derivatives)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ EASE OF USE ============ -->
+<div class="section" id="usability">
+  <h2 class="section-title">Ease of Use & Intuitiveness</h2>
+  <p class="section-desc">How quickly can an agentic developer (non-traditional coder) get value from each system?</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Time to First Value</td>
+        <td><span class="rating moderate">Moderate</span><br>Install, configure hooks, understand 5 skills. Estimated 30-60 min to see first real-time alert.</td>
+        <td><span class="rating strong">Strong</span><br>Deploy Supabase project, connect MCP. First "thought" captured in ~15 min via setup guide.</td>
+      </tr>
+      <tr>
+        <td>Setup Complexity</td>
+        <td><span class="rating moderate">Moderate</span><br>Copy directory, configure agent-sentry.config.json, wire hooks into .claude/settings.json or git hooks. Multiple moving parts.</td>
+        <td><span class="rating moderate">Moderate</span><br>Deploy Supabase Edge Function, set env vars, connect Claude Desktop via MCP URL. Fewer parts, but cloud dependency.</td>
+      </tr>
+      <tr>
+        <td>Learning Curve</td>
+        <td><span class="rating limited">Steep</span><br>Must understand 5 skills, hooks, scaffold docs, risk scoring, blast radius, rules files. Comprehensive but dense.</td>
+        <td><span class="rating strong">Gentle</span><br>4 MCP tools (capture, search, list, stats). Progressive extensions build knowledge incrementally.</td>
+      </tr>
+      <tr>
+        <td>Onboarding Path</td>
+        <td><span class="rating moderate">Moderate</span><br>Implementation guide + interactive HTML learning app exist, but no progressive enablement — it's all-or-nothing today.</td>
+        <td><span class="rating strong">Strong</span><br>6 progressive extensions from beginner to advanced. Each builds on the last. Clear curriculum.</td>
+      </tr>
+      <tr>
+        <td>Daily Interaction</td>
+        <td><span class="rating strong">Strong</span><br>Mostly invisible — hooks fire automatically. Dashboard shows health. Alerts only when something's wrong. Low cognitive load once configured.</td>
+        <td><span class="rating strong">Strong</span><br>Conversational — ask any AI "what did I think about X?" or "save this thought." Natural language, zero commands to memorize.</td>
+      </tr>
+      <tr>
+        <td>Documentation</td>
+        <td><span class="rating strong">Strong</span><br>656-line implementation guide, 1,605-line spec, interactive HTML guide, dashboard prototype, architecture analysis. Thorough.</td>
+        <td><span class="rating strong">Strong</span><br>README templates, CONTRIBUTING.md, CLAUDE.md agent instructions, companion prompts, and step-by-step extension guides.</td>
+      </tr>
+      <tr>
+        <td>Error Recovery</td>
+        <td><span class="rating strong">Strong</span><br>Core purpose is error prevention. Auto-branching, auto-commits, recovery cheat sheet, rollback guidance.</td>
+        <td><span class="rating moderate">Moderate</span><br>Data stored in Supabase with standard backup/restore. No specific recovery tooling for corrupted thoughts.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note"><strong>Bottom line:</strong> OB1 is easier to pick up because it does fewer things and the interaction model is conversational. AgentSentry is harder to start but mostly invisible once running — the value compounds over time as it prevents disasters you'd never have seen coming.</div>
+</div>
+
+<!-- ============ ARCHITECTURE ============ -->
+<div class="section" id="architecture">
+  <h2 class="section-title">Architecture & Design</h2>
+  <p class="section-desc">How each system is built, what patterns it uses, and how cleanly the architecture supports its goals.</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Core Pattern</td>
+        <td><span class="rating strong">Strong</span><br><strong>Event-driven hook system.</strong> Hooks intercept agent actions (PreToolUse, PostToolUse), run checks, emit events to an event bus. Plugins subscribe to events.</td>
+        <td><span class="rating strong">Strong</span><br><strong>MCP tool server.</strong> Four registered tools on a Hono HTTP server. Stateless request/response via Streamable HTTP Transport.</td>
+      </tr>
+      <tr>
+        <td>Deployment Model</td>
+        <td><span class="rating strong">Strong</span><br><strong>Local-first.</strong> Directory of scripts, configs, and HTML in your project root. No server, no cloud, no dependencies beyond shell and git.</td>
+        <td><span class="rating moderate">Moderate</span><br><strong>Cloud-required.</strong> Supabase Edge Function + PostgreSQL. Requires internet, Supabase account, and OpenRouter API key.</td>
+      </tr>
+      <tr>
+        <td>Data Storage</td>
+        <td><span class="rating moderate">Moderate</span><br>Flat files (scaffold docs, JSON logs, audit trail). No database. Simple but limits queryability.</td>
+        <td><span class="rating strong">Strong</span><br>PostgreSQL with pgvector. Structured data + vector embeddings. Full SQL queryability + semantic search.</td>
+      </tr>
+      <tr>
+        <td>Codebase Size</td>
+        <td><span class="rating strong">Strong</span><br>Shell scripts averaging 50-100 lines each. HTML dashboard ~800 lines. Auditable by non-engineers.</td>
+        <td><span class="rating strong">Strong</span><br>~250-line core server. Extensions are self-contained. Entire server fits in one file.</td>
+      </tr>
+      <tr>
+        <td>Modularity</td>
+        <td><span class="rating strong">Strong</span><br>5 skills are independent modules. Event bus decouples plugins. Each script is standalone. Clean separation of concerns.</td>
+        <td><span class="rating moderate">Moderate</span><br>4 tools in a single server file. Extensions are separate. No formal module boundary within the core — works at this scale, might not at 10x.</td>
+      </tr>
+      <tr>
+        <td>Scalability Path</td>
+        <td><span class="rating strong">Strong</span><br>Plugin architecture + event bus designed for growth. Tracing (OpenTelemetry), agent identity (RBAC), cost management, lifecycle management all specified.</td>
+        <td><span class="rating moderate">Moderate</span><br>Supabase handles database scaling. Adding tools means growing the server file. No formal plugin/hook system for core extensions.</td>
+      </tr>
+      <tr>
+        <td>Offline Capability</td>
+        <td><span class="rating strong">Strong</span><br>Fully offline. Everything runs locally. No API calls required for any core feature.</td>
+        <td><span class="rating limited">Limited</span><br>Requires internet for Supabase, OpenRouter embeddings, and LLM metadata extraction. No offline mode.</td>
+      </tr>
+      <tr>
+        <td>State Management</td>
+        <td><span class="rating moderate">Moderate</span><br>Scaffold docs (markdown files) + JSON config. Human-readable but no transactional guarantees. Concurrent agent writes could conflict.</td>
+        <td><span class="rating strong">Strong</span><br>PostgreSQL ACID transactions. Row-level security for multi-user isolation. Concurrent writes handled by the database.</td>
+      </tr>
+      <tr>
+        <td>Observability</td>
+        <td><span class="rating strong">Strong</span><br>OpenTelemetry-compatible tracing specified. Dashboard with health rings, KPIs, trend charts. 8-page dashboard prototype built.</td>
+        <td><span class="rating moderate">Moderate</span><br>thought_stats tool gives aggregate counts. No tracing, no dashboard in core (community-contributed dashboards exist as a category).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note"><strong>Bottom line:</strong> AgentSentry has the more ambitious, enterprise-grade architecture (event bus, plugins, tracing, RBAC). OB1 has the more elegant, minimalist architecture (250 lines, one database, four tools). Neither is "better" — they're right-sized for their problem domains.</div>
+</div>
+
+<!-- ============ SECURITY ============ -->
+<div class="section" id="security">
+  <h2 class="section-title">Security Model</h2>
+  <p class="section-desc">How each system protects the user, the project, and the data.</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Data Residency</td>
+        <td><span class="rating strong">Strong</span><br>All data stays local. Files in your project directory. Nothing leaves your machine. Full data sovereignty.</td>
+        <td><span class="rating moderate">Moderate</span><br>Data lives in Supabase cloud (user's project, but hosted). Thoughts sent to OpenRouter for embedding. Cloud dependency.</td>
+      </tr>
+      <tr>
+        <td>Secret Detection</td>
+        <td><span class="rating strong">Strong</span><br>Dedicated secret scanner. Pre-commit hook blocks secrets. Regex patterns for API keys, tokens, connection strings, AWS keys, etc.</td>
+        <td><span class="rating moderate">Moderate</span><br>Automated PR check rejects contributions containing credentials. No runtime secret scanning on captured thoughts.</td>
+      </tr>
+      <tr>
+        <td>Access Control</td>
+        <td><span class="rating strong">Strong</span><br>3-layer RBAC specified: agent identity, capability model, permission boundaries. Delegation tokens for agent-to-agent trust.</td>
+        <td><span class="rating strong">Strong</span><br>Row-level security via PostgreSQL RLS. MCP access key for server authentication. Multi-user isolation built in.</td>
+      </tr>
+      <tr>
+        <td>Audit Trail</td>
+        <td><span class="rating strong">Strong</span><br>Append-only, SHA-256 hash-chained audit records. Tamper detection. EU AI Act Article 12 compliance specified.</td>
+        <td><span class="rating limited">Limited</span><br>No formal audit trail. Thoughts have timestamps and metadata, but no immutability guarantees or tamper detection.</td>
+      </tr>
+      <tr>
+        <td>Input Validation</td>
+        <td><span class="rating strong">Strong</span><br>Input validation at all system boundaries is a core design principle. Rules file linting. Path sanitization.</td>
+        <td><span class="rating moderate">Moderate</span><br>Zod schema validation on MCP tool inputs. SQL safety checks (no DROP, TRUNCATE). Core table protection rules.</td>
+      </tr>
+      <tr>
+        <td>PII Protection</td>
+        <td><span class="rating strong">Strong</span><br>Dedicated PII detection module. Scans for emails, phone numbers, SSNs in code. Blocks commits containing PII.</td>
+        <td><span class="rating limited">Limited</span><br>No PII detection. Thoughts can contain any content. User is responsible for what they capture.</td>
+      </tr>
+      <tr>
+        <td>Blast Radius Control</td>
+        <td><span class="rating strong">Strong</span><br>Risk scoring model (file count + DB changes + shared code). Auto-branching for high-risk operations. Decomposition enforcement.</td>
+        <td><span class="rating na">N/A</span><br>Not applicable — OB1 doesn't modify project files. It only reads and writes to its own database.</td>
+      </tr>
+      <tr>
+        <td>Compliance Readiness</td>
+        <td><span class="rating strong">Strong</span><br>EU AI Act, SOC 2, hash-chained audit trails, compliance report generator. Enterprise-ready compliance framework.</td>
+        <td><span class="rating limited">Limited</span><br>FSL-1.1-MIT license. No compliance tooling. Not designed for regulated environments.</td>
+      </tr>
+      <tr>
+        <td>Supply Chain Safety</td>
+        <td><span class="rating moderate">Moderate</span><br>Plugin validation specified (no secrets, metadata checks). But no plugin signing or dependency scanning.</td>
+        <td><span class="rating strong">Strong</span><br>11 automated PR checks. No binaries >1MB. No destructive SQL. Metadata schema validation. Human review gate.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note"><strong>Bottom line:</strong> AgentSentry wins decisively on security. It's fundamentally a safety system — secret scanning, PII detection, blast radius control, and compliance auditing are its raison d'être. OB1 has sensible guardrails for a knowledge tool but isn't built to be a security product.</div>
+</div>
+
+<!-- ============ MEMORY ============ -->
+<div class="section" id="memory">
+  <h2 class="section-title">Memory, Data & Cross-Session Intelligence</h2>
+  <p class="section-desc">How each system persists knowledge across sessions and makes historical data useful.</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Cross-Session Memory</td>
+        <td><span class="rating moderate">Moderate</span><br>Scaffold documents (PLANNING.md, TASKS.md, CONTEXT.md, WORKFLOW.md) carry state between sessions. Human-readable but lossy — history is overwritten on each update.</td>
+        <td><span class="rating strong">Strong</span><br>Every thought persists with full history. Nothing is overwritten. Vector embeddings enable retrieval by meaning across unlimited sessions.</td>
+      </tr>
+      <tr>
+        <td>Semantic Search</td>
+        <td><span class="rating limited">Absent</span><br>No semantic search. Scaffold docs are text files. Finding past decisions requires manual reading or grep.</td>
+        <td><span class="rating strong">Strong</span><br>Core feature. pgvector embeddings with configurable similarity thresholds. Search by meaning, not keywords.</td>
+      </tr>
+      <tr>
+        <td>Auto-Classification</td>
+        <td><span class="rating moderate">Moderate</span><br>Events are classified by the module that generates them (hardcoded categories). No cross-cutting classification.</td>
+        <td><span class="rating strong">Strong</span><br>LLM-powered auto-extraction: type, topics, people, action items, dates. Zero manual tagging required.</td>
+      </tr>
+      <tr>
+        <td>Knowledge Compounding</td>
+        <td><span class="rating limited">Limited</span><br>Each session starts semi-fresh. Scaffold docs provide context but don't learn from patterns across sessions.</td>
+        <td><span class="rating strong">Strong</span><br>Core design principle. Extensions compound (CRM references captured thoughts; meal planning checks household schedules). Data flows between systems.</td>
+      </tr>
+      <tr>
+        <td>Data Portability</td>
+        <td><span class="rating strong">Strong</span><br>Everything is markdown and JSON files in your project. Copy the directory, you have all your data. Zero lock-in.</td>
+        <td><span class="rating moderate">Moderate</span><br>Data in Supabase PostgreSQL — exportable via SQL dump or API. But embeddings are tied to the embedding model used.</td>
+      </tr>
+      <tr>
+        <td>Multi-Tool Data Access</td>
+        <td><span class="rating moderate">Moderate</span><br>Scaffold docs are readable by any tool (they're markdown). But structured data (audit logs, events) is tool-specific.</td>
+        <td><span class="rating strong">Strong</span><br>Any MCP-compatible client (Claude, ChatGPT, Cursor) accesses the same database. True multi-tool parity for read and write.</td>
+      </tr>
+      <tr>
+        <td>Historical Trends</td>
+        <td><span class="rating strong">Strong</span><br>Dashboard with trend charts, historical KPIs, agent activity timelines. Designed for operational trend analysis.</td>
+        <td><span class="rating moderate">Moderate</span><br>thought_stats gives aggregate counts by type, topic, person. No time-series visualization in core.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note"><strong>Bottom line:</strong> OB1 wins on memory and cross-session intelligence. It's built specifically for this. AgentSentry treats memory as a secondary concern (scaffold docs are a state handoff mechanism, not a knowledge system). This is the #1 area where AgentSentry should adopt OB1's patterns — see the cross-pollination analysis.</div>
+</div>
+
+<!-- ============ EXTENSIBILITY ============ -->
+<div class="section" id="extensibility">
+  <h2 class="section-title">Extensibility & Plugin Ecosystem</h2>
+  <p class="section-desc">How easy it is to extend, customize, and contribute to each system.</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Plugin/Extension Model</td>
+        <td><span class="rating strong">Strong</span><br>Event bus architecture. Plugin manifest with hook subscriptions, config schema, dashboard panels. Designed for an ecosystem.</td>
+        <td><span class="rating strong">Strong</span><br>6 contribution categories: extensions, primitives, recipes, schemas, dashboards, integrations. Mature taxonomy.</td>
+      </tr>
+      <tr>
+        <td>Contribution Categories</td>
+        <td><span class="rating moderate">Moderate</span><br>Plugins exist as a single category. No formal taxonomy (monitors vs auditors vs dashboards vs integrations).</td>
+        <td><span class="rating strong">Strong</span><br>6 distinct categories with different rules, templates, and review processes per category.</td>
+      </tr>
+      <tr>
+        <td>Templates & Scaffolding</td>
+        <td><span class="rating moderate">Moderate</span><br>Plugin manifest format defined. No _template directories, no starter files, no README templates for contributors.</td>
+        <td><span class="rating strong">Strong</span><br>_template/ directories per category. metadata.json schema. Required README sections. Companion prompts for AI-assisted creation.</td>
+      </tr>
+      <tr>
+        <td>Automated Validation</td>
+        <td><span class="rating limited">Limited</span><br>Specified conceptually (no secrets, valid hooks) but no CI pipeline or automated checks implemented.</td>
+        <td><span class="rating strong">Strong</span><br>11 machine-readable checks in GitHub Actions. Automated rejection before human review. Battle-tested pipeline.</td>
+      </tr>
+      <tr>
+        <td>Customization Depth</td>
+        <td><span class="rating strong">Strong</span><br>agent-sentry.config.json controls thresholds, verbosity, which skills are active, risk scoring weights. Deep customization.</td>
+        <td><span class="rating moderate">Moderate</span><br>Extensions are self-contained SQL + functions. Customization is "add new extensions" rather than "tune existing behavior."</td>
+      </tr>
+      <tr>
+        <td>Reusable Primitives</td>
+        <td><span class="rating limited">Absent</span><br>No primitives concept. Shared patterns (checkpoint, risk-score) are duplicated across skills.</td>
+        <td><span class="rating strong">Strong</span><br>Formal primitives layer. Concepts extracted when referenced 2+ times. Learn once, apply everywhere.</td>
+      </tr>
+      <tr>
+        <td>Non-Developer Contributions</td>
+        <td><span class="rating limited">Limited</span><br>No explicit path for non-technical contributions. The spec targets implementers.</td>
+        <td><span class="rating strong">Strong</span><br>Explicit: "If you have a workflow, a use case, or an idea — that's a contribution." Mentors handle implementation.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note"><strong>Bottom line:</strong> OB1's contribution model is more mature and welcoming. AgentSentry has the more powerful underlying architecture (event bus, hook subscriptions), but hasn't built the community scaffolding around it yet. This is the second area where OB1's patterns should be adopted.</div>
+</div>
+
+<!-- ============ TOOL COMPAT ============ -->
+<div class="section" id="tooling">
+  <h2 class="section-title">AI Tool Compatibility</h2>
+  <p class="section-desc">Which AI coding tools work with each system, and how deeply?</p>
+
+  <table>
+    <thead><tr><th>Tool / Platform</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Claude Code</td>
+        <td><span class="rating strong">Strong</span><br>Deep integration: PreToolUse/PostToolUse hooks, subagent definitions, CLAUDE.md rules, slash commands. Full real-time monitoring.</td>
+        <td><span class="rating strong">Strong</span><br>MCP connection via Claude Desktop. capture_thought and search_thoughts available as tools. CLAUDE.md provides agent instructions.</td>
+      </tr>
+      <tr>
+        <td>Cursor</td>
+        <td><span class="rating moderate">Moderate</span><br>Rules synced to .cursorrules. Git hooks work. No real-time hook interception — only pre/post-commit checks.</td>
+        <td><span class="rating strong">Strong</span><br>MCP support. Same 4 tools available. Full read/write parity with Claude.</td>
+      </tr>
+      <tr>
+        <td>GitHub Copilot</td>
+        <td><span class="rating moderate">Moderate</span><br>Git hooks work. Rules in AGENTS.md are readable. No real-time monitoring — Copilot doesn't expose hooks.</td>
+        <td><span class="rating moderate">Moderate</span><br>No native MCP support yet. Would need a wrapper or browser extension.</td>
+      </tr>
+      <tr>
+        <td>OpenAI Codex / ChatGPT</td>
+        <td><span class="rating moderate">Moderate</span><br>Rules in .agents/config.toml or AGENTS.md. Git hooks work. No real-time monitoring.</td>
+        <td><span class="rating strong">Strong</span><br>MCP support in ChatGPT. Same database, same tools, same thoughts. Full parity.</td>
+      </tr>
+      <tr>
+        <td>Windsurf</td>
+        <td><span class="rating moderate">Moderate</span><br>AGENTS.md readable. Git hooks work. No tool-specific integration.</td>
+        <td><span class="rating strong">Strong</span><br>MCP support. Full parity with other MCP-compatible clients.</td>
+      </tr>
+      <tr>
+        <td>Universal Protocol</td>
+        <td><span class="rating limited">Limited</span><br>No MCP server. Hook-based monitoring only works where the tool exposes hooks (currently only Claude Code). Git hooks are the universal fallback.</td>
+        <td><span class="rating strong">Strong</span><br>MCP-native. Every MCP-compatible client gets identical access. Protocol-first design.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note"><strong>Bottom line:</strong> OB1 wins on tool compatibility because MCP is its only interface — and MCP is going everywhere. AgentSentry has deeper integration with Claude Code but falls back to git hooks for everything else. Adding an MCP server layer to AgentSentry (Recommendation #2 in the cross-pollination analysis) would close this gap.</div>
+</div>
+
+<!-- ============ COMMUNITY ============ -->
+<div class="section" id="community">
+  <h2 class="section-title">Community & Ecosystem</h2>
+  <p class="section-desc">How each project builds and supports a community around it.</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Current State</td>
+        <td><span class="rating limited">Pre-community</span><br>Specification and prototypes only. No public repo, no users, no contributors yet.</td>
+        <td><span class="rating strong">Active</span><br>Public GitHub repo. Community admin. PR review process. Multiple contribution categories open.</td>
+      </tr>
+      <tr>
+        <td>Contributor Onboarding</td>
+        <td><span class="rating limited">Not yet built</span><br>Plugin architecture is specified but no contribution guide, templates, or validation pipeline exist.</td>
+        <td><span class="rating strong">Strong</span><br>CONTRIBUTING.md with detailed process. Templates per category. metadata.json schema. 11 automated checks. Mentorship for non-devs.</td>
+      </tr>
+      <tr>
+        <td>Governance Model</td>
+        <td><span class="rating limited">Undefined</span><br>No governance specified. Single-maintainer assumption in the spec.</td>
+        <td><span class="rating strong">Defined</span><br>Creator (Nate B. Jones) + community admin (Matt Hallett). Automated + human review. Clear roles.</td>
+      </tr>
+      <tr>
+        <td>Learning Resources</td>
+        <td><span class="rating strong">Strong</span><br>Interactive HTML guide, implementation guide, architecture analysis, dashboard prototype, synopsis. Rich educational material.</td>
+        <td><span class="rating strong">Strong</span><br>6 progressive extensions as a learning path. Companion prompts. Docs folder. Extension READMEs are self-contained tutorials.</td>
+      </tr>
+      <tr>
+        <td>Ecosystem Potential</td>
+        <td><span class="rating strong">High</span><br>Plugin architecture + event bus is designed for ecosystem. Monitors, auditors, dashboards, integrations could form a marketplace.</td>
+        <td><span class="rating strong">High</span><br>Recipes, schemas, dashboards, integrations already exist as categories. Community contributions are live.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ STRATEGIC ============ -->
+<div class="section" id="strategic">
+  <h2 class="section-title">Strategic Fit & Future-Proofing</h2>
+  <p class="section-desc">How well each system is positioned for the evolving agent landscape.</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>AgentSentry</th><th>Open Brain (OB1)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Addresses Urgent Need?</td>
+        <td><span class="rating strong">Yes — Critical</span><br>Gartner: 40% of AI agent projects will fail from management gaps. Meta email deletion incident. Agent safety is an emergency.</td>
+        <td><span class="rating strong">Yes — Growing</span><br>Tool fragmentation is real. Knowledge scattered across ChatGPT, Claude, Cursor sessions. Persistent memory is increasingly urgent.</td>
+      </tr>
+      <tr>
+        <td>Multi-Agent Future</td>
+        <td><span class="rating strong">Strong</span><br>Designed for multi-agent. Agent identity, permission boundaries, delegation tokens, blast radius per agent. Ready for 10+ concurrent agents.</td>
+        <td><span class="rating moderate">Moderate</span><br>Multiple AI clients can access the same brain, but there's no concept of agent identity, permissions, or coordination between agents.</td>
+      </tr>
+      <tr>
+        <td>Regulatory Readiness</td>
+        <td><span class="rating strong">Strong</span><br>EU AI Act compliance, hash-chained audit trails, compliance report generator. Ahead of the regulatory curve.</td>
+        <td><span class="rating limited">Limited</span><br>No compliance features. FSL license restricts commercial derivatives, which limits enterprise adoption.</td>
+      </tr>
+      <tr>
+        <td>Protocol Alignment</td>
+        <td><span class="rating moderate">Moderate</span><br>AGENTS.md (Linux Foundation standard). Claude Code hooks. Git hooks. Universal standards where possible, but no MCP.</td>
+        <td><span class="rating strong">Strong</span><br>MCP-native from day one. Aligned with the protocol that's becoming the de facto standard for AI tool interop.</td>
+      </tr>
+      <tr>
+        <td>Vendor Independence</td>
+        <td><span class="rating strong">Strong</span><br>Stack-agnostic. Works with any AI tool, any framework, any language. Zero vendor lock-in by design.</td>
+        <td><span class="rating moderate">Moderate</span><br>MCP is open, but tied to Supabase for hosting and OpenRouter for embeddings. Switching requires migration.</td>
+      </tr>
+      <tr>
+        <td>Enterprise Path</td>
+        <td><span class="rating strong">Strong</span><br>RBAC, compliance, audit trails, cost management, observability — all enterprise concerns are addressed in the spec.</td>
+        <td><span class="rating moderate">Moderate</span><br>RLS provides multi-tenancy. But no compliance, no RBAC beyond database roles, no cost management. Personal/small-team tool today.</td>
+      </tr>
+      <tr>
+        <td>Complementarity</td>
+        <td colspan="2" style="text-align:center; color: var(--amber); font-weight: 500;">These systems are complementary, not competitive. AgentSentry manages agents; OB1 gives them memory. Together they cover both halves of the infrastructure gap.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ VERDICT ============ -->
+<div class="section" id="verdict">
+  <h2 class="section-title">Final Verdict</h2>
+  <p class="section-desc">These are not competing products. They solve different halves of the same problem: AI tools need infrastructure they don't ship with.</p>
+
+  <table>
+    <thead><tr><th>Category</th><th>Winner</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Ease of Use</td><td><span class="winner ob">OB1</span></td><td>Conversational interface, progressive learning path, 15-min setup</td></tr>
+      <tr><td>Architecture Ambition</td><td><span class="winner ao">AgentSentry</span></td><td>Event bus, plugin system, tracing, RBAC, cost management — enterprise-grade spec</td></tr>
+      <tr><td>Architecture Elegance</td><td><span class="winner ob">OB1</span></td><td>250 lines, 4 tools, one database. Does one thing exceptionally well.</td></tr>
+      <tr><td>Security</td><td><span class="winner ao">AgentSentry</span></td><td>Security is its entire purpose. Secret scanning, PII detection, blast radius, compliance.</td></tr>
+      <tr><td>Memory & Cross-Session</td><td><span class="winner ob">OB1</span></td><td>Vector-indexed persistent memory is the core product. AgentSentry uses flat files.</td></tr>
+      <tr><td>Extensibility Model</td><td><span class="winner ob">OB1</span></td><td>Mature contribution model with categories, templates, automated validation, mentorship.</td></tr>
+      <tr><td>Extensibility Power</td><td><span class="winner ao">AgentSentry</span></td><td>Event bus + hook subscriptions enable deeper, more powerful plugins.</td></tr>
+      <tr><td>Tool Compatibility</td><td><span class="winner ob">OB1</span></td><td>MCP-native means every compatible AI client gets full access.</td></tr>
+      <tr><td>Offline Capability</td><td><span class="winner ao">AgentSentry</span></td><td>Fully local. OB1 requires cloud connectivity.</td></tr>
+      <tr><td>Multi-Agent Readiness</td><td><span class="winner ao">AgentSentry</span></td><td>Agent identity, permissions, delegation, blast radius per agent.</td></tr>
+      <tr><td>Regulatory Readiness</td><td><span class="winner ao">AgentSentry</span></td><td>EU AI Act, hash-chained audit trail, compliance reports.</td></tr>
+      <tr><td>Community Maturity</td><td><span class="winner ob">OB1</span></td><td>Shipped, public, active contributors. AgentSentry is still a specification.</td></tr>
+      <tr><td>Data Portability</td><td><span class="winner ao">AgentSentry</span></td><td>Markdown and JSON files. Copy a folder. Zero lock-in.</td></tr>
+      <tr><td>Enterprise Path</td><td><span class="winner ao">AgentSentry</span></td><td>RBAC, compliance, observability, cost management all specified.</td></tr>
+      <tr><td>Learning Curve</td><td><span class="winner ob">OB1</span></td><td>4 tools, conversational interaction, progressive extensions.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="verdict-row">
+    <div class="verdict-card ao">
+      <h3>Choose AgentSentry When...</h3>
+      <p>You're managing AI coding agents on real projects and need to prevent disasters — data loss, security gaps, context drift, blast radius problems. You want enterprise-grade safety rails. You care about compliance and audit trails. You need multi-agent coordination. You want offline, local-first, zero-dependency infrastructure.</p>
+    </div>
+    <div class="verdict-card ob">
+      <h3>Choose OB1 When...</h3>
+      <p>You use multiple AI tools and your knowledge is scattered across them. You want every AI you use to share the same memory. You want to capture thoughts, decisions, and ideas once and retrieve them by meaning from any tool. You want a gentle learning curve and a community to contribute to.</p>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top: 24px;">
+    <strong>The real answer:</strong> Use both. OB1 provides the persistent memory layer that AgentSentry lacks. AgentSentry provides the safety and management layer that OB1 lacks. The cross-pollination analysis identifies exactly how to integrate OB1's patterns (persistent memory, MCP interface, primitives, contribution model) into AgentSentry — making both systems stronger.
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+document.querySelectorAll('.nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

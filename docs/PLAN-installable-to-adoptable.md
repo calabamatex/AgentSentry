@@ -1,4 +1,4 @@
-# AgentOps: From Installable to Adoptable
+# AgentSentry: From Installable to Adoptable
 
 ## Plan of Action — Phase 1 & Phase 2
 
@@ -10,30 +10,30 @@
 
 ## Phase 1: Make It Installable
 
-The objective is: a stranger runs `npm install agentops`, wires up the MCP server, and everything works without reading source code or cloning the repo.
+The objective is: a stranger runs `npm install agent-sentry`, wires up the MCP server, and everything works without reading source code or cloning the repo.
 
 ### 1.1 — Fix Config Resolution (BLOCKING)
 
-**Problem**: Config loading uses 5 different path strategies across the codebase. The primary one (`path.resolve('agent-sentry/agentops.config.json')`) assumes CWD is the repo root. An npm-installed user has the config at `node_modules/agent-sentry/agentops.config.json` — the CWD-relative path will fail silently and fall back to defaults, which may or may not be what the user expects.
+**Problem**: Config loading uses 5 different path strategies across the codebase. The primary one (`path.resolve('agent-sentry/agent-sentry.config.json')`) assumes CWD is the repo root. An npm-installed user has the config at `node_modules/agent-sentry/agent-sentry.config.json` — the CWD-relative path will fail silently and fall back to defaults, which may or may not be what the user expects.
 
 **Affected files** (verified):
 | File | Line | Strategy |
 |------|------|----------|
-| `src/memory/providers/provider-factory.ts` | 36 | `path.resolve('agent-sentry/agentops.config.json')` |
-| `src/mcp/tools/health.ts` | 115 | `pathModule.resolve('agent-sentry/agentops.config.json')` |
-| `src/cli/commands/config.ts` | 15 | `path.resolve('agent-sentry/agentops.config.json')` |
-| `src/cli/commands/enable.ts` | 22 | `path.resolve('agent-sentry/agentops.config.json')` |
-| `src/cli/hooks/session-start.ts` | 44 | `path.join(__dirname, '..', '..', '..', 'agentops.config.json')` |
-| `src/cli/hooks/session-checkpoint.ts` | 21 | `path.join(__dirname, '..', '..', '..', 'agentops.config.json')` |
-| `src/cli/hooks/post-write.ts` | 31 | `path.join(__dirname, '..', '..', '..', 'agentops.config.json')` |
-| `src/memory/cli-capture.js` | 29 | `path.resolve(__dirname, '../../agentops.config.json')` |
+| `src/memory/providers/provider-factory.ts` | 36 | `path.resolve('agent-sentry/agent-sentry.config.json')` |
+| `src/mcp/tools/health.ts` | 115 | `pathModule.resolve('agent-sentry/agent-sentry.config.json')` |
+| `src/cli/commands/config.ts` | 15 | `path.resolve('agent-sentry/agent-sentry.config.json')` |
+| `src/cli/commands/enable.ts` | 22 | `path.resolve('agent-sentry/agent-sentry.config.json')` |
+| `src/cli/hooks/session-start.ts` | 44 | `path.join(__dirname, '..', '..', '..', 'agent-sentry.config.json')` |
+| `src/cli/hooks/session-checkpoint.ts` | 21 | `path.join(__dirname, '..', '..', '..', 'agent-sentry.config.json')` |
+| `src/cli/hooks/post-write.ts` | 31 | `path.join(__dirname, '..', '..', '..', 'agent-sentry.config.json')` |
+| `src/memory/cli-capture.js` | 29 | `path.resolve(__dirname, '../../agent-sentry.config.json')` |
 
 **Solution**: Create a single `resolveConfigPath()` function with this resolution order:
 1. Explicit `configPath` argument (already supported by `loadMemoryConfig`)
-2. `AGENTOPS_CONFIG` environment variable
-3. `./agentops.config.json` (CWD — for repo-clone users)
-4. `./agent-sentry/agentops.config.json` (CWD/agentops — current behavior)
-5. Package-relative fallback: `path.join(__dirname, '..', '..', 'agentops.config.json')` (from dist/src/)
+2. `AGENT_SENTRY_CONFIG` environment variable
+3. `./agent-sentry.config.json` (CWD — for repo-clone users)
+4. `./agent-sentry/agent-sentry.config.json` (CWD/agent-sentry — current behavior)
+5. Package-relative fallback: `path.join(__dirname, '..', '..', 'agent-sentry.config.json')` (from dist/src/)
 6. Built-in defaults (current `DEFAULT_CONFIG` — already works)
 
 **Implementation**:
@@ -83,15 +83,15 @@ The objective is: a stranger runs `npm install agentops`, wires up the MCP serve
 - `WORKFLOW.md` — move to `docs/planning/`
 - `IMPLEMENTATION-PLAN.md` — move to `docs/planning/`
 - `Agent-Management-Implementation-Guide.md` — move to `docs/planning/`
-- `AgentOps-Architecture-Evolution.md` — move to `docs/planning/`
-- `AgentOps-OB1-Analysis.md` — move to `docs/planning/`
-- `AgentOps-OB1-Build-Plan.md` — move to `docs/planning/`
-- `AgentOps-Product-Spec.md` — move to `docs/planning/`
-- `AgentOps-Spec.md` — move to `docs/planning/`
-- `AgentOps-Synopsis.md` — move to `docs/planning/`
+- `AgentSentry-Architecture-Evolution.md` — move to `docs/planning/`
+- `AgentSentry-OB1-Analysis.md` — move to `docs/planning/`
+- `AgentSentry-OB1-Build-Plan.md` — move to `docs/planning/`
+- `AgentSentry-Product-Spec.md` — move to `docs/planning/`
+- `AgentSentry-Spec.md` — move to `docs/planning/`
+- `AgentSentry-Synopsis.md` — move to `docs/planning/`
 - `From-Vibe-Coding-to-Agent-Management.md` — move to `docs/planning/`
 - `agent-management-guide.html` — move to `docs/planning/`
-- `agentops-dashboard.html` — move to `docs/planning/`
+- `agent-sentry-dashboard.html` — move to `docs/planning/`
 
 **Also**:
 - `ws-8.19.0.tgz` — delete or move to a `vendor/` directory. Tarballs in root are a red flag.
@@ -114,7 +114,7 @@ The objective is: a stranger runs `npm install agentops`, wires up the MCP serve
 
 ### 1.6 — Add npm Install Smoke Test to CI
 
-**Problem**: Nobody has tested the `npm pack` → `npm install` → `require('agentops')` path end-to-end.
+**Problem**: Nobody has tested the `npm pack` → `npm install` → `require('agent-sentry')` path end-to-end.
 
 **Implementation**: Add a CI job (GitHub Actions):
 ```yaml
@@ -125,18 +125,18 @@ smoke-test-install:
     - uses: actions/setup-node@v4
       with:
         node-version: 20
-    - run: cd agentops && npm ci && npm run build
-    - run: cd agentops && npm pack
+    - run: cd agent-sentry && npm ci && npm run build
+    - run: cd agent-sentry && npm pack
     - run: |
         mkdir /tmp/test-install
         cd /tmp/test-install
         npm init -y
-        npm install $GITHUB_WORKSPACE/agent-sentry/agentops-*.tgz
-        node -e "const a = require('agentops'); console.log('Import OK:', Object.keys(a).length, 'exports')"
+        npm install $GITHUB_WORKSPACE/agent-sentry/agent-sentry-*.tgz
+        node -e "const a = require('agent-sentry'); console.log('Import OK:', Object.keys(a).length, 'exports')"
     - run: |
         cd /tmp/test-install
         node -e "
-          const { createMcpServer } = require('agentops');
+          const { createMcpServer } = require('agent-sentry');
           const server = createMcpServer();
           console.log('MCP server created OK');
           process.exit(0);
@@ -149,12 +149,12 @@ smoke-test-install:
 
 ### 1.7 — Verify and Fix `files` Array in package.json
 
-**Problem**: `"files": ["dist/", "scripts/", "agentops.config.json"]` — does this include everything needed?
+**Problem**: `"files": ["dist/", "scripts/", "agent-sentry.config.json"]` — does this include everything needed?
 
 **Checklist**:
 - [ ] `dist/` includes compiled MCP server entry point (`dist/src/mcp/server.js`)
 - [ ] `dist/` includes compiled CLI entry point (`dist/src/cli/index.js`)
-- [ ] `agentops.config.json` is present and valid
+- [ ] `agent-sentry.config.json` is present and valid
 - [ ] ONNX model files (if needed for auto embeddings) — currently `onnxruntime-node` is a dependency, but model files may need to be bundled or downloaded on first run
 - [ ] `scripts/` contains only what's needed at runtime (not just dev scripts)
 - [ ] No test files leak into the package
@@ -169,7 +169,7 @@ All of these must pass before moving to Phase 2:
 
 - [ ] `npm pack` in `agent-sentry/` produces a clean tarball
 - [ ] Fresh `npm install <tarball>` in an empty directory succeeds
-- [ ] `node -e "require('agentops')"` works without errors
+- [ ] `node -e "require('agent-sentry')"` works without errors
 - [ ] `node node_modules/agent-sentry/dist/src/mcp/server.js` starts the MCP server
 - [ ] Config resolution finds the packaged config OR uses sensible defaults
 - [ ] SQLite database is created at a writable location automatically
@@ -180,7 +180,7 @@ All of these must pass before moving to Phase 2:
 
 ## Phase 2: Make It Adoptable
 
-The objective is: a new user understands why they should use AgentOps, sees value in their first session, and knows how to grow into deeper features.
+The objective is: a new user understands why they should use AgentSentry, sees value in their first session, and knows how to grow into deeper features.
 
 ### 2.1 — Rewrite the README Lead
 
@@ -190,7 +190,7 @@ The objective is: a new user understands why they should use AgentOps, sees valu
 **Problem**: This describes architecture ("hash-chained, searchable event"), not user value. A new user doesn't know why they want a "tamper-evident audit trail."
 
 **Rewrite target** (concept — exact wording TBD):
-> AgentOps watches your Claude Code sessions so you don't have to. It catches secrets before they're committed, warns when context is running low, scores the risk of proposed changes, and remembers what happened across sessions — all without any external services.
+> AgentSentry watches your Claude Code sessions so you don't have to. It catches secrets before they're committed, warns when context is running low, scores the risk of proposed changes, and remembers what happened across sessions — all without any external services.
 >
 > Install in 60 seconds. Start at a safe default. Turn on more as you trust it.
 
@@ -210,16 +210,16 @@ The objective is: a new user understands why they should use AgentOps, sees valu
    - Rules validation is active
 
 2. **Your first task**: Do something normal (edit a file, run tests)
-   - Show what `agentops_check_context` returns mid-session
-   - Show what `agentops_size_task` returns for a small change vs a large one
-   - Show what `agentops_scan_security` catches if you accidentally add an API key
+   - Show what `agent_sentry_check_context` returns mid-session
+   - Show what `agent_sentry_size_task` returns for a small change vs a large one
+   - Show what `agent_sentry_scan_security` catches if you accidentally add an API key
 
 3. **End of session**: What got captured
-   - Show the output of `agentops_search_history` for that session
+   - Show the output of `agent_sentry_search_history` for that session
    - Show the health dashboard output
 
 4. **Next session**: Context recall in action
-   - Show `agentops_recall_context` pulling in relevant context from the previous session
+   - Show `agent_sentry_recall_context` pulling in relevant context from the previous session
    - This is the "aha moment" — the reason the memory store exists
 
 **Format**: Concrete terminal output examples, not abstract descriptions. Show real tool responses.
@@ -234,17 +234,17 @@ The objective is: a new user understands why they should use AgentOps, sees valu
 
 **Content**:
 ```markdown
-## Removing AgentOps
+## Removing AgentSentry
 
-AgentOps is additive — it never modifies your code, your git history, or your Claude Code configuration beyond the MCP registration.
+AgentSentry is additive — it never modifies your code, your git history, or your Claude Code configuration beyond the MCP registration.
 
 ### Disable temporarily
-Set `"enabled": false` in agentops.config.json. All hooks become no-ops.
+Set `"enabled": false` in agent-sentry.config.json. All hooks become no-ops.
 
 ### Remove completely
-1. `claude mcp remove agentops`
+1. `claude mcp remove agent-sentry`
 2. `rm -rf agent-sentry/data/` (deletes the SQLite database)
-3. Remove the agentops entry from your settings if added manually
+3. Remove the agent-sentry entry from your settings if added manually
 
 Your code, git history, and Claude Code configuration are unchanged.
 ```
@@ -269,7 +269,7 @@ Your code, git history, and Claude Code configuration are unchanged.
 
 **Option B: Default moves to 1** (recommended if the progression is the real UX)
 - First session walkthrough shows level 1 behavior
-- End of walkthrough says "ready for more? `agentops enable 2`"
+- End of walkthrough says "ready for more? `agent-sentry enable 2`"
 - Each level-up must deliver a clear, visible improvement
 
 **My recommendation**: Option A. The progression narrative is appealing in docs but most users won't manually bump levels. Ship the useful default, document what each level adds, let power users customize.
@@ -304,7 +304,7 @@ Your code, git history, and Claude Code configuration are unchanged.
 
 **After Phase 1 cleanup and Phase 2 rewrites, the root README should**:
 
-1. Lead with 1-2 sentences on what AgentOps does (user value)
+1. Lead with 1-2 sentences on what AgentSentry does (user value)
 2. Point to `agent-sentry/README.md` for install and usage
 3. Point to `docs/` for architecture and planning
 4. Remove duplicated feature tables (they belong in the package README)

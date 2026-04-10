@@ -2,7 +2,7 @@
  * health.ts — agent_sentry_health tool: comprehensive system health check.
  */
 
-import { MemoryStore } from '../../memory/store';
+import { getSharedStore } from '../shared-store';
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { detectEmbeddingProvider } from '../../memory/embeddings';
 import { getActiveSkills, generateConfigForLevel, validateLevelMatchesSkills, LEVEL_NAMES } from '../../enablement/engine';
@@ -10,6 +10,7 @@ import type { EnablementConfig } from '../../enablement/engine';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'mcp-health' });
 
@@ -65,7 +66,6 @@ export interface HealthResult {
 export async function handler(
   _args: Record<string, unknown>,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  let store: MemoryStore | null = null;
   const issues: string[] = [];
   let overallStatus: 'healthy' | 'degraded' | 'error' = 'healthy';
 
@@ -73,9 +73,8 @@ export async function handler(
     // Load config
     const memConfig = loadMemoryConfig();
 
-    // Initialize store
-    store = new MemoryStore();
-    await store.initialize();
+    // Initialize store (shared singleton)
+    const store = await getSharedStore();
 
     // Get stats
     const stats = await store.stats();
@@ -94,7 +93,7 @@ export async function handler(
         overallStatus = 'degraded';
       }
     } catch (err) {
-      issues.push(`Chain verification failed: ${err instanceof Error ? err.message : String(err)}`);
+      issues.push(`Chain verification failed: ${errorMessage(err)}`);
       overallStatus = 'degraded';
     }
 
@@ -117,7 +116,7 @@ export async function handler(
         issues.push(`${hint} (semantic search disabled, using text-only fallback)`);
       }
     } catch (e) {
-      logger.warn('Embedding provider detection failed', { error: e instanceof Error ? e.message : String(e) });
+      logger.warn('Embedding provider detection failed', { error: errorMessage(e) });
       issues.push('Embedding provider detection failed');
     }
 
@@ -133,7 +132,7 @@ export async function handler(
         }
       }
     } catch (e) {
-      logger.debug('Failed to read enablement level from config', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to read enablement level from config', { error: errorMessage(e) });
     }
     const enablementConfig = generateConfigForLevel(enablementLevel);
     const enablementInfo: HealthResult['enablement'] = {
@@ -161,7 +160,7 @@ export async function handler(
         }
       }
     } catch (e) {
-      logger.debug('Failed to check enablement config drift', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to check enablement config drift', { error: errorMessage(e) });
     }
 
     // Check for degraded conditions
@@ -197,7 +196,7 @@ export async function handler(
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     return {
       content: [{
         type: 'text',
@@ -212,9 +211,5 @@ export async function handler(
         }, null, 2),
       }],
     };
-  } finally {
-    if (store) {
-      await store.close().catch(() => {});
-    }
   }
 }

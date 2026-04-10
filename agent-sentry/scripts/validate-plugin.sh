@@ -11,7 +11,7 @@
 #  6. Version follows semver pattern
 #  7. Category is valid
 #  8. Author has name field
-#  9. Requires has agent-sentry field
+#  9. Requires has agentsentry field
 # 10. src/index.ts exists
 # 11. README.md exists
 
@@ -150,11 +150,11 @@ else
   check 8 "Author has name field" "fail"
 fi
 
-# 9. Requires has agent-sentry field
-if json_has "requires.agent-sentry"; then
-  check 9 "Requires has agent-sentry field" "pass"
+# 9. Requires has agentsentry field
+if json_has "requires.agentsentry"; then
+  check 9 "Requires has agentsentry field" "pass"
 else
-  check 9 "Requires has agent-sentry field" "fail"
+  check 9 "Requires has agentsentry field" "fail"
 fi
 
 # 10. src/index.ts exists

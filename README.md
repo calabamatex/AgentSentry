@@ -1,12 +1,12 @@
-# AgentSentry v4.0
+# AgentSentry v0.5.0-beta
 
 ![AgentSentry Banner](agent-sentry/dashboard/assets/agent-sentry-banner.png)
 
-[![npm version](https://img.shields.io/npm/v/agent-sentry.svg)](https://www.npmjs.com/package/agent-sentry)
+[![npm version](https://img.shields.io/npm/v/@calabamatex/agentsentry.svg)](https://www.npmjs.com/package/@calabamatex/agentsentry)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/calabamatex/AgenticManagement/actions/workflows/ci.yml/badge.svg)](https://github.com/calabamatex/AgenticManagement/actions/workflows/ci.yml)
+[![CI](https://github.com/calabamatex/AgentSentry/actions/workflows/ci.yml/badge.svg)](https://github.com/calabamatex/AgentSentry/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-1042%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#)
 
 **Memory-aware management and safety framework for AI agents.**
 
@@ -17,20 +17,20 @@
 ## Install
 
 ```bash
-npm install agent-sentry
+npm install @calabamatex/agentsentry
 ```
 
 Or clone and use directly:
 
 ```bash
-git clone https://github.com/calabamatex/AgenticManagement.git
-cd AgenticManagement/agent-sentry && npm install && npm run build
+git clone https://github.com/calabamatex/AgentSentry.git
+cd AgentSentry/agent-sentry && npm install && npm run build
 ```
 
 **Requirements:** Node.js >= 18
 
 **Dependencies:** `@modelcontextprotocol/sdk`, `better-sqlite3`, `uuid`, `zod`
-**Optional:** `onnxruntime-node` (for native ONNX embeddings — falls back to JS cosine similarity if absent)
+**Optional:** `onnxruntime-node` (for native ONNX embeddings — falls back to text search if absent). npm installs use noop embeddings by default; for semantic vector search, copy the `models/` directory from the source repo or configure Ollama/OpenAI as the embedding provider.
 
 ---
 
@@ -53,13 +53,14 @@ What makes it different: AgentSentry *remembers*. Every decision, violation, inc
 | **Standing Orders** | Lints and enforces rules files (CLAUDE.md, .cursorrules, etc.) for project convention compliance |
 | **Small Bets** | Scores tasks by file count and complexity, flags oversized changes, enforces incremental delivery |
 | **Safety Checks** | Scans for leaked secrets, validates permissions, blocks commits containing sensitive data |
+| **Directive Compliance** | Ensures agent executes ACTION/RECOMMEND directives from hooks immediately (active at Level 3+) |
 
-### Memory & Intelligence (v4.0)
+### Memory & Intelligence
 
-- **Persistent Memory Store** -- Vector-indexed database with semantic search. SQLite with JS cosine similarity locally, Supabase [beta] for teams.
-- **MCP Server Interface** -- All 5 core skills plus memory read/write exposed as 9 MCP tools. Works with any MCP-compatible client.
+- **Persistent Memory Store** -- Vector-indexed database with semantic search. SQLite with JS cosine similarity locally, Supabase [experimental] for teams.
+- **MCP Server Interface** -- All 5 core skills plus memory read/write exposed as 10 MCP tools. Works with any MCP-compatible client.
 - **Primitives Library** -- 7 reusable management patterns (checkpoint-and-branch, risk-scoring, secret-detection, rules-validation, context-estimation, scaffold-update, event-capture).
-- **Auto-Classification** -- Events enriched with tags, root cause hints, related event links, and severity context. Local pattern matching at <10ms.
+- **Auto-Classification** -- Events enriched with tags, root cause hints, related event links, and severity context.
 - **Progressive Enablement** -- 5 levels from beginner to advanced. Start simple, add capabilities when ready.
 
 ### Advanced Capabilities
@@ -78,11 +79,11 @@ What makes it different: AgentSentry *remembers*. Every decision, violation, inc
 ### Option 1: npm Package
 
 ```bash
-npm install agent-sentry
+npm install @calabamatex/agentsentry
 ```
 
 ```typescript
-import { MemoryStore, createProvider } from 'agent-sentry';
+import { MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 const store = new MemoryStore({
   provider: createProvider({ provider: 'sqlite', database_path: './ops.db' }),
@@ -122,7 +123,7 @@ Or in `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "agent-sentry": {
+    "@calabamatex/agentsentry": {
       "command": "node",
       "args": ["agent-sentry/dist/src/mcp/server.js"]
     }
@@ -161,7 +162,7 @@ Prompts for your enablement level (1-5) and generates `agent-sentry.config.json`
 
 ## MCP Tools
 
-When running as an MCP server, AgentSentry exposes 9 tools:
+When running as an MCP server, AgentSentry exposes 10 tools:
 
 | Tool | What It Does |
 |------|-------------|
@@ -173,7 +174,10 @@ When running as an MCP server, AgentSentry exposes 9 tools:
 | `agent_sentry_capture_event` | Writes a decision, violation, or incident to persistent memory |
 | `agent_sentry_search_history` | Semantic search across all stored operational events |
 | `agent_sentry_recall_context` | Cross-session context recall -- finds relevant prior session data for current task |
+| `agent_sentry_generate_handoff` | Generates a structured handoff message for session continuity |
 | `agent_sentry_health` | Current health scores, KPIs, and skill-level status |
+
+> **Security note:** By default, the MCP server accepts all requests when `AGENT_SENTRY_ACCESS_KEY` is not set (convenient for local development). For production or network-exposed deployments, set `AGENT_SENTRY_REQUIRE_AUTH=true` to reject all unauthenticated requests when no access key is configured.
 
 ---
 
@@ -183,7 +187,7 @@ When running as an MCP server, AgentSentry exposes 9 tools:
 |-------|------|--------------|------------|
 | 1 | Safe Ground | save_points (full) | 5 min |
 | 2 | Clear Head | + context_health (full) | 10 min |
-| 3 | House Rules | + standing_orders (basic) | 15 min |
+| 3 | House Rules | + standing_orders (basic), + directive_compliance (full) | 15 min |
 | 4 | Right Size | standing_orders → full, + small_bets (basic) | 15 min |
 | 5 | Full Guard | small_bets → full, + proactive_safety (full) | 15 min |
 
@@ -197,7 +201,7 @@ All settings in `agent-sentry/agent-sentry.config.json`:
 
 | Section | Setting | Default |
 |---------|---------|---------|
-| enablement | level | 1 |
+| enablement | level | 2 |
 | memory | provider | sqlite |
 | memory | embedding_provider | auto |
 | save_points | auto_commit_after_minutes | 30 |
@@ -214,7 +218,7 @@ All settings in `agent-sentry/agent-sentry.config.json`:
 // Solo developer (default -- zero config):
 { "memory": { "provider": "sqlite", "database_path": "agent-sentry/data/ops.db" } }
 
-// Team setup (shared memory) [beta]:
+// Team setup (shared memory) [experimental — not recommended for production]:
 // Supabase provider reads credentials from environment variables:
 //   SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
 { "memory": { "provider": "supabase" } }
@@ -256,12 +260,20 @@ npm run benchmark
 
 ---
 
+## Known Limitations
+
+- **Vector search** uses linear cosine similarity (O(n)), suitable for up to ~10,000 events per store. An ANN/HNSW index is planned for a future release. Text-based fallback search is available when vector search is not configured.
+- **Supabase provider** is experimental and not recommended for production use.
+- **Dashboard** authentication uses a shared token; no user-level access control.
+
+---
+
 ## Development
 
 ```bash
 npm install        # Install dependencies
 npm run build      # Compile TypeScript
-npm test           # Run tests (1042 passing)
+npm test           # Run all tests
 npm run benchmark  # Run performance benchmarks
 ```
 
@@ -269,11 +281,13 @@ npm run benchmark  # Run performance benchmarks
 
 ## Project Structure
 
+> **Note:** The npm package source lives in `agent-sentry/`. Run all `npm` commands from that directory.
+
 ```
 agent-sentry/
   src/
     memory/           # MemoryStore, embeddings, providers, migrations
-    mcp/              # MCP server, 9 tools, transport, auth
+    mcp/              # MCP server, 10 tools, transport, auth
     primitives/       # 7 reusable management patterns
     cli/              # CLI commands, TypeScript hook handlers
   scripts/            # Thin wrapper hooks, setup wizard, validators
@@ -291,15 +305,19 @@ agent-sentry/
 ## CLI Commands
 
 ```bash
-npx agent-sentry init           # Interactive project setup wizard
-npx agent-sentry config          # View or update agent-sentry.config.json
-npx agent-sentry enable <level>  # Set enablement level (1-5)
-npx agent-sentry health          # System health and embedding status
-npx agent-sentry memory          # Query persistent memory store
-npx agent-sentry metrics         # Session and cost metrics
-npx agent-sentry dashboard       # Launch monitoring dashboard
-npx agent-sentry stream          # Live event stream
-npx agent-sentry plugin          # Plugin management
+npx @calabamatex/agentsentry init           # Interactive project setup wizard
+npx @calabamatex/agentsentry config          # View or update agent-sentry.config.json
+npx @calabamatex/agentsentry enable <level>  # Set enablement level (1-5)
+npx @calabamatex/agentsentry health          # System health and embedding status
+npx @calabamatex/agentsentry memory          # Query persistent memory store
+npx @calabamatex/agentsentry metrics         # Session and cost metrics
+npx @calabamatex/agentsentry dashboard       # Launch monitoring dashboard
+npx @calabamatex/agentsentry stream          # Live event stream
+npx @calabamatex/agentsentry plugin          # Plugin management
+npx @calabamatex/agentsentry handoff         # Generate session handoff message
+npx @calabamatex/agentsentry prune           # Clean up old events from memory store
+npx @calabamatex/agentsentry export          # Export memory store data
+npx @calabamatex/agentsentry import          # Import memory store data
 ```
 
 ## Slash Commands
@@ -321,10 +339,16 @@ MIT -- see [LICENSE](LICENSE) for details.
 - [Getting Started Guide](agent-sentry/docs/getting-started.md)
 - [First Session Walkthrough](agent-sentry/docs/first-session.md)
 - [API Reference](agent-sentry/docs/api-reference.md)
-- [Product Specification](docs/planning/AgentOps-Product-Spec.md) -- Full v4.0 spec covering architecture, skills, memory, MCP, and integrations
-- [Architecture Evolution](docs/planning/AgentOps-Architecture-Evolution.md) -- Design decisions and architectural history
+- [Product Specification](docs/planning/AgentSentry-Product-Spec.md) -- Full spec covering architecture, skills, memory, MCP, and integrations
+- [Architecture Evolution](docs/planning/AgentSentry-Architecture-Evolution.md) -- Design decisions and architectural history
 - [Implementation Guide](docs/planning/Agent-Management-Implementation-Guide.md) -- Practical guide for managing AI agents
-- [Synopsis](docs/planning/AgentOps-Synopsis.md) -- Non-technical project overview
+- [Synopsis](docs/planning/AgentSentry-Synopsis.md) -- Non-technical project overview
 - [Memory Model](agent-sentry/docs/architecture/memory-model.md) -- Hash chains, search, and storage providers
 - [Enablement Model](agent-sentry/docs/architecture/enablement-model.md) -- 5 levels with skill mapping
 - [MCP Integration](agent-sentry/docs/architecture/mcp-integration.md) -- Tools, transports, and auth
+- [Configuration Reference](agent-sentry/docs/configuration.md) -- Every config option explained
+- [Dashboard Guide](agent-sentry/docs/dashboard-guide.md) -- Monitoring dashboard and streaming
+- [Supabase Setup](agent-sentry/docs/supabase-setup.md) -- Remote storage for teams
+- [Troubleshooting](agent-sentry/docs/troubleshooting.md) -- Common issues and solutions
+- [Changelog](agent-sentry/CHANGELOG.md) -- Version history
+- [Contributing](CONTRIBUTING.md) -- Development setup and PR process

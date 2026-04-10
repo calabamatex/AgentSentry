@@ -3,76 +3,51 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'http';
-import { Logger } from '../observability/logger';
-
-const logger = new Logger({ module: 'mcp-auth' });
-
-/**
- * When set to true (v0.6.0+), unauthenticated requests are rejected by default.
- * Set AGENT_SENTRY_NO_AUTH=true to opt out (local dev only).
- */
-const AUTH_REQUIRED_BY_DEFAULT = false;
-
-/** Track whether we've already logged the deprecation warning this session. */
-let deprecationWarned = false;
+import { timingSafeEqual } from 'crypto';
 
 /**
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
  * Returns true if the key matches or if no key is configured (with deprecation path).
  */
+let authWarningLogged = false;
+
 export function validateAccessKey(key: string): boolean {
   const expected = process.env.AGENT_SENTRY_ACCESS_KEY;
   if (!expected) {
-    // Check for explicit opt-out
-    const noAuth = process.env.AGENT_SENTRY_NO_AUTH;
-    if (noAuth === 'true' || noAuth === '1') {
-      return true;
-    }
-
-    if (AUTH_REQUIRED_BY_DEFAULT) {
-      logger.error('Authentication required but no AGENT_SENTRY_ACCESS_KEY set. '
-        + 'Set AGENT_SENTRY_NO_AUTH=true to opt out (local dev only).');
+    const requireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
+    if (requireAuth === 'true' || requireAuth === '1') {
+      if (!authWarningLogged) {
+        console.error('[AgentSentry] AGENT_SENTRY_REQUIRE_AUTH is set but AGENT_SENTRY_ACCESS_KEY is not configured — rejecting all requests. Set AGENT_SENTRY_ACCESS_KEY to enable authenticated access.');
+        authWarningLogged = true;
+      }
       return false;
     }
-
-    // v0.5.x: allow with deprecation warning (once per session)
-    if (!deprecationWarned) {
-      deprecationWarned = true;
-      logger.warn('MCP server running without authentication. '
-        + 'Set AGENT_SENTRY_ACCESS_KEY to enable auth. '
-        + 'Starting in v0.6.0, authentication will be REQUIRED by default. '
-        + 'To opt out (local dev only): set AGENT_SENTRY_NO_AUTH=true');
+    if (!authWarningLogged) {
+      console.error('[AgentSentry] WARNING: No AGENT_SENTRY_ACCESS_KEY set — MCP server accepting all requests without authentication. Set AGENT_SENTRY_ACCESS_KEY to enable auth, or AGENT_SENTRY_REQUIRE_AUTH=true to reject unauthenticated requests.');
+      authWarningLogged = true;
     }
     return true;
   }
   if (!key) {
     return false;
   }
-  // Constant-time comparison to prevent timing attacks.
-  // Even on length mismatch we do a dummy comparison to avoid leaking
-  // key length via timing.
-  if (key.length !== expected.length) {
-    // Dummy comparison against expected to burn constant time
-    let dummy = 0;
-    for (let i = 0; i < expected.length; i++) {
-      dummy |= expected.charCodeAt(i) ^ expected.charCodeAt(i);
-    }
-    void dummy;
+  // Constant-time comparison to prevent timing attacks
+  const keyBuf = Buffer.from(key);
+  const expectedBuf = Buffer.from(expected);
+  if (keyBuf.length !== expectedBuf.length) {
+    // Perform a dummy comparison to avoid leaking key length via timing
+    timingSafeEqual(expectedBuf, expectedBuf);
     return false;
   }
-  let mismatch = 0;
-  for (let i = 0; i < key.length; i++) {
-    mismatch |= key.charCodeAt(i) ^ expected.charCodeAt(i);
-  }
-  return mismatch === 0;
+  return timingSafeEqual(keyBuf, expectedBuf);
 }
 
 /**
- * Reset the deprecation warning state.
+ * Reset the auth warning state.
  * @internal Exported for testing only.
  */
 export function _resetDeprecationWarning(): void {
-  deprecationWarned = false;
+  authWarningLogged = false;
 }
 
 export interface RateLimitEntry {

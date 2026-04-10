@@ -1,4 +1,4 @@
-# AgentOps: Comprehensive Plan of Action
+# AgentSentry: Comprehensive Plan of Action
 
 **Created**: 2026-03-21
 **Status**: Draft — awaiting approval
@@ -26,9 +26,9 @@
 | # | Task | Detail |
 |---|------|--------|
 | 1.1.1 | Expand `files` field | Add `"scripts/"`, `"templates/"`, `"plugins/"`, `"config/"`, `"dashboard/"` to the `files` array. Only include what's actually needed at runtime — audit each directory first. |
-| 1.1.2 | Fix `repository.url` | Change from `https://github.com/ruvnet/agentops.git` to the actual repo URL for this project. |
+| 1.1.2 | Fix `repository.url` | Change from `https://github.com/ruvnet/agent-sentry.git` to the actual repo URL for this project. |
 | 1.1.3 | Add tarball smoke test | Create `tests/contracts/package-contents.test.ts`. Run `npm pack`, extract the tarball, and assert every runtime-required file exists. This prevents future regression. |
-| 1.1.4 | Add CI install test | Add a CI step (GitHub Actions or equivalent) that does: `npm pack` → `npm install ./agentops-*.tgz` → `npx agentops --help` → assert exit 0. |
+| 1.1.4 | Add CI install test | Add a CI step (GitHub Actions or equivalent) that does: `npm pack` → `npm install ./agent-sentry-*.tgz` → `npx agent-sentry --help` → assert exit 0. |
 
 **Verification**: `npm pack --dry-run` output includes all required assets. CI green.
 
@@ -109,7 +109,7 @@
 
 | # | Task | Detail |
 |---|------|--------|
-| 1.4.1 | Add loud failure on missing dependencies | Each script should check for required tools (`jq`, `node`, `git`) at the top and print `[AgentOps] CRITICAL: <tool> is required but not found` instead of silently exiting. |
+| 1.4.1 | Add loud failure on missing dependencies | Each script should check for required tools (`jq`, `node`, `git`) at the top and print `[AgentSentry] CRITICAL: <tool> is required but not found` instead of silently exiting. |
 | 1.4.2 | Standardize config key access | Decide on canonical config shape. Document it. Make all scripts read the same keys the same way. |
 | 1.4.3 | Add hook contract tests | Create `tests/contracts/hook-contracts.test.ts` that invokes each shell script with known JSON payloads and asserts expected output patterns. This prevents hook/doc drift. |
 
@@ -139,7 +139,7 @@
 
 | # | Task | Detail |
 |---|------|--------|
-| 2.1.1 | Install-and-run test | `npm pack` → install from tarball → `npx agentops health` → assert output contains expected fields. |
+| 2.1.1 | Install-and-run test | `npm pack` → install from tarball → `npx agent-sentry health` → assert output contains expected fields. |
 | 2.1.2 | Hook lifecycle test | Programmatically invoke `session-start-checks.sh` → simulate file write → invoke `post-write-checks.sh` with mock JSON → invoke `session-checkpoint.sh` → verify each produces expected output and exit codes. |
 | 2.1.3 | MCP server test | Start MCP server → connect via stdio → call each of the 8 tools → verify responses match documented schemas. |
 | 2.1.4 | Dashboard startup test | Start dashboard server → HTTP GET `/` → assert 200 → GET `/api/events` → assert valid JSON → shutdown cleanly. |
@@ -188,7 +188,7 @@
 
 | # | Task | Detail |
 |---|------|--------|
-| 2.3.1 | Write a one-sentence product definition | Proposal: "AgentOps is a local-first memory and safety layer for AI coding sessions, with Claude Code as the primary integration and MCP as the interop standard." |
+| 2.3.1 | Write a one-sentence product definition | Proposal: "AgentSentry is a local-first memory and safety layer for AI coding sessions, with Claude Code as the primary integration and MCP as the interop standard." |
 | 2.3.2 | Restructure README around core path | Lead with: install → configure hooks → progressive enablement → query memory. Move coordination, plugins, streaming, dashboard to a "Beta & Experimental" section below. |
 | 2.3.3 | Remove or qualify multi-tool claims | Unless there are integration tests for Cursor/Codex/Copilot, replace "works with X" with "architecturally compatible via MCP" and be honest about what's been tested. |
 
@@ -218,7 +218,7 @@
 
 ## Phase 3: Strengthen the Moat
 
-**Goal**: Make the features that differentiate AgentOps genuinely excellent. Explicitly defer or downscope features that aren't core.
+**Goal**: Make the features that differentiate AgentSentry genuinely excellent. Explicitly defer or downscope features that aren't core.
 **Timeline**: 4–8 weeks (after Phase 2)
 **Success criteria**: Memory + enablement are best-in-class. Experimental features are honestly labeled and don't distract from the core.
 
@@ -237,7 +237,7 @@
 
 | # | Task | Detail |
 |---|------|--------|
-| 3.1.1 | Create enablement onboarding flow | `npx agentops enable --level 1` should print what it enables, what it doesn't, and how to level up. Make this the recommended first command after install. |
+| 3.1.1 | Create enablement onboarding flow | `npx agent-sentry enable --level 1` should print what it enables, what it doesn't, and how to level up. Make this the recommended first command after install. |
 | 3.1.2 | Add level-specific documentation | For each level (1-5), document: what skills activate, what hooks run, what the user will notice, and when to upgrade. |
 | 3.1.3 | Add enablement telemetry | Track (locally, in MemoryStore) which level the user is at and how long they've been there. Use this to suggest leveling up. |
 | 3.1.4 | Position in README | Move enablement to the second section of the README, right after install. Frame it as: "Start with Level 1. You'll get safety nets without complexity. Level up when ready." |

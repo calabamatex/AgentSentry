@@ -20,7 +20,7 @@ function runHook(
   const result = spawnSync('bash', [scriptPath], {
     input: stdinJson,
     encoding: 'utf-8',
-    timeout: 15_000,
+    timeout: 30_000,
     env: { ...process.env, ...env },
   });
   return {

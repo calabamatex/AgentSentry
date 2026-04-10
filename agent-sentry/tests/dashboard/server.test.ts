@@ -2,10 +2,12 @@ import { describe, it, expect, afterEach } from 'vitest';
 import * as http from 'http';
 import { DashboardServer } from '../../src/dashboard/server';
 
+const TEST_TOKEN = 'server-test-token';
+
 /** Simple HTTP GET helper. */
-function httpGet(url: string): Promise<{ status: number; headers: http.IncomingHttpHeaders; body: string }> {
+function httpGet(url: string, extraHeaders?: Record<string, string>): Promise<{ status: number; headers: http.IncomingHttpHeaders; body: string }> {
   return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
+    http.get(url, { headers: extraHeaders }, (res) => {
       let body = '';
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
@@ -13,6 +15,10 @@ function httpGet(url: string): Promise<{ status: number; headers: http.IncomingH
       });
     }).on('error', reject);
   });
+}
+
+function authHeaders(): Record<string, string> {
+  return { Authorization: `Bearer ${TEST_TOKEN}` };
 }
 
 describe('DashboardServer', () => {
@@ -26,7 +32,7 @@ describe('DashboardServer', () => {
   });
 
   it('starts and stops without error', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
     expect(info.port).toBeGreaterThan(0);
     expect(server.isRunning()).toBe(true);
@@ -37,10 +43,10 @@ describe('DashboardServer', () => {
   });
 
   it('serves dashboard HTML at /', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/`, authHeaders());
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toContain('text/html');
     expect(res.body).toContain('AgentSentry Dashboard v5');
@@ -48,27 +54,27 @@ describe('DashboardServer', () => {
   });
 
   it('serves dashboard HTML at /index.html', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/index.html`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/index.html`, authHeaders());
     expect(res.status).toBe(200);
     expect(res.body).toContain('AgentSentry Dashboard v5');
   });
 
   it('returns 404 for unknown paths', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/nonexistent`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/nonexistent`, authHeaders());
     expect(res.status).toBe(404);
   });
 
   it('serves /api/health with health check results', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/api/health`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/health`, authHeaders());
     expect(res.status).toBe(200);
     const data = JSON.parse(res.body);
     expect(data.status).toMatch(/healthy|degraded|unhealthy/);
@@ -76,29 +82,29 @@ describe('DashboardServer', () => {
   });
 
   it('serves /api/metrics with Prometheus text', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/api/metrics`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/metrics`, authHeaders());
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toContain('text/plain');
   });
 
   it('serves /api/plugins with JSON array', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/api/plugins`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/plugins`, authHeaders());
     expect(res.status).toBe(200);
     const data = JSON.parse(res.body);
     expect(Array.isArray(data)).toBe(true);
   });
 
   it('serves /api/stats with uptime and client count', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`, authHeaders());
     expect(res.status).toBe(200);
     const data = JSON.parse(res.body);
     expect(typeof data.uptime).toBe('number');
@@ -106,12 +112,12 @@ describe('DashboardServer', () => {
   });
 
   it('establishes SSE connection at /events', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
     // Connect as SSE client — read initial comment
     const body = await new Promise<string>((resolve, reject) => {
-      http.get(`http://127.0.0.1:${info.port}/events`, (res) => {
+      http.get(`http://127.0.0.1:${info.port}/events`, { headers: authHeaders() }, (res) => {
         expect(res.statusCode).toBe(200);
         expect(res.headers['content-type']).toBe('text/event-stream');
 
@@ -132,21 +138,21 @@ describe('DashboardServer', () => {
   });
 
   it('sets CORS headers', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`);
-    expect(res.headers['access-control-allow-origin']).toBe('*');
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`, authHeaders());
+    expect(res.headers['access-control-allow-origin']).toBe('http://127.0.0.1:9200');
   });
 
   it('throws if started twice', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     await server.start();
     await expect(server.start()).rejects.toThrow('already running');
   });
 
   it('returns correct URL in server info', async () => {
-    server = new DashboardServer({ port: 0, host: '127.0.0.1' });
+    server = new DashboardServer({ port: 0, host: '127.0.0.1', token: TEST_TOKEN });
     const info = await server.start();
     expect(info.url).toBe(`http://127.0.0.1:${info.port}`);
   });
@@ -164,10 +170,10 @@ describe('DashboardServer', () => {
       close: async () => {},
     } as any;
 
-    server = new DashboardServer({ port: 0, memoryStore: mockMemoryStore });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN, memoryStore: mockMemoryStore });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`, authHeaders());
     expect(res.status).toBe(200);
     const data = JSON.parse(res.body);
     expect(typeof data.uptime).toBe('number');
@@ -176,10 +182,10 @@ describe('DashboardServer', () => {
   });
 
   it('returns stream-only stats when memoryStore is absent', async () => {
-    server = new DashboardServer({ port: 0 });
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
     const info = await server.start();
 
-    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`);
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/stats`, authHeaders());
     expect(res.status).toBe(200);
     const data = JSON.parse(res.body);
     expect(typeof data.uptime).toBe('number');

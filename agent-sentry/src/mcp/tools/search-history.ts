@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { MemoryStore } from '../../memory/store';
+import { getSharedStore } from '../shared-store';
 import { EVENT_TYPES, SEVERITIES, type EventType, type Severity } from '../../memory/schema';
 
 export const name = 'agent_sentry_search_history';
@@ -50,12 +50,10 @@ export const argsSchema = z.object({
 export async function handler(
   args: Record<string, unknown>,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  let store: MemoryStore | null = null;
   try {
     const parsed = argsSchema.parse(args);
 
-    store = new MemoryStore();
-    await store.initialize();
+    const store = await getSharedStore();
 
     const results = await store.search(parsed.query, {
       limit: parsed.limit ?? 10,
@@ -80,9 +78,5 @@ export async function handler(
     return {
       content: [{ type: 'text', text: JSON.stringify({ error: message }) }],
     };
-  } finally {
-    if (store) {
-      await store.close().catch(() => {});
-    }
   }
 }

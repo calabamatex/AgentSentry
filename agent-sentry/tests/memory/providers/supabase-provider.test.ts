@@ -240,7 +240,7 @@ describe('SupabaseProvider', () => {
       await provider.query({ tag: 'security' });
 
       const callOpts = mockRequestFn.mock.calls[1][0];
-      expect(callOpts.path).toContain('tags=cs.["security"]');
+      expect(callOpts.path).toContain('tags=cs.%5B%22security%22%5D');
     });
   });
 

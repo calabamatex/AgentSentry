@@ -1,5 +1,5 @@
 /**
- * server.ts — Dashboard HTTP server for AgentSentry v5.
+ * server.ts — Dashboard HTTP server for AgentSentry.
  *
  * Serves a single-file SPA dashboard and proxies API endpoints:
  *   /           → Dashboard HTML
@@ -16,6 +16,7 @@ import * as http from 'http';
 import * as crypto from 'crypto';
 import { EventStream, StreamClient, StreamEvent, StreamFilter } from '../streaming/event-stream';
 import { Logger } from '../observability/logger';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'dashboard-server' });
 import { HealthChecker, memoryUsageCheck, eventLoopCheck } from '../observability/health';
@@ -24,6 +25,9 @@ import { PluginRegistry } from '../plugins/registry';
 import { getDashboardHtml } from './html';
 import { VERSION } from '../version';
 import { MemoryStore } from '../memory/store';
+import { getDashboardHeader, getDashboardPanels } from '../enablement/dashboard-adapter';
+import type { EnablementConfig } from '../enablement/engine';
+import type { AgentCoordinator } from '../coordination/coordinator';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,8 +38,10 @@ export interface DashboardServerOptions {
   port?: number;
   /** Host to bind to (default '127.0.0.1'). */
   host?: string;
-  /** CORS origin (default '*'). */
+  /** CORS origin (default 'http://127.0.0.1:9200'). */
   corsOrigin?: string;
+  /** Authentication token. If set, all requests must include Authorization: Bearer <token>. */
+  token?: string;
   /** EventStream instance to subscribe to. */
   eventStream?: EventStream;
   /** HealthChecker instance. */
@@ -44,6 +50,10 @@ export interface DashboardServerOptions {
   pluginRegistry?: PluginRegistry;
   /** Optional MemoryStore for enriched /api/stats responses. */
   memoryStore?: MemoryStore;
+  /** Optional EnablementConfig for /api/enablement endpoint. */
+  enablementConfig?: EnablementConfig;
+  /** Optional AgentCoordinator for /api/coordination endpoint. */
+  coordinator?: AgentCoordinator;
 }
 
 export interface DashboardServerInfo {
@@ -62,20 +72,34 @@ export class DashboardServer {
   private healthChecker: HealthChecker;
   private pluginRegistry: PluginRegistry;
   private memoryStore?: MemoryStore;
-  private options: Required<Omit<DashboardServerOptions, 'eventStream' | 'healthChecker' | 'pluginRegistry' | 'memoryStore'>>;
+  private enablementConfig?: EnablementConfig;
+  private coordinator?: AgentCoordinator;
+  private token?: string;
+  private options: Required<Omit<DashboardServerOptions, 'eventStream' | 'healthChecker' | 'pluginRegistry' | 'memoryStore' | 'enablementConfig' | 'coordinator' | 'token'>>;
   private startTime = 0;
 
   constructor(options?: DashboardServerOptions) {
     this.options = {
       port: options?.port ?? 9200,
       host: options?.host ?? '127.0.0.1',
-      corsOrigin: options?.corsOrigin ?? '*',
+      corsOrigin: options?.corsOrigin ?? 'http://127.0.0.1:9200',
     };
+
+    // Token: env var > options > random
+    if (process.env.AGENT_SENTRY_DASHBOARD_TOKEN) {
+      this.token = process.env.AGENT_SENTRY_DASHBOARD_TOKEN;
+    } else if (options?.token) {
+      this.token = options.token;
+    } else {
+      this.token = crypto.randomBytes(24).toString('hex');
+    }
 
     this.eventStream = options?.eventStream ?? new EventStream();
     this.healthChecker = options?.healthChecker ?? new HealthChecker({ version: VERSION });
     this.pluginRegistry = options?.pluginRegistry ?? new PluginRegistry();
     this.memoryStore = options?.memoryStore;
+    this.enablementConfig = options?.enablementConfig;
+    this.coordinator = options?.coordinator;
 
     // Register default health checks
     this.healthChecker.registerCheck('memory', memoryUsageCheck());
@@ -101,6 +125,7 @@ export class DashboardServer {
         const addr = srv.address();
         const port = (addr && typeof addr === 'object') ? addr.port : this.options.port;
         const host = this.options.host;
+        console.log(`[AgentSentry] Dashboard token: ${this.token}`);
         resolve({ port, host, url: `http://${host}:${port}` });
       });
     });
@@ -143,6 +168,8 @@ export class DashboardServer {
       return;
     }
 
+    if (!this.authenticateRequest(req, res, url)) return;
+
     const path = url.pathname;
 
     // Dashboard HTML
@@ -159,7 +186,7 @@ export class DashboardServer {
 
     // API endpoints
     if (path === '/api/health') {
-      this.handleHealth(res);
+      void this.handleHealth(res);
       return;
     }
 
@@ -169,12 +196,27 @@ export class DashboardServer {
     }
 
     if (path === '/api/plugins') {
-      this.handlePlugins(res);
+      void this.handlePlugins(res);
       return;
     }
 
     if (path === '/api/stats') {
-      this.handleStats(res);
+      void this.handleStats(res);
+      return;
+    }
+
+    if (path === '/api/enablement') {
+      this.handleEnablement(res);
+      return;
+    }
+
+    if (path === '/api/streaming') {
+      this.handleStreaming(res);
+      return;
+    }
+
+    if (path === '/api/coordination') {
+      void this.handleCoordination(res);
       return;
     }
 
@@ -265,7 +307,7 @@ export class DashboardServer {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(plugins));
     } catch (e) {
-      logger.warn('Failed to list plugins for dashboard', { error: e instanceof Error ? e.message : String(e) });
+      logger.warn('Failed to list plugins for dashboard', { error: errorMessage(e) });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('[]');
     }
@@ -285,12 +327,69 @@ export class DashboardServer {
         res.end(JSON.stringify({ ...streamStats, memory: memoryStats }));
         return;
       } catch (e) {
-        logger.debug('Failed to get memory stats for dashboard', { error: e instanceof Error ? e.message : String(e) });
+        logger.debug('Failed to get memory stats for dashboard', { error: errorMessage(e) });
       }
     }
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(streamStats));
+  }
+
+  private handleEnablement(res: http.ServerResponse): void {
+    if (!this.enablementConfig) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false }));
+      return;
+    }
+    try {
+      const header = getDashboardHeader(this.enablementConfig);
+      const panels = getDashboardPanels(this.enablementConfig);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: true, ...header, panels }));
+    } catch (e) {
+      logger.warn('Failed to build enablement data', { error: errorMessage(e) });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false }));
+    }
+  }
+
+  private handleStreaming(res: http.ServerResponse): void {
+    const stats = this.eventStream.getStats();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(stats));
+  }
+
+  private async handleCoordination(res: http.ServerResponse): Promise<void> {
+    if (!this.coordinator) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false, agents: [] }));
+      return;
+    }
+    try {
+      const agents = await this.coordinator.listAgents();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: true, agents }));
+    } catch (e) {
+      logger.warn('Failed to list coordinated agents', { error: errorMessage(e) });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false, agents: [] }));
+    }
+  }
+
+  private authenticateRequest(req: http.IncomingMessage, res: http.ServerResponse, url: URL): boolean {
+    if (!this.token) return true;
+
+    // Allow token in query param for SSE (EventSource can't set headers)
+    const queryToken = url.searchParams.get('token');
+    if (queryToken === this.token) return true;
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== this.token) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return false;
+    }
+    return true;
   }
 
   private parseFilter(url: URL): StreamFilter {

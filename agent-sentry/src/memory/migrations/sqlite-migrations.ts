@@ -6,6 +6,7 @@ import type Database from 'better-sqlite3';
 import { MIGRATION_V3_SQL } from './migration-v3';
 import { MIGRATION_V4_SQL } from './migration-v4';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'sqlite-migrations' });
 
@@ -98,7 +99,7 @@ export function getCurrentVersion(db: Database.Database): number {
     const row = db.prepare('SELECT MAX(version) as v FROM schema_version').get() as { v: number | null };
     return row?.v ?? 0;
   } catch (e) {
-    logger.debug('Failed to get current schema version', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to get current schema version', { error: errorMessage(e) });
     return 0;
   }
 }

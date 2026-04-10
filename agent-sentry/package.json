@@ -1,11 +1,11 @@
 {
-  "name": "agent-sentry",
-  "version": "4.0.0",
-  "description": "AgentSentry v4.0 — Memory-Aware Agent Management",
+  "name": "@calabamatex/agentsentry",
+  "version": "0.5.0-beta.1",
+  "description": "Memory-Aware Agent Management and Safety Framework for AI Agents",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "agent-sentry": "./dist/src/cli/index.js"
+    "agentsentry": "./dist/src/cli/index.js"
   },
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "keywords": [
-    "agent-sentry",
+    "agentsentry",
     "agent",
     "observability",
     "memory",
@@ -61,7 +61,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.0.0",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=18"

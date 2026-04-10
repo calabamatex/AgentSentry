@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "AgentSentry Enablement Configuration",
-  "description": "Progressive skill enablement configuration for AgentSentry v4.0",
+  "description": "Progressive skill enablement configuration for AgentSentry",
   "type": "object",
   "required": ["level", "skills"],
   "properties": {
@@ -17,6 +17,7 @@
         "save_points",
         "context_health",
         "standing_orders",
+        "directive_compliance",
         "small_bets",
         "proactive_safety"
       ],
@@ -24,6 +25,7 @@
         "save_points": { "$ref": "#/definitions/skillConfig" },
         "context_health": { "$ref": "#/definitions/skillConfig" },
         "standing_orders": { "$ref": "#/definitions/skillConfig" },
+        "directive_compliance": { "$ref": "#/definitions/skillConfig" },
         "small_bets": { "$ref": "#/definitions/skillConfig" },
         "proactive_safety": { "$ref": "#/definitions/skillConfig" }
       },

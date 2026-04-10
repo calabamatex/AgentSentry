@@ -1,4 +1,4 @@
-# AgentOps — Session Context
+# AgentSentry — Session Context
 
 **Last updated:** 2026-03-22
 **Branch:** main
@@ -8,7 +8,7 @@ Last verified: 2026-03-22
 
 ## Recent Work
 
-This session completed all 4 build phases of AgentOps v4.0, plus P0 scaling fixes and a comprehensive review-driven remediation pass.
+This session completed all 4 build phases of AgentSentry v4.0, plus P0 scaling fixes and a comprehensive review-driven remediation pass.
 
 ## Key Files
 
@@ -19,9 +19,9 @@ This session completed all 4 build phases of AgentOps v4.0, plus P0 scaling fixe
 | Primitives | `agent-sentry/src/primitives/index.ts` |
 | Enablement | `agent-sentry/src/enablement/engine.ts` |
 | Enrichment | `agent-sentry/src/memory/enrichment.ts` |
-| Config | `agent-sentry/agentops.config.json` |
-| Build Plan | `AgentOps-OB1-Build-Plan.md` |
-| Product Spec | `AgentOps-Product-Spec.md` |
+| Config | `agent-sentry/agent-sentry.config.json` |
+| Build Plan | `AgentSentry-OB1-Build-Plan.md` |
+| Product Spec | `AgentSentry-Product-Spec.md` |
 
 ## Constraints
 

@@ -65,7 +65,12 @@ export class QueryOptimizer {
     };
   }
 
+  private static readonly VALID_TABLES = new Set(['ops_events', 'chain_checkpoints', 'coordination_locks']);
+
   analyzeTable(table: string): TableStats {
+    if (!QueryOptimizer.VALID_TABLES.has(table)) {
+      throw new Error(`Invalid table name: ${table}`);
+    }
     this.db.exec(`ANALYZE ${table}`);
 
     const countRow = this.db

@@ -13,9 +13,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 import { formatHandoff, buildHandoffPrompt } from './handoff-templates';
 import { safeJsonParse } from '../../utils/safe-json';
 import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
@@ -50,9 +51,9 @@ export interface HandoffResult {
 // Git helpers
 // ---------------------------------------------------------------------------
 
-function git(cmd: string, cwd?: string): string {
+function git(args: string[], cwd?: string): string {
   try {
-    return execSync(`git ${cmd}`, {
+    return execFileSync('git', args, {
       encoding: 'utf-8',
       timeout: 5000,
       cwd: cwd ?? process.cwd(),
@@ -156,7 +157,7 @@ async function getSessionSummary(): Promise<string> {
 
     return `${events.length} events (${decisions} decisions, ${incidents} incidents, ${patterns} patterns). ${files.size} files referenced.`;
   } catch (e) {
-    logger.debug('Failed to get session summary', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to get session summary', { error: errorMessage(e) });
     return 'Memory store unavailable.';
   }
 }
@@ -243,7 +244,7 @@ function readTodoState(): TodoItem[] {
         activeForm: item.activeForm,
       }));
   } catch (e) {
-    logger.debug('Failed to read todo state', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read todo state', { error: errorMessage(e) });
     return [];
   }
 }
@@ -259,11 +260,11 @@ function readTodoState(): TodoItem[] {
 export async function generateHandoffResult(options?: {
   remaining?: string[];
 }): Promise<HandoffResult> {
-  const branch = git('branch --show-current') || git('rev-parse --abbrev-ref HEAD') || 'unknown';
-  const lastCommit = git('log -1 --oneline') || 'no commits';
-  const uncommitted = git('status --short') || '';
-  const diffStat = git('diff --stat') || '';
-  const recentCommits = git('log --oneline -10').split('\n').filter(Boolean);
+  const branch = git(['branch', '--show-current']) || git(['rev-parse', '--abbrev-ref', 'HEAD']) || 'unknown';
+  const lastCommit = git(['log', '-1', '--oneline']) || 'no commits';
+  const uncommitted = git(['status', '--short']) || '';
+  const diffStat = git(['diff', '--stat']) || '';
+  const recentCommits = git(['log', '--oneline', '-10']).split('\n').filter(Boolean);
   const sessionSummary = await getSessionSummary();
   const todos = readTodoState();
   let remaining = options?.remaining ?? [];
@@ -372,7 +373,7 @@ export const handoffCommand: CommandDefinition = {
       });
       await store.close();
     } catch (e) {
-      logger.debug('Failed to store handoff event', { error: e instanceof Error ? e.message : String(e) });
+      logger.debug('Failed to store handoff event', { error: errorMessage(e) });
     }
 
     // Output

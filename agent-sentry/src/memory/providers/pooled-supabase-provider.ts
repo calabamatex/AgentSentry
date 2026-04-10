@@ -10,6 +10,7 @@ import * as http from 'http';
 import { SupabaseBaseProvider, SupabaseRequestOptions } from './supabase-base';
 import { ConnectionPool, ConnectionPoolOptions } from './connection-pool';
 import { Logger } from '../../observability/logger';
+import { errorMessage } from '../../utils/error-message';
 import { OpsEvent } from '../schema';
 import { safeJsonParse } from '../../utils/safe-json';
 
@@ -57,7 +58,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
     try {
       await this.rpc('ensure_ops_schema', {});
     } catch (err) {
-      logger.warn('PooledSupabaseProvider: ensure_ops_schema RPC call failed (tables may already exist)', { error: err instanceof Error ? err.message : String(err) });
+      logger.warn('PooledSupabaseProvider: ensure_ops_schema RPC call failed (tables may already exist)', { error: errorMessage(err) });
     }
   }
 
@@ -144,7 +145,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
                 const data = body ? safeJsonParse(body) : null;
                 resolve({ data, headers: res.headers } as unknown as T);
               } catch (e) {
-                logger.debug('Failed to parse response body with headers', { error: e instanceof Error ? e.message : String(e) });
+                logger.debug('Failed to parse response body with headers', { error: errorMessage(e) });
                 resolve({ data: null, headers: res.headers } as unknown as T);
               }
               return;
@@ -153,7 +154,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
             try {
               resolve(body ? safeJsonParse<T>(body) : (null as unknown as T));
             } catch (e) {
-              logger.debug('Failed to parse response body', { error: e instanceof Error ? e.message : String(e) });
+              logger.debug('Failed to parse response body', { error: errorMessage(e) });
               resolve(null as unknown as T);
             }
           });

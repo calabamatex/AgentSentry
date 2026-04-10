@@ -453,7 +453,7 @@ interface PluginManifest {
   category: 'monitor' | 'integration' | 'dashboard' | 'auditor';
   author: { name: string; github?: string };
   version: string;
-  requires: { 'agent-sentry': string; primitives?: string[] };
+  requires: { 'agentsentry': string; primitives?: string[] };
   hooks: string[]; tags: string[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   downloads?: number; rating?: number;

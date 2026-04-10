@@ -1,6 +1,6 @@
-# AgentOps API & Script Reference
+# AgentSentry API & Script Reference
 
-Comprehensive reference for every script, command, and module in the AgentOps framework.
+Comprehensive reference for every script, command, and module in the AgentSentry framework.
 
 ---
 
@@ -144,7 +144,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 - `context_health.message_count_critical` (default: `30`)
 
 **Environment variables:**
-- `AGENTOPS_MAX_TOKENS` -- Override assumed context window size (default: `200000`)
+- `AGENT_SENTRY_MAX_TOKENS` -- Override assumed context window size (default: `200000`)
 
 ---
 
@@ -161,7 +161,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 
 **Checks performed:**
 1. **Git state** -- Verifies git repository exists and reports uncommitted changes
-2. **CLAUDE.md** -- Checks existence, line count vs threshold, presence of AgentOps section, required sections (security, error handling)
+2. **CLAUDE.md** -- Checks existence, line count vs threshold, presence of AgentSentry section, required sections (security, error handling)
 3. **AGENTS.md** -- Checks existence and line count vs threshold
 4. **Scaffold documents** -- Checks for `PLANNING.md`, `TASKS.md`, `CONTEXT.md`, `WORKFLOW.md`; checks `CONTEXT.md` freshness (warns if >7 days stale)
 
@@ -184,7 +184,7 @@ These scripts are registered in `.claude/settings.json` and invoked automaticall
 | **Timeout** | 10000ms |
 
 **What it does:** Runs when a session ends. Performs three steps:
-1. **Auto-commit** -- Commits all uncommitted changes with message `[agentops] session-end checkpoint`
+1. **Auto-commit** -- Commits all uncommitted changes with message `[agent-sentry] session-end checkpoint`
 2. **Reset state** -- Clears blast-radius-files, context-state, and git-hygiene-session temp files
 3. **Log event** -- Appends a session-end NDJSON event to `agent-sentry/dashboard/data/session-log.json`
 
@@ -284,7 +284,7 @@ permissions:
 | **Hook Event** | `PreToolUse` |
 | **Trigger (matcher)** | Not currently wired in settings.json (available for manual integration) |
 
-**What it does:** Validates agent-to-agent delegation tokens before every tool use. When an agent delegates a task to another agent, it issues a delegation token (JSON) via the `AGENTOPS_DELEGATION_TOKEN` environment variable.
+**What it does:** Validates agent-to-agent delegation tokens before every tool use. When an agent delegates a task to another agent, it issues a delegation token (JSON) via the `AGENT_SENTRY_DELEGATION_TOKEN` environment variable.
 
 **Token format:**
 ```json
@@ -315,7 +315,7 @@ permissions:
 - `0` -- Delegation valid (or no delegation token present)
 - `2` -- Delegation check failed, BLOCK the tool use
 
-**Config keys read:** None (reads from `AGENTOPS_DELEGATION_TOKEN` env var).
+**Config keys read:** None (reads from `AGENT_SENTRY_DELEGATION_TOKEN` env var).
 
 **Logs to:** `agent-sentry/dashboard/data/delegation-log.json` (NDJSON)
 
@@ -332,7 +332,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 | Field | Value |
 |---|---|
 | **Path** | `agent-sentry/scripts/security-audit.sh` |
-| **Invoked by** | `/agentops audit` |
+| **Invoked by** | `/agent-sentry audit` |
 
 **What it does:** Runs a comprehensive project security scan across 6 check categories. Results are grouped by severity (Critical, Warning, Advisory, Pass) and written to `agent-sentry/dashboard/data/audit-results.json` as NDJSON.
 
@@ -348,7 +348,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 
 **Environment variables:**
 - `PROJECT_ROOT` -- Override project root (default: git root or cwd)
-- `AGENTOPS_AUDIT_SCAN_HISTORY` -- Set to `true` to scan git history for secrets
+- `AGENT_SENTRY_AUDIT_SCAN_HISTORY` -- Set to `true` to scan git history for secrets
 
 **Exit codes:**
 - `0` -- Always (advisory tool, not a gate)
@@ -360,7 +360,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 | Field | Value |
 |---|---|
 | **Path** | `agent-sentry/scripts/rules-file-linter.sh` |
-| **Invoked by** | `/agentops audit` |
+| **Invoked by** | `/agent-sentry audit` |
 
 **What it does:** Validates `AGENTS.md`, `CLAUDE.md`, and nested rules files for structure, size, contradictions, clarity, and completeness.
 
@@ -501,7 +501,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 | **Path** | `agent-sentry/scripts/validate-plugin.sh` |
 | **Invoked by** | Manual or CI |
 
-**What it does:** Validates a plugin directory against the AgentOps plugin specification. Accepts a plugin path as the first argument.
+**What it does:** Validates a plugin directory against the AgentSentry plugin specification. Accepts a plugin path as the first argument.
 
 **11 validation checks:**
 1. Folder structure matches category template
@@ -510,7 +510,7 @@ These scripts are invoked manually or by slash commands. They are not registered
 4. README.md has required sections (What It Does, Prerequisites, Installation, Configuration, How It Works, Troubleshooting)
 5. `src/index.ts` exports valid plugin interface
 6. Hook subscriptions reference valid types
-7. MCP tool names follow `agentops_plugin_{name}_{tool}` convention
+7. MCP tool names follow `agent_sentry_plugin_{name}_{tool}` convention
 8. No files exceed 500 lines
 9. Required primitives exist in the primitives library
 10. Tests exist and pass
@@ -659,24 +659,24 @@ Model Context Protocol server exposing 8 tools via stdio or HTTP transport.
 
 | Tool | Input | Description |
 |---|---|---|
-| `agentops_check_git` | none | Git hygiene status — uncommitted files, branch, risk score |
-| `agentops_check_context` | `message_count?` | Context window health estimation |
-| `agentops_check_rules` | `file_path`, `change_description` | Rules compliance validation |
-| `agentops_size_task` | `task`, `files?` | Task risk scoring (LOW/MEDIUM/HIGH/CRITICAL) |
-| `agentops_scan_security` | `content`, `file_path?` | Secret and vulnerability detection |
-| `agentops_capture_event` | `event_type`, `severity`, `skill`, `title`, `detail`, ... | Capture event to memory store |
-| `agentops_search_history` | `query`, `limit?`, `event_type?`, `severity?`, `since?` | Semantic search across events |
-| `agentops_health` | none | System health dashboard |
+| `agent_sentry_check_git` | none | Git hygiene status — uncommitted files, branch, risk score |
+| `agent_sentry_check_context` | `message_count?` | Context window health estimation |
+| `agent_sentry_check_rules` | `file_path`, `change_description` | Rules compliance validation |
+| `agent_sentry_size_task` | `task`, `files?` | Task risk scoring (LOW/MEDIUM/HIGH/CRITICAL) |
+| `agent_sentry_scan_security` | `content`, `file_path?` | Secret and vulnerability detection |
+| `agent_sentry_capture_event` | `event_type`, `severity`, `skill`, `title`, `detail`, ... | Capture event to memory store |
+| `agent_sentry_search_history` | `query`, `limit?`, `event_type?`, `severity?`, `since?` | Semantic search across events |
+| `agent_sentry_health` | none | System health dashboard |
 
 **Transport:**
 - Stdio (default): `node agent-sentry/dist/src/mcp/server.js`
 - HTTP: `node agent-sentry/dist/src/mcp/server.js --http --port 3100`
 
-**Auth (HTTP only):** `x-agentops-key` header or `?key=` query param. Rate limited to 100 req/min.
+**Auth (HTTP only):** `x-agent-sentry-key` header or `?key=` query param. Rate limited to 100 req/min.
 
 **Integration:**
 ```bash
-claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
+claude mcp add agent-sentry -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 ---
@@ -795,27 +795,27 @@ These are invoked as Claude Code slash commands.
 
 ---
 
-### /agentops check
+### /agent-sentry check
 
 Runs a session health dashboard. Executes `session-start-checks.sh` to validate rules files, scaffold docs, and git state. Reports criticals, warnings, and advisories.
 
-### /agentops audit
+### /agent-sentry audit
 
 Runs a full project audit by executing both `security-audit.sh` (6-category security scan) and `rules-file-linter.sh` (5-check rules validation). Writes results to `agent-sentry/dashboard/data/audit-results.json`.
 
-### /agentops scaffold
+### /agent-sentry scaffold
 
-Creates or updates scaffold documents (`PLANNING.md`, `TASKS.md`, `CONTEXT.md`, `WORKFLOW.md`) and ensures `CLAUDE.md` contains the AgentOps rules section.
+Creates or updates scaffold documents (`PLANNING.md`, `TASKS.md`, `CONTEXT.md`, `WORKFLOW.md`) and ensures `CLAUDE.md` contains the AgentSentry rules section.
 
-### /agentops setup
+### /agent-sentry setup
 
 Runs the progressive enablement setup wizard. Prompts for an enablement level (1-5) and generates the appropriate configuration.
 
 ---
 
-## Configuration (agentops.config.json)
+## Configuration (agent-sentry.config.json)
 
-**Path:** `agent-sentry/agentops.config.json`
+**Path:** `agent-sentry/agent-sentry.config.json`
 
 ### save_points
 
@@ -872,7 +872,7 @@ Runs the progressive enablement setup wizard. Prompts for an enablement level (1
 | Key | Default | Description |
 |---|---|---|
 | `notifications.verbose` | `false` | Whether to emit verbose diagnostic messages |
-| `notifications.prefix_all_messages` | `"[AgentOps]"` | Prefix string for all hook output messages |
+| `notifications.prefix_all_messages` | `"[AgentSentry]"` | Prefix string for all hook output messages |
 
 ### memory
 

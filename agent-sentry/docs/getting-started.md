@@ -3,13 +3,13 @@
 ## Installation
 
 ```bash
-npm install agent-sentry
+npm install @calabamatex/agentsentry
 ```
 
 ## Basic Usage
 
 ```typescript
-import { MemoryStore, createProvider } from 'agent-sentry';
+import { MemoryStore, createProvider } from '@calabamatex/agentsentry';
 
 // Create a store with the default SQLite provider
 const store = new MemoryStore({
@@ -95,28 +95,28 @@ AgentSentry reads configuration from `agent-sentry/agent-sentry.config.json`:
 
 ```bash
 # Capture an event
-npx agent-sentry capture --type decision --severity low --title "Deployed v2"
+npx @calabamatex/agentsentry capture --type decision --severity low --title "Deployed v2"
 
 # Search event history
-npx agent-sentry search "authentication bug"
+npx @calabamatex/agentsentry search "authentication bug"
 
 # List recent events
-npx agent-sentry list --limit 20 --type incident
+npx @calabamatex/agentsentry list --limit 20 --type incident
 
 # Get stats
-npx agent-sentry stats
+npx @calabamatex/agentsentry stats
 
 # Verify chain integrity
-npx agent-sentry verify
+npx @calabamatex/agentsentry verify
 
 # Run health check
-npx agent-sentry health
+npx @calabamatex/agentsentry health
 
 # Scan for secrets
-npx agent-sentry scan --path src/
+npx @calabamatex/agentsentry scan --path src/
 
 # Start MCP server
-npx agent-sentry serve
+npx @calabamatex/agentsentry serve
 ```
 
 ## Dashboard
@@ -124,7 +124,7 @@ npx agent-sentry serve
 Start the built-in dashboard to get a live SSE event feed, health status, metrics, and plugin overview:
 
 ```typescript
-import { DashboardServer } from 'agent-sentry';
+import { DashboardServer } from '@calabamatex/agentsentry';
 
 const dashboard = new DashboardServer({ port: 9200 });
 const info = await dashboard.start();
@@ -135,7 +135,7 @@ console.log(`Dashboard running at ${info.url}`);
 Or from the CLI:
 
 ```bash
-npx agent-sentry dashboard --port 9200
+npx @calabamatex/agentsentry dashboard --port 9200
 ```
 
 The dashboard exposes these endpoints:

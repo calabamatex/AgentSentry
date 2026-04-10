@@ -85,6 +85,30 @@ const SECRET_PATTERNS: SecretPattern[] = [
     pattern: /xox[bpors]-[0-9a-zA-Z-]{10,}/g,
     description: 'Slack token detected',
   },
+  {
+    type: 'token',
+    severity: 'high',
+    pattern: /(?:Authorization|authorization)\s*[:=]\s*['"]Bearer\s+[a-zA-Z0-9_\-/.]{10,}['"]/g,
+    description: 'Hardcoded Bearer token detected',
+  },
+  {
+    type: 'connection_string',
+    severity: 'critical',
+    pattern: /(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s'"]{10,}/gi,
+    description: 'Database connection string with credentials detected',
+  },
+  {
+    type: 'token',
+    severity: 'high',
+    pattern: /eyJ[a-zA-Z0-9_-]{10,}\.eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g,
+    description: 'JSON Web Token (JWT) detected',
+  },
+  {
+    type: 'api_key',
+    severity: 'critical',
+    pattern: /(?:aws_secret_access_key|AWS_SECRET_ACCESS_KEY)\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?/g,
+    description: 'AWS Secret Access Key detected',
+  },
 ];
 
 /**

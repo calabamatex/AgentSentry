@@ -6,6 +6,10 @@
 
 set -euo pipefail
 
+HOOK_NAME="context-estimator"
+DEBOUNCE_SECONDS=30
+source "$(dirname "${BASH_SOURCE[0]}")/hook-guard.sh" || exit 0
+
 # Consume stdin (hook input) so the pipe doesn't break
 cat > /dev/null 2>&1 || true
 
@@ -23,72 +27,12 @@ MSG_CRIT=$(jq -r '.context_health.message_count_critical // 30' "$CONFIG_FILE" 2
 # Assumed context window size in tokens (Claude default)
 MAX_TOKENS=${AGENT_SENTRY_MAX_TOKENS:-200000}
 
-# ── Session State ─────────────────────────────────────────────────────
-STATE_DIR="${TMPDIR:-/tmp}/agent-sentry"
-STATE_FILE="$STATE_DIR/context-state"
+# ── Session State (via shared state manager) ─────────────────────────
+as_init_state
+MSG_COUNT=$(as_increment_messages)
 
-mkdir -p "$STATE_DIR"
-
-# Initialise state file if missing
-if [[ ! -f "$STATE_FILE" ]]; then
-    echo "message_count=0" > "$STATE_FILE"
-    echo "session_id=$(date +%s)" >> "$STATE_FILE"
-fi
-
-# Read current message count
-MSG_COUNT=$(grep -oP '(?<=message_count=)\d+' "$STATE_FILE" 2>/dev/null || echo 0)
-
-# Increment message count
-MSG_COUNT=$((MSG_COUNT + 1))
-
-# Write updated count back (portable sed in-place)
-if grep -q "message_count=" "$STATE_FILE" 2>/dev/null; then
-    # macOS and GNU sed compatible in-place edit
-    if sed --version 2>/dev/null | grep -q GNU; then
-        sed -i "s/message_count=.*/message_count=$MSG_COUNT/" "$STATE_FILE"
-    else
-        sed -i '' "s/message_count=.*/message_count=$MSG_COUNT/" "$STATE_FILE"
-    fi
-else
-    echo "message_count=$MSG_COUNT" >> "$STATE_FILE"
-fi
-
-# ── Token Estimation ──────────────────────────────────────────────────
-# Estimate tokens consumed by counting characters in recently-read
-# git-tracked files, then dividing by 4 (rough char-to-token ratio).
-
-TOTAL_CHARS=0
-
-if git rev-parse --is-inside-work-tree &>/dev/null; then
-    # Recently modified tracked files (last 50 by mtime) as a proxy for
-    # files likely read into context during this session.
-    while IFS= read -r file; do
-        if [[ -f "$file" ]]; then
-            CHARS=$(wc -c < "$file" 2>/dev/null | tr -d ' ')
-            TOTAL_CHARS=$((TOTAL_CHARS + CHARS))
-        fi
-    done < <(git ls-files -z 2>/dev/null \
-        | xargs -0 ls -1t 2>/dev/null \
-        | head -50)
-fi
-
-# Add an estimate for conversation overhead: ~500 tokens per message
-CONVERSATION_TOKENS=$((MSG_COUNT * 500))
-
-# File-based token estimate (chars / 4)
-FILE_TOKENS=$((TOTAL_CHARS / 4))
-
-ESTIMATED_TOKENS=$((FILE_TOKENS + CONVERSATION_TOKENS))
-if [[ "$MAX_TOKENS" -gt 0 ]]; then
-    CTX_PERCENT=$((ESTIMATED_TOKENS * 100 / MAX_TOKENS))
-else
-    CTX_PERCENT=0
-fi
-
-# Cap at 100 for display
-if [[ "$CTX_PERCENT" -gt 100 ]]; then
-    CTX_PERCENT=100
-fi
+# ── Token Estimation (via shared state manager) ──────────────────────
+CTX_PERCENT=$(as_estimate_context_percent "$MAX_TOKENS")
 
 # ── Notifications ─────────────────────────────────────────────────────
 
@@ -113,7 +57,7 @@ fi
 # Only print if there are notifications (keep hook quiet when healthy)
 if [[ ${#NOTIFICATIONS[@]} -gt 0 ]]; then
     for note in "${NOTIFICATIONS[@]}"; do
-        echo "$note"
+        echo "$note" >&2
     done
 fi
 

@@ -9,11 +9,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { safeReadSync } from '../../utils/safe-io';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'hook-session-checkpoint' });
 
@@ -28,7 +29,7 @@ function readConfig(): Record<string, unknown> {
   try {
     return safeJsonParse<Record<string, unknown>>(safeReadSync(configPath).toString('utf-8'));
   } catch (e) {
-    logger.debug('Failed to read config file', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to read config file', { error: errorMessage(e) });
     return {};
   }
 }
@@ -38,7 +39,7 @@ function isGitRepo(): boolean {
     execSync('git rev-parse --is-inside-work-tree', { stdio: ['pipe', 'pipe', 'pipe'] });
     return true;
   } catch (e) {
-    logger.debug('Not inside a git repository', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Not inside a git repository', { error: errorMessage(e) });
     return false;
   }
 }
@@ -60,7 +61,7 @@ function stashSnapshot(config: Record<string, unknown>): string {
     const porcelain = execSync('git status --porcelain', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
     changedFiles = porcelain.split('\n').filter(Boolean).length;
   } catch (e) {
-    logger.debug('Failed to get git status', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Failed to get git status', { error: errorMessage(e) });
     return '';
   }
 
@@ -97,12 +98,12 @@ function stashSnapshot(config: Record<string, unknown>): string {
 
     // Protect the SHA from garbage collection by storing it in the stash reflog
     const stashMsg = `AgentSentry checkpoint — ${summary}`;
-    execSync(`git stash store -m "${stashMsg}" ${sha}`, { stdio: 'pipe' });
+    execFileSync('git', ['stash', 'store', '-m', stashMsg, sha], { stdio: 'pipe' });
 
     console.log(`${PREFIX} Snapshot created: ${sha} (${summary})`);
     return sha;
   } catch (e) {
-    logger.warn('Stash snapshot failed during session checkpoint', { error: e instanceof Error ? e.message : String(e) });
+    logger.warn('Stash snapshot failed during session checkpoint', { error: errorMessage(e) });
     return '';
   }
 }
@@ -148,7 +149,7 @@ async function autoSaveHandoff(): Promise<void> {
       console.log(`${PREFIX} Could not resolve memory directory — handoff not saved.`);
     }
   } catch (e) {
-    logger.debug('Auto-save handoff failed', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Auto-save handoff failed', { error: errorMessage(e) });
     console.log(`${PREFIX} Auto-save handoff skipped (not critical).`);
   }
 }

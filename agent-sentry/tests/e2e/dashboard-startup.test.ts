@@ -8,11 +8,14 @@ import * as http from 'http';
 import { DashboardServer } from '../../src/dashboard/server';
 
 const TEST_PORT = 19_200 + Math.floor(Math.random() * 1000);
+const TEST_TOKEN = 'e2e-dashboard-test-token';
 
 /** Simple HTTP GET helper. */
 function httpGet(path: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
-    const req = http.get(`http://127.0.0.1:${TEST_PORT}${path}`, (res) => {
+    const req = http.get(`http://127.0.0.1:${TEST_PORT}${path}`, {
+      headers: { Authorization: `Bearer ${TEST_TOKEN}` },
+    }, (res) => {
       let body = '';
       res.on('data', (chunk) => (body += chunk));
       res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
@@ -35,7 +38,7 @@ describe('Dashboard Startup (e2e)', () => {
   });
 
   it('DashboardServer class can be instantiated', () => {
-    server = new DashboardServer({ port: TEST_PORT, host: '127.0.0.1' });
+    server = new DashboardServer({ port: TEST_PORT, host: '127.0.0.1', token: TEST_TOKEN });
     expect(server).toBeDefined();
   });
 

@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+HOOK_NAME="task-sizer"
+DEBOUNCE_SECONDS=30
+source "$(dirname "${BASH_SOURCE[0]}")/hook-guard.sh" || exit 0
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
 PREFIX="[AgentSentry]"
@@ -82,43 +86,15 @@ fi
 # Determine risk level and respond
 # ---------------------------------------------------------------------------
 
-# Helper: auto-commit if there are uncommitted changes
-auto_commit() {
-    if git rev-parse --is-inside-work-tree &>/dev/null; then
-        local uncommitted
-        uncommitted=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-        if [[ "$uncommitted" -gt 0 ]]; then
-            if [[ "$AUTO_COMMIT_ENABLED" != "true" ]]; then
-                echo "$PREFIX ADVISORY: Auto-checkpoint would fire ($uncommitted files) but auto_commit_enabled=false."
-            else
-                git add -A &>/dev/null || true
-                git commit -m "[AgentSentry] Auto-checkpoint before risk-score $risk_score task" --no-verify &>/dev/null || true
-                echo "$PREFIX Auto-committed $uncommitted file(s) as safety checkpoint."
-            fi
-        fi
-    fi
-}
+# Advisory output only — NO auto-commits (they cause feedback loops)
 
 if [[ "$risk_score" -ge "$CRITICAL_THRESHOLD" ]]; then
-    # CRITICAL (13+)
-    echo "$PREFIX WARN: Critical-risk task (score: $risk_score)."
-    echo "$PREFIX Recommendation: Create a dedicated branch and decompose into smaller tasks."
-    auto_commit
-    if git rev-parse --is-inside-work-tree &>/dev/null; then
-        BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
-        echo "$PREFIX Current branch: $BRANCH. Consider: git checkout -b task/<name>"
-    fi
-
+    echo "$PREFIX WARN: Critical-risk task (score: $risk_score)." >&2
+    echo "$PREFIX Recommendation: Create a dedicated branch and decompose into smaller tasks." >&2
 elif [[ "$risk_score" -ge "$HIGH_THRESHOLD" ]]; then
-    # HIGH (8-12)
-    echo "$PREFIX WARN: High-risk task (score: $risk_score). Decompose before starting."
-    auto_commit
-
+    echo "$PREFIX WARN: High-risk task (score: $risk_score). Decompose before starting." >&2
 elif [[ "$risk_score" -ge "$MEDIUM_THRESHOLD" ]]; then
-    # MEDIUM (4-7)
-    echo "$PREFIX NOTIFY: Medium-risk task. Committing checkpoint first."
-    auto_commit
-
+    echo "$PREFIX NOTIFY: Medium-risk task (score: $risk_score)." >&2
 # else: LOW (0-3) — silent, no output
 fi
 

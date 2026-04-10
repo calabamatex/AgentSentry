@@ -1,6 +1,6 @@
-# AgentOps Quick-Start Guide
+# Agent-Sentry Quick-Start Guide
 
-Install AgentOps into an existing project in under ten minutes. This guide walks through every step from prerequisites to your first audit.
+Install Agent-Sentry into an existing project in under ten minutes. This guide walks through every step from prerequisites to your first audit.
 
 ---
 
@@ -31,7 +31,7 @@ Install AgentOps into an existing project in under ten minutes. This guide walks
 
 | Category | Tool | Version | Purpose |
 |----------|------|---------|---------|
-| **Required** | bash | 3.2+ | All AgentOps scripts are bash-based |
+| **Required** | bash | 3.2+ | All agent-sentry scripts are bash-based |
 | **Required** | git | 2.x | Hooks, hygiene checks, commit tracking |
 | **Recommended** | jq | 1.6+ | Config parsing in shell scripts (falls back to defaults without it) |
 | **Required** | Node.js | 18+ | TypeScript runtime for MCP server, primitives, and memory store |
@@ -48,12 +48,12 @@ yq --version        # optional — needed for YAML eval fixtures only
 
 ---
 
-## 2. Install AgentOps
+## 2. Install Agent-Sentry
 
 Copy the `agent-sentry/` directory from this repository into the root of your project:
 
 ```bash
-cp -r /path/to/AgenticManagement/agentops /path/to/your-project/agentops
+cp -r /path/to/AgenticManagement/agent-sentry /path/to/your-project/agent-sentry
 ```
 
 Your project tree should now contain:
@@ -61,7 +61,7 @@ Your project tree should now contain:
 ```
 your-project/
   agent-sentry/
-    agentops.config.json
+    agent-sentry.config.json
     scripts/
     dashboard/
     templates/
@@ -80,7 +80,7 @@ your-project/
 
 ## 2b. Install Node Dependencies
 
-AgentOps v4.0 includes TypeScript modules that require Node.js:
+Agent-Sentry v4.0 includes TypeScript modules that require Node.js:
 
 ```bash
 cd agent-sentry && npm install
@@ -92,7 +92,7 @@ This installs the MCP SDK, vector search, and other runtime dependencies.
 
 ## 3. Set Up Git Hooks
 
-AgentOps ships two git hooks (`pre-commit` and `post-commit`) that scan for secrets and track commits automatically.
+Agent-Sentry ships two git hooks (`pre-commit` and `post-commit`) that scan for secrets and track commits automatically.
 
 ```bash
 # Copy the hooks directory into your project
@@ -121,13 +121,13 @@ cp /path/to/AgenticManagement/AGENTS.md /path/to/your-project/AGENTS.md
 
 ### CLAUDE.md (Claude Code specific, optional)
 
-If you use Claude Code, create a `CLAUDE.md` at your project root with project-specific rules and agent configuration. The session-start checks will verify that it exists and contains required sections (`security`, `error handling`) as well as an AgentOps reference.
+If you use Claude Code, create a `CLAUDE.md` at your project root with project-specific rules and agent configuration. The session-start checks will verify that it exists and contains required sections (`security`, `error handling`) as well as an AgentSentry reference.
 
 ---
 
 ## 5. Configure for Claude Code
 
-Add the AgentOps hook entries to `.claude/settings.json` in your project. Create the file if it does not exist. Below is the minimal AgentOps-specific configuration -- merge these entries into any existing hooks you already have:
+Add the Agent-Sentry hook entries to `.claude/settings.json` in your project. Create the file if it does not exist. Below is the minimal AgentSentry-specific configuration -- merge these entries into any existing hooks you already have:
 
 ```json
 {
@@ -219,13 +219,13 @@ Add the AgentOps hook entries to `.claude/settings.json` in your project. Create
 
 ## 5b. Configure MCP Server (Optional)
 
-AgentOps exposes 9 tools via the Model Context Protocol. Register with Claude Code:
+Agent-Sentry exposes 9 tools via the Model Context Protocol. Register with Claude Code:
 
 ```bash
-claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
+claude mcp add agent-sentry -- node agent-sentry/dist/src/mcp/server.js
 ```
 
-This gives Claude Code direct access to: `agentops_check_git`, `agentops_check_context`, `agentops_check_rules`, `agentops_size_task`, `agentops_scan_security`, `agentops_capture_event`, `agentops_search_history`, `agentops_health`, and `agentops_recall_context`.
+This gives Claude Code direct access to: `agent_sentry_check_git`, `agent_sentry_check_context`, `agent_sentry_check_rules`, `agent_sentry_size_task`, `agent_sentry_scan_security`, `agent_sentry_capture_event`, `agent_sentry_search_history`, `agent_sentry_health`, and `agent_sentry_recall_context`.
 
 For HTTP transport (team/remote access):
 
@@ -237,7 +237,7 @@ node agent-sentry/dist/src/mcp/server.js --http --port 3100
 
 ## 5c. Choose Enablement Level (Optional)
 
-AgentOps supports 5 progressive adoption levels:
+AgentSentry supports 5 progressive adoption levels:
 
 | Level | Name | Skills Active |
 |-------|------|--------------|
@@ -247,7 +247,7 @@ AgentOps supports 5 progressive adoption levels:
 | 4 | Right Size | + Small Bets |
 | 5 | Full Guard | + Proactive Safety |
 
-Run the setup wizard (a configuration generator that writes enablement settings to `agentops.config.json`):
+Run the setup wizard (a configuration generator that writes enablement settings to `agent-sentry.config.json`):
 
 ```bash
 bash agent-sentry/scripts/setup-wizard.sh
@@ -265,7 +265,7 @@ Preview without writing changes:
 bash agent-sentry/scripts/setup-wizard.sh --dry-run
 ```
 
-The wizard prompts for an enablement level (1-5), generates the corresponding enablement JSON, and merges it into `agentops.config.json`. It does **not** install git hooks, register MCP servers, or modify `.claude/settings.json` -- those are separate steps.
+The wizard prompts for an enablement level (1-5), generates the corresponding enablement JSON, and merges it into `agent-sentry.config.json`. It does **not** install git hooks, register MCP servers, or modify `.claude/settings.json` -- those are separate steps.
 
 ---
 
@@ -278,7 +278,7 @@ The setup wizard handles enablement configuration only. You must wire up hooks a
 3. **MCP server registration:**
 
 ```bash
-claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
+claude mcp add agent-sentry -- node agent-sentry/dist/src/mcp/server.js
 ```
 
 ---
@@ -287,7 +287,7 @@ claude mcp add agentops -- node agent-sentry/dist/src/mcp/server.js
 
 `AGENTS.md` is a universal rules file recognized by most AI coding tools. No extra integration work is needed for tools that read it natively.
 
-For tools that do not support Claude Code-style hooks, you can still get value from AgentOps by:
+For tools that do not support Claude Code-style hooks, you can still get value from AgentSentry by:
 
 - Running the scripts manually (see step 7).
 - Wiring the scripts into your tool's extension or plugin system.
@@ -308,17 +308,17 @@ bash agent-sentry/scripts/session-start-checks.sh
 You should see output like:
 
 ```
-[AgentOps] Session Start Health Check
+[AgentSentry] Session Start Health Check
 ───────────────────────────────────────────────
-  ○ ADVISORY: Missing scaffold docs: PLANNING.md TASKS.md CONTEXT.md WORKFLOW.md. Run /agentops scaffold to create them.
+  ○ ADVISORY: Missing scaffold docs: PLANNING.md TASKS.md CONTEXT.md WORKFLOW.md. Run /agent-sentry scaffold to create them.
 ───────────────────────────────────────────────
-[AgentOps] 0 critical, 0 warnings, 1 advisories
+[AgentSentry] 0 critical, 0 warnings, 1 advisories
 ```
 
 If you are inside Claude Code, you can also run:
 
 ```
-/agentops check
+/agent-sentry check
 ```
 
 Fix any CRITICAL or WARNING items before proceeding.
@@ -327,10 +327,10 @@ Fix any CRITICAL or WARNING items before proceeding.
 
 ## 8. Create Scaffold Documents
 
-AgentOps uses four markdown documents to maintain project context across sessions. Generate them from the bundled templates:
+AgentSentry uses four markdown documents to maintain project context across sessions. Generate them from the bundled templates:
 
 ```
-/agentops scaffold
+/agent-sentry scaffold
 ```
 
 This creates:
@@ -351,7 +351,7 @@ Templates live in `agent-sentry/templates/` if you want to customize them before
 From inside Claude Code:
 
 ```
-/agentops audit
+/agent-sentry audit
 ```
 
 The audit checks rules-file quality, security posture, scaffold doc freshness, git hygiene, and hook configuration. Review the output and address any findings.
@@ -366,10 +366,10 @@ bash agent-sentry/scripts/security-audit.sh
 
 ## 10. View the Dashboard
 
-Open the AgentOps dashboard in your browser:
+Open the AgentSentry dashboard in your browser:
 
 ```bash
-open agent-sentry/dashboard/agentops-dashboard.html
+open agent-sentry/dashboard/agent-sentry-dashboard.html
 ```
 
 The dashboard displays session metrics, commit history, risk scores, and audit findings. It reads data from `agent-sentry/dashboard/data/` which is populated automatically by the post-commit hook and other scripts.
@@ -378,11 +378,11 @@ The dashboard displays session metrics, commit history, risk scores, and audit f
 
 ## 11. Customize Thresholds
 
-All AgentOps thresholds are controlled by a single configuration file:
+All AgentSentry thresholds are controlled by a single configuration file:
 
 ```bash
 # Open in your editor
-$EDITOR agent-sentry/agentops.config.json
+$EDITOR agent-sentry/agent-sentry.config.json
 ```
 
 Key settings you may want to tune:
@@ -408,7 +408,7 @@ Key settings you may want to tune:
 
 ## What Happens Next
 
-With AgentOps installed, every Claude Code session will automatically:
+With AgentSentry installed, every Claude Code session will automatically:
 
 1. **On session start** -- validate rules files, check scaffold doc freshness, report git state.
 2. **On every prompt** -- score the task for risk and estimate context usage.

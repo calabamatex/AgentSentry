@@ -8,6 +8,8 @@ import * as fs from 'fs';
 import { StorageProvider } from './storage-provider';
 import { runMigrations } from '../migrations/sqlite-migrations';
 import { Logger } from '../../observability/logger';
+import { QueryOptimizer } from '../query-optimizer';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'sqlite-provider' });
 import {
@@ -61,9 +63,16 @@ export class SqliteProvider implements StorageProvider {
       fs.mkdirSync(dir, { recursive: true });
     }
     this.db = new Database(this.dbPath);
+    this.db.pragma('busy_timeout = 5000');
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
+    this.db.pragma('synchronous = NORMAL');
     runMigrations(this.db);
+
+    // Apply composite indexes and connection optimizations
+    const optimizer = new QueryOptimizer({ db: this.db });
+    optimizer.addCompositeIndexes();
+    optimizer.optimizeConnection(this.db);
   }
 
   async close(): Promise<void> {
@@ -78,33 +87,36 @@ export class SqliteProvider implements StorageProvider {
 
   async insert(event: OpsEvent): Promise<void> {
     const db = this.getDb();
-    const stmt = db.prepare(`
-      INSERT INTO ops_events (id, timestamp, session_id, agent_id, event_type, severity, skill, title, detail, affected_files, tags, metadata, hash, prev_hash, schema_version)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
-      event.id,
-      event.timestamp,
-      event.session_id,
-      event.agent_id,
-      event.event_type,
-      event.severity,
-      event.skill,
-      event.title,
-      event.detail,
-      JSON.stringify(event.affected_files),
-      JSON.stringify(event.tags),
-      JSON.stringify(event.metadata),
-      event.hash,
-      event.prev_hash,
-      event.schema_version ?? 1,
-    );
+    const insertTransaction = db.transaction(() => {
+      const stmt = db.prepare(`
+        INSERT INTO ops_events (id, timestamp, session_id, agent_id, event_type, severity, skill, title, detail, affected_files, tags, metadata, hash, prev_hash, schema_version)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      stmt.run(
+        event.id,
+        event.timestamp,
+        event.session_id,
+        event.agent_id,
+        event.event_type,
+        event.severity,
+        event.skill,
+        event.title,
+        event.detail,
+        JSON.stringify(event.affected_files),
+        JSON.stringify(event.tags),
+        JSON.stringify(event.metadata),
+        event.hash,
+        event.prev_hash,
+        event.schema_version ?? 1,
+      );
 
-    if (event.embedding && event.embedding.length > 0) {
-      const embStmt = db.prepare('INSERT INTO ops_embeddings (id, embedding, timestamp) VALUES (?, ?, ?)');
-      const buffer = Buffer.from(new Float32Array(event.embedding).buffer);
-      embStmt.run(event.id, buffer, event.timestamp);
-    }
+      if (event.embedding && event.embedding.length > 0) {
+        const embStmt = db.prepare('INSERT INTO ops_embeddings (id, embedding, timestamp) VALUES (?, ?, ?)');
+        const buffer = Buffer.from(new Float32Array(event.embedding).buffer);
+        embStmt.run(event.id, buffer, event.timestamp);
+      }
+    });
+    insertTransaction();
   }
 
   async getById(id: string): Promise<OpsEvent | null> {
@@ -456,7 +468,7 @@ function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   try {
     return JSON.parse(value);
   } catch (e) {
-    logger.debug('JSON parse failed in safeJsonParse', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('JSON parse failed in safeJsonParse', { error: errorMessage(e) });
     return fallback;
   }
 }

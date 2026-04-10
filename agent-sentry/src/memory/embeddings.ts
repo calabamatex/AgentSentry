@@ -9,8 +9,37 @@ import * as http from 'http';
 import { Logger } from '../observability/logger';
 import { safeJsonParse } from '../utils/safe-json';
 import { safeReadSync } from '../utils/safe-io';
+import { createHash } from 'crypto';
+import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'embeddings' });
+
+/** Maximum HTTP response body size for embedding API responses (10MB). */
+const MAX_RESPONSE_SIZE = 10 * 1024 * 1024;
+
+/** Simple LRU cache for embeddings keyed by text hash. */
+const embeddingCache = new Map<string, { embedding: number[]; timestamp: number }>();
+const EMBEDDING_CACHE_MAX = 500;
+const EMBEDDING_CACHE_TTL = 300_000; // 5 minutes
+
+function getCachedEmbedding(text: string): number[] | undefined {
+  const entry = embeddingCache.get(text);
+  if (!entry) return undefined;
+  if (Date.now() - entry.timestamp > EMBEDDING_CACHE_TTL) {
+    embeddingCache.delete(text);
+    return undefined;
+  }
+  return entry.embedding;
+}
+
+function setCachedEmbedding(text: string, embedding: number[]): void {
+  if (embeddingCache.size >= EMBEDDING_CACHE_MAX) {
+    // Evict oldest entry
+    const oldestKey = embeddingCache.keys().next().value as string;
+    embeddingCache.delete(oldestKey);
+  }
+  embeddingCache.set(text, { embedding, timestamp: Date.now() });
+}
 
 export interface EmbeddingProvider {
   embed(text: string): Promise<number[]>;
@@ -23,6 +52,10 @@ const ONNX_MODEL_FILE = 'all-MiniLM-L6-v2.onnx';
 const ONNX_TOKENIZER_FILE = 'tokenizer.json';
 const ONNX_MODEL_URL = 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx';
 const ONNX_TOKENIZER_URL = 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json';
+
+/** SHA-256 checksum for integrity verification (set to empty string to skip verification). */
+const ONNX_MODEL_SHA256 = '';
+const ONNX_TOKENIZER_SHA256 = '';
 
 export class NoopEmbeddingProvider implements EmbeddingProvider {
   readonly name = 'noop';
@@ -40,11 +73,15 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
   private tokenizer: { model?: { vocab?: Record<string, number> } } | null = null;
 
   async embed(text: string): Promise<number[]> {
+    const cached = getCachedEmbedding(text);
+    if (cached) return cached;
     await this.ensureLoaded();
     if (!this.session) {
       throw new Error('ONNX model not loaded');
     }
-    return this.runInference(text);
+    const result = await this.runInference(text);
+    setCachedEmbedding(text, result);
+    return result;
   }
 
   private async ensureLoaded(): Promise<void> {
@@ -58,6 +95,9 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     }
     if (!fs.existsSync(tokenizerPath)) {
       await this.downloadFile(ONNX_TOKENIZER_URL, tokenizerPath);
+      if (ONNX_TOKENIZER_SHA256) {
+        await this.verifyChecksum(tokenizerPath, ONNX_TOKENIZER_SHA256);
+      }
     }
 
     try {
@@ -142,6 +182,18 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
 
   private async downloadModel(destPath: string): Promise<void> {
     await this.downloadFile(ONNX_MODEL_URL, destPath);
+    if (ONNX_MODEL_SHA256) {
+      await this.verifyChecksum(destPath, ONNX_MODEL_SHA256);
+    }
+  }
+
+  private async verifyChecksum(filePath: string, expectedHash: string): Promise<void> {
+    const fileBuffer = fs.readFileSync(filePath);
+    const actualHash = createHash('sha256').update(fileBuffer).digest('hex');
+    if (actualHash !== expectedHash) {
+      fs.unlinkSync(filePath);
+      throw new Error(`Checksum mismatch for ${path.basename(filePath)}: expected ${expectedHash}, got ${actualHash}`);
+    }
   }
 
   private async downloadFile(url: string, destPath: string): Promise<void> {
@@ -198,7 +250,7 @@ export async function detectEmbeddingProvider(
           require.resolve('onnxruntime-node');
           return new OnnxEmbeddingProvider();
         } catch (e) {
-          logger.debug('ONNX runtime not available', { error: e instanceof Error ? e.message : String(e) });
+          logger.debug('ONNX runtime not available', { error: errorMessage(e) });
           throw new Error('ONNX provider requested but onnxruntime-node is not available');
         }
       case 'ollama': {
@@ -230,7 +282,7 @@ export async function detectEmbeddingProvider(
     const provider = new OnnxEmbeddingProvider();
     return provider;
   } catch (e) {
-    logger.debug('ONNX runtime not available for auto-detection', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('ONNX runtime not available for auto-detection', { error: errorMessage(e) });
   }
 
   // 2. Try Ollama (if running locally)
@@ -240,7 +292,7 @@ export async function detectEmbeddingProvider(
       return new OllamaEmbeddingProvider();
     }
   } catch (e) {
-    logger.debug('Ollama not available for auto-detection', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Ollama not available for auto-detection', { error: errorMessage(e) });
   }
 
   // 3. Try OpenAI
@@ -283,7 +335,10 @@ export class OllamaEmbeddingProvider implements EmbeddingProvider {
         headers: { 'Content-Type': 'application/json' },
       }, (res) => {
         let body = '';
-        res.on('data', (chunk) => { body += chunk; });
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > MAX_RESPONSE_SIZE) { req.destroy(); reject(new Error('Embedding response too large')); }
+        });
         res.on('end', () => {
           try {
             const result = safeJsonParse<Record<string, unknown>>(body);
@@ -321,7 +376,10 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
         },
       }, (res) => {
         let body = '';
-        res.on('data', (chunk) => { body += chunk; });
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > MAX_RESPONSE_SIZE) { req.destroy(); reject(new Error('Embedding response too large')); }
+        });
         res.on('end', () => {
           try {
             const result = safeJsonParse<Record<string, unknown>>(body);
@@ -360,7 +418,10 @@ export class VoyageEmbeddingProvider implements EmbeddingProvider {
         },
       }, (res) => {
         let body = '';
-        res.on('data', (chunk) => { body += chunk; });
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > MAX_RESPONSE_SIZE) { req.destroy(); reject(new Error('Embedding response too large')); }
+        });
         res.on('end', () => {
           try {
             const result = safeJsonParse<Record<string, unknown>>(body);

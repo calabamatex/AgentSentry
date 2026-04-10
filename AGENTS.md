@@ -1,6 +1,6 @@
-# AGENTS.md — AgentOps Universal Rules (All Tools)
+# AGENTS.md — AgentSentry Universal Rules (All Tools)
 
-> Implements AgentOps-Product-Spec.md §4.2 — universal agent rules that work with any AI tool.
+> Universal agent rules that work with any AI tool.
 
 ## Before Starting Any Task
 

@@ -9,6 +9,7 @@ import { resolveConfigPath, resolveDatabasePath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { safeReadSync } from '../../utils/safe-io';
+import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'provider-factory' });
 export interface MemoryConfig {
@@ -44,7 +45,7 @@ export function loadMemoryConfig(configPath?: string): MemoryConfig {
       return { ...DEFAULT_CONFIG, ...raw.memory };
     }
   } catch (e) {
-    logger.debug('Config file not found or invalid, using defaults', { error: e instanceof Error ? e.message : String(e) });
+    logger.debug('Config file not found or invalid, using defaults', { error: errorMessage(e) });
   }
   return { ...DEFAULT_CONFIG };
 }

@@ -1,4 +1,4 @@
-# AgentOps — Task Tracker
+# AgentSentry — Task Tracker
 
 ## Completed (v4.0)
 
