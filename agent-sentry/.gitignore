@@ -1,7 +1,10 @@
-agentops/tests/performance/.benchmark-regression-temp.db*
+tests/performance/.benchmark-regression-temp.db*
 
 # Runtime state (not source)
 .swarm/
 .ruflo-state/
 :memory:
 agentops/
+
+# CI benchmark artifacts (uploaded as workflow artifacts; not tracked)
+benchmarks/ci-latest.json

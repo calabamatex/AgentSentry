@@ -177,7 +177,7 @@ When running as an MCP server, AgentSentry exposes 10 tools:
 | `agent_sentry_generate_handoff` | Generates a structured handoff message for session continuity |
 | `agent_sentry_health` | Current health scores, KPIs, and skill-level status |
 
-> **Security note:** By default, the MCP server accepts all requests when `AGENT_SENTRY_ACCESS_KEY` is not set (convenient for local development). For production or network-exposed deployments, set `AGENT_SENTRY_REQUIRE_AUTH=true` to reject all unauthenticated requests when no access key is configured.
+> **Security note (v0.6.0+):** The MCP server now **requires authentication by default**. Set `AGENT_SENTRY_ACCESS_KEY` to a strong random value to start the server. For local development, set `AGENT_SENTRY_NO_AUTH=true` to disable authentication (unsafe — emits a stderr warning). The deprecated `AGENT_SENTRY_REQUIRE_AUTH` variable has been removed.
 
 ---
 

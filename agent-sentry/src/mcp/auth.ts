@@ -7,35 +7,56 @@ import { timingSafeEqual } from 'crypto';
 
 /**
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
- * Returns true if the key matches or if no key is configured (with deprecation path).
+ *
+ * Default behavior (v0.6.0+): REJECT all requests unless AGENT_SENTRY_ACCESS_KEY is set.
+ * Opt-out: Set AGENT_SENTRY_NO_AUTH=true for local development (unsafe).
+ *
+ * BREAKING CHANGE in v0.6.0: Previously accepted all requests when no key was configured.
+ * The deprecated AGENT_SENTRY_REQUIRE_AUTH variable has been removed.
+ *
+ * Uses process.stderr.write (not Logger) because auth runs before Logger may be
+ * initialized in the MCP server startup path.
  */
 let authWarningLogged = false;
 
 export function validateAccessKey(key: string): boolean {
   const expected = process.env.AGENT_SENTRY_ACCESS_KEY;
-  if (!expected) {
-    const requireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
-    if (requireAuth === 'true' || requireAuth === '1') {
-      if (!authWarningLogged) {
-        console.error('[AgentSentry] AGENT_SENTRY_REQUIRE_AUTH is set but AGENT_SENTRY_ACCESS_KEY is not configured — rejecting all requests. Set AGENT_SENTRY_ACCESS_KEY to enable authenticated access.');
-        authWarningLogged = true;
-      }
-      return false;
-    }
+  const noAuth = process.env.AGENT_SENTRY_NO_AUTH;
+
+  // Explicit opt-out for local development
+  if (noAuth === 'true' || noAuth === '1') {
     if (!authWarningLogged) {
-      console.error('[AgentSentry] WARNING: No AGENT_SENTRY_ACCESS_KEY set — MCP server accepting all requests without authentication. Set AGENT_SENTRY_ACCESS_KEY to enable auth, or AGENT_SENTRY_REQUIRE_AUTH=true to reject unauthenticated requests.');
+      process.stderr.write(
+        '[AgentSentry] WARNING: AGENT_SENTRY_NO_AUTH is set — MCP server accepting ' +
+        'all requests WITHOUT authentication. Do not use in production.\n'
+      );
       authWarningLogged = true;
     }
     return true;
   }
+
+  // Default: require access key
+  if (!expected) {
+    if (!authWarningLogged) {
+      process.stderr.write(
+        '[AgentSentry] ERROR: AGENT_SENTRY_ACCESS_KEY not configured. ' +
+        'Set an access key to start the MCP server, or set ' +
+        'AGENT_SENTRY_NO_AUTH=true for local development (unsafe).\n'
+      );
+      authWarningLogged = true;
+    }
+    return false;
+  }
+
   if (!key) {
     return false;
   }
+
   // Constant-time comparison to prevent timing attacks
   const keyBuf = Buffer.from(key);
   const expectedBuf = Buffer.from(expected);
   if (keyBuf.length !== expectedBuf.length) {
-    // Perform a dummy comparison to avoid leaking key length via timing
+    // Dummy comparison to avoid leaking key length via timing
     timingSafeEqual(expectedBuf, expectedBuf);
     return false;
   }
@@ -43,10 +64,10 @@ export function validateAccessKey(key: string): boolean {
 }
 
 /**
- * Reset the auth warning state.
+ * Reset the auth warning flag.
  * @internal Exported for testing only.
  */
-export function _resetDeprecationWarning(): void {
+export function resetAuthWarning(): void {
   authWarningLogged = false;
 }
 

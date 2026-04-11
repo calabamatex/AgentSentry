@@ -14,9 +14,10 @@ import * as path from 'path';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { errorMessage } from '../../utils/error-message';
+import { safeJsonParse } from '../../utils/safe-json';
+import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
 
 const logger = new Logger({ module: 'hook-cost-tracker' });
-const PREFIX = '[AgentSentry]';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -77,13 +78,16 @@ function loadBudgetConfig(): BudgetConfig {
   if (!cfgPath) return defaults;
 
   try {
-    const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+    const raw = safeJsonParse<{ budget?: Partial<BudgetConfig> } & Partial<BudgetConfig>>(
+      safeReadSync(cfgPath).toString('utf-8'),
+    );
     return {
       session_budget: raw.budget?.session_budget ?? raw.session_budget ?? defaults.session_budget,
       monthly_budget: raw.budget?.monthly_budget ?? raw.monthly_budget ?? defaults.monthly_budget,
       warn_threshold: raw.budget?.warn_threshold ?? raw.warn_threshold ?? defaults.warn_threshold,
     };
   } catch {
+    logger.debug('Could not parse cost config, using defaults');
     return defaults;
   }
 }
@@ -131,12 +135,12 @@ export async function runCostTracker(hookInput: HookInput): Promise<void> {
 
   if (fs.existsSync(costState)) {
     try {
-      const state: CostState = JSON.parse(fs.readFileSync(costState, 'utf-8'));
+      const state = safeJsonParse<CostState>(safeReadSync(costState).toString('utf-8'));
       sessionTotal = parseFloat(state.session_total) || 0;
       sessionCalls = parseInt(state.session_calls, 10) || 0;
       sessionStart = state.session_start || sessionStart;
     } catch {
-      // Corrupted state — start fresh
+      logger.debug('Corrupted cost state — starting fresh');
     }
   }
 
@@ -153,15 +157,15 @@ export async function runCostTracker(hookInput: HookInput): Promise<void> {
     last_model: modelTier,
     last_update: timestamp,
   };
-  fs.writeFileSync(costState, JSON.stringify(stateObj), 'utf-8');
+  atomicWriteSync(costState, JSON.stringify(stateObj));
 
   // Budget checks
   const budgetPct = (newTotal / budget.session_budget) * 100;
 
   if (newTotal >= budget.session_budget) {
-    console.log(`${PREFIX} WARN: Session budget EXCEEDED ($${newTotal.toFixed(6)} / $${budget.session_budget}). Only critical operations allowed.`);
+    logger.warn('Session budget exceeded', { total: newTotal, budget: budget.session_budget });
   } else if (newTotal >= budget.session_budget * budget.warn_threshold) {
-    console.log(`${PREFIX} WARN: Approaching session budget — $${newTotal.toFixed(6)} / $${budget.session_budget} (${budgetPct.toFixed(1)}% used).`);
+    logger.warn('Approaching session budget', { total: newTotal, budget: budget.session_budget, pct: budgetPct });
   }
 
   // Monthly tracking
@@ -171,18 +175,20 @@ export async function runCostTracker(hookInput: HookInput): Promise<void> {
 
   if (fs.existsSync(monthlyFile)) {
     try {
-      monthlyTotal = parseFloat(fs.readFileSync(monthlyFile, 'utf-8').trim()) || 0;
-    } catch { /* start fresh */ }
+      monthlyTotal = parseFloat(safeReadSync(monthlyFile).toString('utf-8').trim()) || 0;
+    } catch {
+      logger.debug('Could not read monthly total — starting fresh');
+    }
   }
 
   const newMonthly = monthlyTotal + callCost;
-  fs.writeFileSync(monthlyFile, newMonthly.toFixed(6), 'utf-8');
+  atomicWriteSync(monthlyFile, newMonthly.toFixed(6));
 
   const monthlyPct = (newMonthly / budget.monthly_budget) * 100;
   if (newMonthly >= budget.monthly_budget) {
-    console.log(`${PREFIX} WARN: Monthly budget EXCEEDED ($${newMonthly.toFixed(6)} / $${budget.monthly_budget}). Only critical operations allowed.`);
+    logger.warn('Monthly budget exceeded', { total: newMonthly, budget: budget.monthly_budget });
   } else if (newMonthly >= budget.monthly_budget * budget.warn_threshold) {
-    console.log(`${PREFIX} WARN: Approaching monthly budget — $${newMonthly.toFixed(6)} / $${budget.monthly_budget} (${monthlyPct.toFixed(1)}% used).`);
+    logger.warn('Approaching monthly budget', { total: newMonthly, budget: budget.monthly_budget, pct: monthlyPct });
   }
 
   // Append NDJSON log
@@ -203,14 +209,14 @@ export async function runCostTracker(hookInput: HookInput): Promise<void> {
 
   // Log rotation: cap at 5000 lines
   try {
-    const content = fs.readFileSync(costLog, 'utf-8');
+    const content = safeReadSync(costLog).toString('utf-8');
     const lines = content.trimEnd().split('\n');
     if (lines.length > 5000) {
       const kept = lines.slice(-2500);
-      fs.writeFileSync(costLog, kept.join('\n') + '\n', 'utf-8');
+      atomicWriteSync(costLog, kept.join('\n') + '\n');
     }
   } catch {
-    // Non-fatal
+    logger.debug('Non-fatal error during cost log rotation');
   }
 }
 
@@ -227,7 +233,11 @@ async function main(): Promise<void> {
 
   let hookInput: HookInput = {};
   if (raw.trim()) {
-    try { hookInput = JSON.parse(raw); } catch { /* ignore */ }
+    try {
+      hookInput = safeJsonParse<HookInput>(raw);
+    } catch {
+      logger.debug('Could not parse hook input');
+    }
   }
 
   await runCostTracker(hookInput);

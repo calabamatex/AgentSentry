@@ -60,6 +60,7 @@ function git(args: string[], cwd?: string): string {
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
   } catch {
+    logger.debug('Git command failed, returning empty string');
     return '';
   }
 }
@@ -93,7 +94,7 @@ function readMemoryFiles(projectDir?: string): { index: string; handoffs: string
       }
     }
   } catch {
-    // Ignore
+    logger.debug('Could not list handoff files');
   }
 
   return { index, handoffs };
@@ -128,7 +129,7 @@ function resolveMemoryDir(projectDir?: string): string | undefined {
       }
     }
   } catch {
-    // Ignore
+    logger.debug('Could not read claude projects directory');
   }
 
   return undefined;
@@ -179,6 +180,7 @@ async function getRemainingWork(): Promise<string[]> {
       .map(e => e.event.detail.slice(0, 200))
       .slice(0, 5);
   } catch {
+    logger.debug('Could not extract event details');
     return [];
   }
 }

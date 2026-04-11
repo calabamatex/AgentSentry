@@ -7,6 +7,9 @@
 
 import { execFileSync } from 'child_process';
 import { z } from 'zod';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'mcp-generate-handoff' });
 
 export const name = 'agent_sentry_generate_handoff';
 export const description =
@@ -46,6 +49,7 @@ function git(...args: string[]): string {
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
   } catch {
+    logger.debug('Git command failed for handoff generation');
     return '';
   }
 }

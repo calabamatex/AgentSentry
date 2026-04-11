@@ -138,7 +138,7 @@ export async function main(): Promise<void> {
     const accessKey = process.env.AGENT_SENTRY_ACCESS_KEY;
     const httpTransport = createHttpTransport(port, accessKey);
     await server.connect(httpTransport.transport);
-    console.error(`AgentSentry MCP HTTP server listening on port ${httpTransport.port}`);
+    logger.info('MCP HTTP server listening', { port: httpTransport.port });
 
     const shutdown = async () => {
       await shutdownSharedStore();
@@ -151,7 +151,7 @@ export async function main(): Promise<void> {
   } else {
     const transport = createStdioTransport();
     await server.connect(transport);
-    console.error('AgentSentry MCP server running on stdio');
+    logger.info('MCP server running on stdio');
   }
 }
 

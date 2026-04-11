@@ -26,6 +26,10 @@ const logger = new Logger({ module: 'hook-post-write' });
 
 const PREFIX = '[AgentSentry]';
 
+// User-facing hook UI — rendered by Claude Code.
+// Writes to stdout directly (not via Logger, which writes JSON to stderr).
+const out = (s: string) => process.stdout.write(s + '\n');
+
 interface HookInput {
   tool_input?: { file_path?: string };
   input?: { file_path?: string };
@@ -85,14 +89,14 @@ function checkBlastRadius(filePath: string): void {
 
   if (!needsCheckpoint) return;
 
-  console.log(`${PREFIX} WARN: ${uniqueCount} files modified without a checkpoint. Creating stash snapshot.`);
+  out(`${PREFIX} WARN: ${uniqueCount} files modified without a checkpoint. Creating stash snapshot.`);
 
   const config = readConfig();
   const savePoints = config?.save_points as Record<string, unknown> | undefined;
   const autoEnabled = savePoints?.auto_commit_enabled ?? true;
 
   if (!autoEnabled) {
-    console.log(`${PREFIX} ADVISORY: Auto-checkpoint would fire (blast radius ${uniqueCount} files) but auto_commit_enabled=false.`);
+    out(`${PREFIX} ADVISORY: Auto-checkpoint would fire (blast radius ${uniqueCount} files) but auto_commit_enabled=false.`);
     return;
   }
 
@@ -115,7 +119,7 @@ function checkBlastRadius(filePath: string): void {
     execSync('git reset HEAD', { stdio: 'pipe' });
 
     if (!sha) {
-      console.log(`${PREFIX} git stash create returned empty — no snapshot needed.`);
+      out(`${PREFIX} git stash create returned empty — no snapshot needed.`);
       return;
     }
 
@@ -123,7 +127,7 @@ function checkBlastRadius(filePath: string): void {
     const stashMsg = `AgentSentry auto-checkpoint — blast radius ${uniqueCount} files`;
     execFileSync('git', ['stash', 'store', '-m', stashMsg, sha], { stdio: 'pipe' });
 
-    console.log(`${PREFIX} Stash snapshot created: ${sha} (${uniqueCount} files)`);
+    out(`${PREFIX} Stash snapshot created: ${sha} (${uniqueCount} files)`);
   } catch (e) {
     logger.debug('Stash snapshot failed during blast-radius checkpoint', { error: errorMessage(e) });
   }
@@ -155,14 +159,14 @@ async function main(): Promise<void> {
   // 1. Error Handling Enforcer
   const errorFindings = scanErrorHandling(content, filePath);
   for (const f of errorFindings) {
-    console.log(`${PREFIX} WARN: Unhandled call in ${filePath}:${f.line}. Type: ${f.callType}`);
-    console.log(`${PREFIX} RECOMMEND: Add error handling with graceful fallback.`);
+    out(`${PREFIX} WARN: Unhandled call in ${filePath}:${f.line}. Type: ${f.callType}`);
+    out(`${PREFIX} RECOMMEND: Add error handling with graceful fallback.`);
   }
 
   // 2. PII Logging Scanner
   const piiFindings = scanPiiLogging(content, filePath);
   for (const f of piiFindings) {
-    console.log(`${PREFIX} WARN: PII in logging: ${f.field} in ${filePath}:${f.line}`);
+    out(`${PREFIX} WARN: PII in logging: ${f.field} in ${filePath}:${f.line}`);
   }
 
   // 3. Blast Radius Tracking

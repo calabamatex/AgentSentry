@@ -6,6 +6,7 @@
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { safeJsonParse } from './utils/safe-json';
 
 // In compiled output (dist/src/version.js), package.json is two levels up.
 // In source (src/version.ts), it is one level up.
@@ -18,12 +19,12 @@ function loadVersion(): string {
 
   for (const candidate of candidates) {
     try {
-      const pkg = JSON.parse(readFileSync(candidate, 'utf8'));
+      const pkg = safeJsonParse<{ version?: string }>(readFileSync(candidate, 'utf8'));
       if (typeof pkg.version === 'string') {
         return pkg.version;
       }
     } catch {
-      // try next candidate
+      // try next candidate path
     }
   }
 

@@ -14,6 +14,8 @@ import * as path from 'path';
 import { MemoryStore } from '../memory/store';
 import type { OpsEventInput } from '../memory/schema';
 import { Logger } from './logger';
+import { safeJsonParse } from '../utils/safe-json';
+import { atomicWriteSync } from '../utils/safe-io';
 
 const logger = new Logger({ module: 'log-forwarder' });
 
@@ -130,7 +132,7 @@ export class LogForwarder {
 
     for (const line of newLines) {
       try {
-        const entry = JSON.parse(line) as Record<string, unknown>;
+        const entry = safeJsonParse<Record<string, unknown>>(line);
         const event: OpsEventInput = {
           timestamp: (entry.timestamp as string) ?? new Date().toISOString(),
           session_id: sessionId,
@@ -163,12 +165,13 @@ export class LogForwarder {
     try {
       return parseInt(fs.readFileSync(cursorFile, 'utf-8').trim(), 10) || 0;
     } catch {
+      logger.debug('Could not read cursor file, starting from 0');
       return 0;
     }
   }
 
   private writeCursor(filename: string, value: number): void {
     const cursorFile = path.join(this.cursorDir, filename + '.cursor');
-    fs.writeFileSync(cursorFile, String(value), 'utf-8');
+    atomicWriteSync(cursorFile, String(value));
   }
 }

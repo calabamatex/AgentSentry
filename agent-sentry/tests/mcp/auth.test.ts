@@ -1,79 +1,120 @@
 /**
  * auth.test.ts — Tests for access key validation and rate limiter.
+ *
+ * v0.6.0+ semantics: MCP auth is secure-by-default.
+ *   - Default: reject unauthenticated requests unless AGENT_SENTRY_ACCESS_KEY is set.
+ *   - AGENT_SENTRY_NO_AUTH=true/1 opts out for local development (with stderr warning).
+ *   - AGENT_SENTRY_REQUIRE_AUTH removed.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { validateAccessKey, createRateLimiter, _resetDeprecationWarning } from '../../src/mcp/auth';
+import { validateAccessKey, createRateLimiter, resetAuthWarning } from '../../src/mcp/auth';
 import { IncomingMessage, ServerResponse } from 'http';
 
 describe('validateAccessKey', () => {
   const originalAccessKey = process.env.AGENT_SENTRY_ACCESS_KEY;
-  const originalRequireAuth = process.env.AGENT_SENTRY_REQUIRE_AUTH;
+  const originalNoAuth = process.env.AGENT_SENTRY_NO_AUTH;
+  let stderrSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    _resetDeprecationWarning();
+    resetAuthWarning();
+    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    delete process.env.AGENT_SENTRY_ACCESS_KEY;
+    delete process.env.AGENT_SENTRY_NO_AUTH;
   });
 
   afterEach(() => {
+    stderrSpy.mockRestore();
     if (originalAccessKey === undefined) {
       delete process.env.AGENT_SENTRY_ACCESS_KEY;
     } else {
       process.env.AGENT_SENTRY_ACCESS_KEY = originalAccessKey;
     }
-    if (originalRequireAuth === undefined) {
-      delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
+    if (originalNoAuth === undefined) {
+      delete process.env.AGENT_SENTRY_NO_AUTH;
     } else {
-      process.env.AGENT_SENTRY_REQUIRE_AUTH = originalRequireAuth;
+      process.env.AGENT_SENTRY_NO_AUTH = originalNoAuth;
     }
   });
 
-  it('should return true when no key is configured (open access)', () => {
-    delete process.env.AGENT_SENTRY_ACCESS_KEY;
+  // ── Default-deny behavior (secure-by-default) ───────────────────────────
+
+  it('rejects all requests when no key configured and NO_AUTH not set (default-deny)', () => {
+    expect(validateAccessKey('anything')).toBe(false);
+    expect(validateAccessKey('')).toBe(false);
+  });
+
+  it('emits a stderr ERROR once when rejecting due to missing key', () => {
+    validateAccessKey('first');
+    validateAccessKey('second');
+    validateAccessKey('third');
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
+    const msg = stderrSpy.mock.calls[0][0] as string;
+    expect(msg).toContain('AGENT_SENTRY_ACCESS_KEY not configured');
+  });
+
+  // ── NO_AUTH opt-out ──────────────────────────────────────────────────────
+
+  it('allows all requests when AGENT_SENTRY_NO_AUTH=true (opt-out)', () => {
+    process.env.AGENT_SENTRY_NO_AUTH = 'true';
+    expect(validateAccessKey('anything')).toBe(true);
+    expect(validateAccessKey('')).toBe(true);
+  });
+
+  it('allows all requests when AGENT_SENTRY_NO_AUTH=1', () => {
+    process.env.AGENT_SENTRY_NO_AUTH = '1';
     expect(validateAccessKey('anything')).toBe(true);
   });
 
-  it('should return true for matching key', () => {
+  it('emits a stderr WARNING once when NO_AUTH is enabled', () => {
+    process.env.AGENT_SENTRY_NO_AUTH = 'true';
+    validateAccessKey('first');
+    validateAccessKey('second');
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
+    const msg = stderrSpy.mock.calls[0][0] as string;
+    expect(msg).toContain('AGENT_SENTRY_NO_AUTH');
+    expect(msg).toContain('WARNING');
+  });
+
+  it('ignores NO_AUTH values other than "true"/"1"', () => {
+    process.env.AGENT_SENTRY_NO_AUTH = 'yes';
+    // Falls through to default-deny
+    expect(validateAccessKey('anything')).toBe(false);
+  });
+
+  // ── Normal key validation ───────────────────────────────────────────────
+
+  it('returns true for matching key', () => {
     process.env.AGENT_SENTRY_ACCESS_KEY = 'my-secret-key';
     expect(validateAccessKey('my-secret-key')).toBe(true);
   });
 
-  it('should return false for non-matching key', () => {
+  it('returns false for non-matching key', () => {
     process.env.AGENT_SENTRY_ACCESS_KEY = 'my-secret-key';
     expect(validateAccessKey('wrong-key')).toBe(false);
   });
 
-  it('should return false for empty key when key is required', () => {
+  it('returns false for empty key when a key is configured', () => {
     process.env.AGENT_SENTRY_ACCESS_KEY = 'my-secret-key';
     expect(validateAccessKey('')).toBe(false);
   });
 
-  it('should return false for key of different length', () => {
+  it('returns false for key of different length', () => {
     process.env.AGENT_SENTRY_ACCESS_KEY = 'short';
     expect(validateAccessKey('much-longer-key')).toBe(false);
   });
 
-  it('should handle special characters', () => {
+  it('handles special characters', () => {
     process.env.AGENT_SENTRY_ACCESS_KEY = 'key-with-$pecial!chars@123';
     expect(validateAccessKey('key-with-$pecial!chars@123')).toBe(true);
     expect(validateAccessKey('key-with-$pecial!chars@124')).toBe(false);
   });
 
-  it('should return false when AGENT_SENTRY_REQUIRE_AUTH=true and no key is configured', () => {
-    delete process.env.AGENT_SENTRY_ACCESS_KEY;
-    process.env.AGENT_SENTRY_REQUIRE_AUTH = 'true';
-    expect(validateAccessKey('anything')).toBe(false);
-  });
-
-  it('should return false when AGENT_SENTRY_REQUIRE_AUTH=1 and no key is configured', () => {
-    delete process.env.AGENT_SENTRY_ACCESS_KEY;
-    process.env.AGENT_SENTRY_REQUIRE_AUTH = '1';
-    expect(validateAccessKey('anything')).toBe(false);
-  });
-
-  it('should still allow open access when AGENT_SENTRY_REQUIRE_AUTH is not set', () => {
-    delete process.env.AGENT_SENTRY_ACCESS_KEY;
-    delete process.env.AGENT_SENTRY_REQUIRE_AUTH;
-    expect(validateAccessKey('anything')).toBe(true);
+  it('does not emit any stderr warning when a valid key is configured', () => {
+    process.env.AGENT_SENTRY_ACCESS_KEY = 'valid-key';
+    validateAccessKey('valid-key');
+    validateAccessKey('wrong-key');
+    expect(stderrSpy).not.toHaveBeenCalled();
   });
 });
 

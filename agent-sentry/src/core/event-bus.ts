@@ -5,6 +5,10 @@
  * plugins). Consumed by streaming/event-stream.ts and memory/event-subscriber.ts.
  */
 
+import { Logger } from '../observability/logger';
+
+const logger = new Logger({ module: 'event-bus' });
+
 // ---------------------------------------------------------------------------
 // Event types
 // ---------------------------------------------------------------------------
@@ -77,11 +81,11 @@ class EventBus {
         const result = handler(payload);
         if (result && typeof (result as Promise<void>).catch === 'function') {
           void (result as Promise<void>).catch(() => {
-            // Swallow async handler errors to avoid breaking the bus
+            logger.debug('Async event handler threw — swallowed to protect bus');
           });
         }
       } catch {
-        // Swallow handler errors to avoid breaking the bus
+        logger.debug('Event handler threw — swallowed to protect bus');
       }
     }
   }

@@ -21,6 +21,11 @@ const logger = new Logger({ module: 'hook-session-checkpoint' });
 const PREFIX = '[AgentSentry]';
 const TMPBASE = path.join(process.env.TMPDIR ?? '/tmp', 'agent-sentry');
 
+// User-facing hook UI — rendered by Claude Code in the session-end pane.
+// Writes to stdout directly (not via Logger) because Logger emits JSON-lines
+// to stderr and Claude Code surfaces hook stdout, not stderr.
+const out = (s: string) => process.stdout.write(s + '\n');
+
 function readConfig(): Record<string, unknown> {
   const configPath = resolveConfigPath();
   if (!configPath) {
@@ -52,7 +57,7 @@ function logEvent(sessionLog: string, msg: string, severity = 'info'): void {
 
 function stashSnapshot(config: Record<string, unknown>): string {
   if (!isGitRepo()) {
-    console.log(`${PREFIX} Not inside a git repository — skipping snapshot.`);
+    out(`${PREFIX} Not inside a git repository — skipping snapshot.`);
     return '';
   }
 
@@ -66,7 +71,7 @@ function stashSnapshot(config: Record<string, unknown>): string {
   }
 
   if (changedFiles === 0) {
-    console.log(`${PREFIX} No uncommitted changes.`);
+    out(`${PREFIX} No uncommitted changes.`);
     return '';
   }
 
@@ -75,11 +80,11 @@ function stashSnapshot(config: Record<string, unknown>): string {
   const autoEnabled = savePoints?.auto_commit_enabled ?? true;
 
   if (!autoEnabled) {
-    console.log(`${PREFIX} Uncommitted changes detected (${summary}). Auto-snapshot disabled — skipping.`);
+    out(`${PREFIX} Uncommitted changes detected (${summary}). Auto-snapshot disabled — skipping.`);
     return '';
   }
 
-  console.log(`${PREFIX} Uncommitted changes detected (${summary}). Creating stash snapshot...`);
+  out(`${PREFIX} Uncommitted changes detected (${summary}). Creating stash snapshot...`);
 
   try {
     // Stage everything so git stash create captures all changes (including untracked)
@@ -92,7 +97,7 @@ function stashSnapshot(config: Record<string, unknown>): string {
     execSync('git reset HEAD', { stdio: 'pipe' });
 
     if (!sha) {
-      console.log(`${PREFIX} git stash create returned empty — no snapshot needed.`);
+      out(`${PREFIX} git stash create returned empty — no snapshot needed.`);
       return '';
     }
 
@@ -100,7 +105,7 @@ function stashSnapshot(config: Record<string, unknown>): string {
     const stashMsg = `AgentSentry checkpoint — ${summary}`;
     execFileSync('git', ['stash', 'store', '-m', stashMsg, sha], { stdio: 'pipe' });
 
-    console.log(`${PREFIX} Snapshot created: ${sha} (${summary})`);
+    out(`${PREFIX} Snapshot created: ${sha} (${summary})`);
     return sha;
   } catch (e) {
     logger.warn('Stash snapshot failed during session checkpoint', { error: errorMessage(e) });
@@ -109,18 +114,18 @@ function stashSnapshot(config: Record<string, unknown>): string {
 }
 
 function resetTrackingState(): void {
-  console.log(`${PREFIX} Resetting session state files...`);
+  out(`${PREFIX} Resetting session state files...`);
 
   const blastRadius = path.join(TMPBASE, 'blast-radius-files');
   if (fs.existsSync(blastRadius)) {
     fs.unlinkSync(blastRadius);
-    console.log(`${PREFIX}  Cleared blast-radius-files`);
+    out(`${PREFIX}  Cleared blast-radius-files`);
   }
 
   const contextState = path.join(TMPBASE, 'context-state');
   if (fs.existsSync(contextState)) {
     fs.unlinkSync(contextState);
-    console.log(`${PREFIX}  Cleared context-state`);
+    out(`${PREFIX}  Cleared context-state`);
   }
 
   // Clean up git-hygiene-session files
@@ -133,7 +138,7 @@ function resetTrackingState(): void {
       }
     }
     if (cleared > 0) {
-      console.log(`${PREFIX}  Cleared ${cleared} git-hygiene-session file(s)`);
+      out(`${PREFIX}  Cleared ${cleared} git-hygiene-session file(s)`);
     }
   }
 }
@@ -144,13 +149,13 @@ async function autoSaveHandoff(): Promise<void> {
     const result = await generateHandoffResult();
     const savedPath = saveHandoffToMemory(result);
     if (savedPath) {
-      console.log(`${PREFIX} Auto-saved handoff: ${savedPath}`);
+      out(`${PREFIX} Auto-saved handoff: ${savedPath}`);
     } else {
-      console.log(`${PREFIX} Could not resolve memory directory — handoff not saved.`);
+      out(`${PREFIX} Could not resolve memory directory — handoff not saved.`);
     }
   } catch (e) {
     logger.debug('Auto-save handoff failed', { error: errorMessage(e) });
-    console.log(`${PREFIX} Auto-save handoff skipped (not critical).`);
+    out(`${PREFIX} Auto-save handoff skipped (not critical).`);
   }
 }
 
@@ -178,7 +183,7 @@ async function main(): Promise<void> {
     logEvent(sessionLog, 'Session ended cleanly — no uncommitted changes', 'info');
   }
 
-  console.log(`${PREFIX} Session end checkpoint complete.`);
+  out(`${PREFIX} Session end checkpoint complete.`);
 }
 
 main().then(() => process.exit(0)).catch(() => process.exit(0));

@@ -10,6 +10,7 @@ import { runMigrations } from '../migrations/sqlite-migrations';
 import { Logger } from '../../observability/logger';
 import { QueryOptimizer } from '../query-optimizer';
 import { errorMessage } from '../../utils/error-message';
+import { safeJsonParse as safeJsonParseStrict } from '../../utils/safe-json';
 
 const logger = new Logger({ module: 'sqlite-provider' });
 import {
@@ -466,7 +467,7 @@ export class SqliteProvider implements StorageProvider {
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
   try {
-    return JSON.parse(value);
+    return safeJsonParseStrict<T>(value);
   } catch (e) {
     logger.debug('JSON parse failed in safeJsonParse', { error: errorMessage(e) });
     return fallback;

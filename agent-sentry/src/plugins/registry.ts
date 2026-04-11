@@ -6,10 +6,11 @@
  * remote discovery or download. Uses only fs/path — no external dependencies.
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, mkdirSync, cpSync, rmSync } from 'fs';
 import { join, resolve } from 'path';
 import { Logger } from '../observability/logger';
 import { safeJsonParse } from '../utils/safe-json';
+import { atomicWriteSync } from '../utils/safe-io';
 import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'plugin-registry' });
@@ -441,7 +442,7 @@ export class PluginRegistry {
     }
 
     const statePath = join(this.pluginsDir, STATE_FILE);
-    writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
+    atomicWriteSync(statePath, JSON.stringify(state, null, 2));
   }
 
   /** Load persisted state from registry.json. */

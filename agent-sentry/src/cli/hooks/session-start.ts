@@ -160,26 +160,36 @@ function main(): void {
   checkAgentsMd(repoRoot, config.agentsMdMaxLines, results);
   checkScaffoldDocs(repoRoot, results);
 
-  // Output
-  console.log(`${PREFIX} Session Start Health Check`);
-  console.log('───────────────────────────────────────────────');
+  // User-facing hook UI — rendered by Claude Code in the session-start pane.
+  // Written to stdout directly (not via Logger) because Logger emits JSON-lines
+  // to stderr and Claude Code surfaces hook stdout, not stderr.
+  const out = (s: string) => process.stdout.write(s + '\n');
+  out(`${PREFIX} Session Start Health Check`);
+  out('───────────────────────────────────────────────');
 
   for (const c of results.criticals) {
-    console.log(`  \u2717 CRITICAL: ${c}`);
+    out(`  \u2717 CRITICAL: ${c}`);
   }
   for (const w of results.warnings) {
-    console.log(`  \u25B2 WARNING: ${w}`);
+    out(`  \u25B2 WARNING: ${w}`);
   }
   for (const a of results.advisories) {
-    console.log(`  \u25CB ADVISORY: ${a}`);
+    out(`  \u25CB ADVISORY: ${a}`);
   }
 
   if (results.criticals.length + results.warnings.length + results.advisories.length === 0) {
-    console.log('  \u2713 All checks passed.');
+    out('  \u2713 All checks passed.');
   }
 
-  console.log('───────────────────────────────────────────────');
-  console.log(`${PREFIX} ${results.criticals.length} critical, ${results.warnings.length} warnings, ${results.advisories.length} advisories`);
+  out('───────────────────────────────────────────────');
+  out(`${PREFIX} ${results.criticals.length} critical, ${results.warnings.length} warnings, ${results.advisories.length} advisories`);
+
+  // Also emit a structured log summary for downstream consumers.
+  logger.info('Session start health check complete', {
+    criticals: results.criticals.length,
+    warnings: results.warnings.length,
+    advisories: results.advisories.length,
+  });
 }
 
 main();

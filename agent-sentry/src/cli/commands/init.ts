@@ -195,7 +195,7 @@ export const initCommand: CommandDefinition = {
           .trim();
         rulesAppended = appendAgentSentryRulesToClaudeMd(repoRoot);
       } catch {
-        // Not in a git repo or CLAUDE.md doesn't exist — skip
+        logger.debug('Not in git repo or CLAUDE.md not found — skipping rule append');
       }
     }
 

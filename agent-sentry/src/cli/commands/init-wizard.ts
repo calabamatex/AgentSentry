@@ -12,6 +12,9 @@ import * as readline from 'readline';
 import { generateConfigForLevel, getActiveSkills, LEVEL_NAMES } from '../../enablement/engine';
 import { safeJsonParse } from '../../utils/safe-json';
 import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
+import { Logger } from '../../observability/logger';
+
+const logger = new Logger({ module: 'cli-init-wizard' });
 
 export interface HealthSummary {
   criticals: string[];
@@ -24,6 +27,7 @@ export function isGitRepo(): boolean {
     execSync('git rev-parse --is-inside-work-tree', { stdio: ['pipe', 'pipe', 'pipe'] });
     return true;
   } catch {
+    logger.debug('Not inside a git repository');
     return false;
   }
 }
@@ -93,6 +97,7 @@ export function wireHooksIntoSettings(): boolean {
       settings = {};
     }
   } catch {
+    logger.debug('Could not parse existing settings file');
     return false;
   }
 
@@ -191,6 +196,7 @@ export function runHealthAudit(): HealthSummary {
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
   } catch {
+    logger.debug('Could not determine git root, using CWD');
     repoRoot = process.cwd();
   }
 
@@ -221,7 +227,7 @@ export function runHealthAudit(): HealthSummary {
       results.advisories.push(`${uncommitted} uncommitted changes.`);
     }
   } catch {
-    // Ignore
+    logger.debug('Could not check git status');
   }
 
   // Scaffold docs

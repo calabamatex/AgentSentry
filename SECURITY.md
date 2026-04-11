@@ -45,8 +45,15 @@ AgentSentry includes built-in security capabilities:
 - **Hash-Chained Audit Log:** Tamper-evident event storage with SHA-256 chain verification
 - **Permission Enforcement:** File-level and command-level allowlist/denylist
 
+## MCP Server Authentication
+
+As of v0.6.0, the MCP server **requires authentication by default** and rejects all requests unless `AGENT_SENTRY_ACCESS_KEY` is set.
+
+- **Production / network-exposed:** set `AGENT_SENTRY_ACCESS_KEY` to a strong random value (e.g., `openssl rand -hex 32`).
+- **Local development only:** set `AGENT_SENTRY_NO_AUTH=true` to disable authentication. This emits a stderr warning on every startup and should never be used in production.
+- The deprecated `AGENT_SENTRY_REQUIRE_AUTH` variable has been removed.
+
 ## Known Security Considerations
 
-- The MCP server accepts all requests by default when `AGENT_SENTRY_ACCESS_KEY` is not set. Set `AGENT_SENTRY_REQUIRE_AUTH=true` for network-exposed deployments.
 - The Supabase provider is experimental and should not be used in production environments.
 - Vector search data is stored unencrypted in local SQLite. Use filesystem-level encryption for sensitive environments.

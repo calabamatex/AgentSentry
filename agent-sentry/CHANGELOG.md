@@ -5,6 +5,32 @@ All notable changes to AgentSentry are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0-beta.1] - 2026-04-11
+
+### Breaking Changes
+
+- **MCP authentication required by default.** The MCP server now rejects unauthenticated requests unless `AGENT_SENTRY_ACCESS_KEY` is set. For local development, set `AGENT_SENTRY_NO_AUTH=true` (emits a stderr warning on every startup). The deprecated `AGENT_SENTRY_REQUIRE_AUTH` environment variable has been removed.
+
+### Security
+
+- **Complete safe-primitive migration.** Every `JSON.parse` call in `src/` now routes through `safeJsonParse` (duplicate-key rejection, prototype-pollution guard). Every unprotected `fs.writeFileSync` call now routes through `atomicWriteSync` (symlink guard, crash-safe rename). Files hardened: `cost-tracker`, `sqlite-provider`, `supabase-base`, `version`, `log-forwarder`, `plugins/registry`.
+- **Moved `@rollup/rollup-darwin-arm64` from `dependencies` to `devDependencies`.** The package was incorrectly listed as a runtime dependency even though it is a build-time platform binary used only by Rollup (pulled transitively via Vitest). It is retained in devDependencies as a workaround for npm's known optional-deps installation bug on Apple Silicon.
+
+### Improved
+
+- Empty `catch {}` blocks now emit `logger.debug()` for observability (12 sites across CLI commands, hooks, MCP tools, event bus, dashboard, and memory providers).
+- CLI hooks (`session-start`, `session-checkpoint`, `post-write`, `cost-tracker`) migrated away from `console.*`. User-facing hook UI uses `process.stdout.write` directly (Claude Code renders hook stdout); non-UI messages use the structured Logger.
+- MCP and dashboard servers now emit structured startup events via Logger instead of `console.error`/`console.log`.
+- CI enforces a line-coverage floor of 80% (measured baseline: 85.7%).
+- Dashboard banner compressed from 6.7MB to <500KB via lossy resize.
+- `benchmarks/ci-latest.json` no longer tracked in git (still uploaded as a CI workflow artifact).
+- Stale `.gitignore` reference to the legacy `agentops/` path cleaned up.
+
+### Removed
+
+- `AGENT_SENTRY_REQUIRE_AUTH` environment variable (replaced by secure-by-default behavior).
+- `_resetDeprecationWarning` export from `src/mcp/auth.ts` (renamed to `resetAuthWarning` — test-only export).
+
 ## [0.5.0-beta.1] - 2026-04-03
 
 ### Changed

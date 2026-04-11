@@ -7,6 +7,8 @@
  */
 
 import { StorageProvider } from './storage-provider';
+import { Logger } from '../../observability/logger';
+import { safeJsonParse as safeJsonParseStrict } from '../../utils/safe-json';
 import {
   OpsEvent,
   QueryOptions,
@@ -22,14 +24,19 @@ import {
   SKILLS,
 } from '../schema';
 
+const logger = new Logger({ module: 'memory-supabase' });
+
 /**
  * Safely parse a JSON string, returning `fallback` on failure or if the value is null/undefined.
+ * Delegates to the hardened global `safeJsonParse` (duplicate-key + prototype-pollution guard),
+ * swallowing parse errors so row-mapping can continue with sensible defaults.
  */
 export function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
   try {
-    return JSON.parse(value);
+    return safeJsonParseStrict<T>(value);
   } catch {
+    logger.debug('Could not parse stored value, using fallback');
     return fallback;
   }
 }

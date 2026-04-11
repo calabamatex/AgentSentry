@@ -125,7 +125,7 @@ export class DashboardServer {
         const addr = srv.address();
         const port = (addr && typeof addr === 'object') ? addr.port : this.options.port;
         const host = this.options.host;
-        console.log(`[AgentSentry] Dashboard token: ${this.token}`);
+        logger.info('Dashboard started', { token: this.token, port, host });
         resolve({ port, host, url: `http://${host}:${port}` });
       });
     });
@@ -289,6 +289,7 @@ export class DashboardServer {
       res.writeHead(code, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch {
+      logger.debug('Health check handler threw');
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Health check failed' }));
     }

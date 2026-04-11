@@ -27,7 +27,7 @@ jobs:
           cache-dependency-path: agent-sentry/package-lock.json
       - run: cd agent-sentry && npm ci
       - run: cd agent-sentry && npm run build
-      - run: cd agent-sentry && npm test
+      - run: cd agent-sentry && npx vitest run --coverage --coverage.thresholds.lines=80
 
   lint:
     runs-on: ubuntu-latest

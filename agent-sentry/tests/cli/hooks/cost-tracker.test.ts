@@ -8,12 +8,27 @@ vi.mock('../../../src/config/resolve', () => ({
   resolveConfigPath: vi.fn(() => undefined),
 }));
 
+const loggerCalls = vi.hoisted(() => ({
+  debug: [] as Array<{ message: string; meta?: Record<string, unknown> }>,
+  info: [] as Array<{ message: string; meta?: Record<string, unknown> }>,
+  warn: [] as Array<{ message: string; meta?: Record<string, unknown> }>,
+  error: [] as Array<{ message: string; meta?: Record<string, unknown> }>,
+}));
+
 vi.mock('../../../src/observability/logger', () => ({
   Logger: class {
-    debug() {}
-    info() {}
-    warn() {}
-    error() {}
+    debug(message: string, meta?: Record<string, unknown>) {
+      loggerCalls.debug.push({ message, meta });
+    }
+    info(message: string, meta?: Record<string, unknown>) {
+      loggerCalls.info.push({ message, meta });
+    }
+    warn(message: string, meta?: Record<string, unknown>) {
+      loggerCalls.warn.push({ message, meta });
+    }
+    error(message: string, meta?: Record<string, unknown>) {
+      loggerCalls.error.push({ message, meta });
+    }
   },
 }));
 
@@ -37,6 +52,10 @@ describe('cost-tracker', () => {
     delete process.env.CLAUDE_MODEL;
     delete process.env.ANTHROPIC_MODEL;
     mockedResolveConfigPath.mockReturnValue(undefined);
+    loggerCalls.debug.length = 0;
+    loggerCalls.info.length = 0;
+    loggerCalls.warn.length = 0;
+    loggerCalls.error.length = 0;
   });
 
   afterEach(() => {
@@ -147,8 +166,6 @@ describe('cost-tracker', () => {
   });
 
   it('warns when session budget is exceeded', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
     // Write a state file that's already near the budget
     const sentryDir = path.join(tmpDir, 'agent-sentry');
     fs.mkdirSync(sentryDir, { recursive: true });
@@ -165,16 +182,12 @@ describe('cost-tracker', () => {
 
     await runCostTracker({ model: 'sonnet', input_tokens: 1000, output_tokens: 1000 });
 
-    const warnings = consoleSpy.mock.calls.map((c) => c[0]);
-    const budgetWarning = warnings.find(
-      (w: string) => typeof w === 'string' && w.includes('WARN') && w.includes('budget'),
-    );
+    const budgetWarning = loggerCalls.warn.find((w) => w.message === 'Session budget exceeded');
     expect(budgetWarning).toBeDefined();
+    expect(budgetWarning?.meta?.total).toBeGreaterThan(10);
   });
 
   it('warns when approaching session budget threshold', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
     const sentryDir = path.join(tmpDir, 'agent-sentry');
     fs.mkdirSync(sentryDir, { recursive: true });
     // Default warn threshold = 0.80, default session budget = 10
@@ -192,10 +205,7 @@ describe('cost-tracker', () => {
 
     await runCostTracker({ model: 'haiku' });
 
-    const warnings = consoleSpy.mock.calls.map((c) => c[0]);
-    const budgetWarning = warnings.find(
-      (w: string) => typeof w === 'string' && w.includes('Approaching session budget'),
-    );
+    const budgetWarning = loggerCalls.warn.find((w) => w.message === 'Approaching session budget');
     expect(budgetWarning).toBeDefined();
   });
 
@@ -213,8 +223,6 @@ describe('cost-tracker', () => {
     );
     mockedResolveConfigPath.mockReturnValue(configPath);
 
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
     // Pre-set session total to 3.0 (60% of 5.0 budget, above 50% threshold)
     const sentryDir = path.join(tmpDir, 'agent-sentry');
     fs.mkdirSync(sentryDir, { recursive: true });
@@ -231,11 +239,9 @@ describe('cost-tracker', () => {
 
     await runCostTracker({ model: 'sonnet' });
 
-    const warnings = consoleSpy.mock.calls.map((c) => c[0]);
-    const budgetWarning = warnings.find(
-      (w: string) => typeof w === 'string' && w.includes('Approaching session budget'),
-    );
+    const budgetWarning = loggerCalls.warn.find((w) => w.message === 'Approaching session budget');
     expect(budgetWarning).toBeDefined();
+    expect(budgetWarning?.meta?.budget).toBe(5);
   });
 
   it('handles corrupted state file gracefully', async () => {
