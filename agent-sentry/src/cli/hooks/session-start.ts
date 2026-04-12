@@ -147,7 +147,7 @@ function checkScaffoldDocs(repoRoot: string, results: CheckResults): void {
 
 function main(): void {
   if (!isGloballyEnabled()) {
-    process.exit(0);
+    return;
   }
 
   const config = readConfig();
@@ -196,5 +196,7 @@ function main(): void {
   });
 }
 
-main();
-process.exit(0);
+if (require.main === module) {
+  main();
+  process.exit(0);
+}

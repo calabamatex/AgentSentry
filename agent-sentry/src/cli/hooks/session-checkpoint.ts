@@ -161,7 +161,7 @@ async function autoSaveHandoff(): Promise<void> {
 
 async function main(): Promise<void> {
   if (!isGloballyEnabled()) {
-    process.exit(0);
+    return;
   }
 
   const config = readConfig();
@@ -190,4 +190,6 @@ async function main(): Promise<void> {
   out(`${PREFIX} Session end checkpoint complete.`);
 }
 
-main().then(() => process.exit(0)).catch(() => process.exit(0));
+if (require.main === module) {
+  main().then(() => process.exit(0)).catch(() => process.exit(0));
+}

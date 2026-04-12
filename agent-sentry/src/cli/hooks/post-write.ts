@@ -135,7 +135,7 @@ function checkBlastRadius(filePath: string): void {
 
 async function main(): Promise<void> {
   if (!isGloballyEnabled()) {
-    process.exit(0);
+    return;
   }
 
   // Read stdin
@@ -177,4 +177,6 @@ async function main(): Promise<void> {
   checkBlastRadius(filePath);
 }
 
-main().catch(() => {}).finally(() => process.exit(0));
+if (require.main === module) {
+  main().catch(() => {}).finally(() => process.exit(0));
+}

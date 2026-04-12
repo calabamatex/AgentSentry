@@ -226,7 +226,7 @@ export async function runCostTracker(hookInput: HookInput): Promise<void> {
 
 async function main(): Promise<void> {
   if (!isGloballyEnabled()) {
-    process.exit(0);
+    return;
   }
 
   const chunks: Buffer[] = [];
@@ -247,8 +247,10 @@ async function main(): Promise<void> {
   await runCostTracker(hookInput);
 }
 
-main().catch((e) => {
-  logger.debug('Cost tracker error', { error: errorMessage(e) });
-}).finally(() => {
-  process.exit(0);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    logger.debug('Cost tracker error', { error: errorMessage(e) });
+  }).finally(() => {
+    process.exit(0);
+  });
+}
