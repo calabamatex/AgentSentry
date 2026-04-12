@@ -46,7 +46,7 @@ mkdir -p "$AS_STATE_DIR" "$AS_GUARD_DIR" "$AS_RUNTIME_DATA_DIR" 2>/dev/null
 
 _AS_CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/../agent-sentry.config.json"
 if [[ -f "$_AS_CONFIG_FILE" ]] && command -v jq &>/dev/null; then
-    _AS_ENABLED=$(jq -r '.enabled // true' "$_AS_CONFIG_FILE" 2>/dev/null || echo "true")
+    _AS_ENABLED=$(jq -r '.enabled' "$_AS_CONFIG_FILE" 2>/dev/null || echo "true")
     if [[ "$_AS_ENABLED" == "false" ]]; then
         exit 0
     fi

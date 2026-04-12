@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Global kill switch
 _AS_CFG="$SCRIPT_DIR/../agent-sentry.config.json"
-if [[ -f "$_AS_CFG" ]] && command -v jq &>/dev/null && [[ "$(jq -r '.enabled // true' "$_AS_CFG" 2>/dev/null)" == "false" ]]; then
+if [[ -f "$_AS_CFG" ]] && command -v jq &>/dev/null && [[ "$(jq -r '.enabled' "$_AS_CFG" 2>/dev/null)" == "false" ]]; then
     exit 0
 fi
 RUNTIME_DATA="${HOME}/.agent-sentry/data"
