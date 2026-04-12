@@ -8,3 +8,6 @@ agentops/
 
 # CI benchmark artifacts (uploaded as workflow artifacts; not tracked)
 benchmarks/ci-latest.json
+
+# Generated coverage reports — never commit
+coverage/
