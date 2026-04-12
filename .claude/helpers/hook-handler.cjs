@@ -82,6 +82,33 @@ async function main() {
   const prompt = hookInput.prompt || hookInput.command || hookInput.toolInput
     || process.env.PROMPT || process.env.TOOL_INPUT_command || args.join(' ') || '';
 
+// Reset context state after /compact — the compact operation significantly reduces
+// actual context usage; resetting the counter prevents false-positive saturation
+// warnings in the post-compact session.
+function resetContextState() {
+  const stateDir = process.env.TMPDIR
+    ? path.join(process.env.TMPDIR, 'agent-sentry')
+    : '/tmp/agent-sentry';
+  const stateFile = path.join(stateDir, 'context-state');
+
+  try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    // Preserve session_id but reset counters
+    const existing = fs.existsSync(stateFile)
+      ? fs.readFileSync(stateFile, 'utf8')
+      : '';
+    const sessionId = (existing.match(/(?<=session_id=).+/) ?? [])[0]
+      ?? String(Date.now());
+    fs.writeFileSync(
+      stateFile,
+      `message_count=0\nsession_id=${sessionId}\nstop_hook_count=0\n`,
+      'utf8'
+    );
+  } catch (_) {
+    // Non-fatal — compact still proceeds
+  }
+}
+
 const handlers = {
   'route': () => {
     // Inject ranked intelligence context before routing
@@ -243,6 +270,16 @@ const handlers = {
     } else {
       console.log('[WARN] Intelligence module not available. Run session-restore first.');
     }
+  },
+
+  'compact-manual': () => {
+    resetContextState();
+    console.log('[OK] Context state reset after manual compact');
+  },
+
+  'compact-auto': () => {
+    resetContextState();
+    console.log('[OK] Context state reset after auto compact');
   },
 };
 

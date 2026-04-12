@@ -208,26 +208,27 @@ as_estimate_context_percent() {
     local msg_count
     msg_count=$(as_state_get "message_count" "0")
 
-    local total_chars=0
-    if git rev-parse --is-inside-work-tree &>/dev/null; then
-        while IFS= read -r file; do
-            if [[ -f "$file" ]]; then
-                local chars
-                chars=$(wc -c < "$file" 2>/dev/null | tr -d ' ')
-                total_chars=$((total_chars + chars))
-            fi
-        done < <(git ls-files -z 2>/dev/null \
-            | xargs -0 ls -1t 2>/dev/null \
-            | head -50)
+    # Read tokens_per_message from config; default to 4000.
+    # File scanning is intentionally absent: hooks cannot know which files
+    # Claude actually read into the context window. Disk size of recently-
+    # modified files is not a valid proxy and causes immediate false positives
+    # in any mature repo.
+    local tokens_per_msg=4000
+    local config_file
+    config_file="$(dirname "${BASH_SOURCE[0]}")/../agent-sentry.config.json"
+    if [[ -f "$config_file" ]] && command -v jq &>/dev/null; then
+        local cfg_val
+        cfg_val=$(jq -r '.context_health.tokens_per_message // 4000' "$config_file" 2>/dev/null)
+        if [[ "$cfg_val" =~ ^[0-9]+$ ]]; then
+            tokens_per_msg="$cfg_val"
+        fi
     fi
 
-    local conversation_tokens=$((msg_count * 500))
-    local file_tokens=$((total_chars / 4))
-    local estimated_tokens=$((file_tokens + conversation_tokens))
+    local estimated_tokens=$(( msg_count * tokens_per_msg ))
 
     local ctx_percent=0
     if [[ "$max_tokens" -gt 0 ]]; then
-        ctx_percent=$((estimated_tokens * 100 / max_tokens))
+        ctx_percent=$(( estimated_tokens * 100 / max_tokens ))
     fi
     if [[ "$ctx_percent" -gt 100 ]]; then
         ctx_percent=100

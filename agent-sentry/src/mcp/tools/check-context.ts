@@ -3,6 +3,9 @@
  */
 
 import { z } from 'zod';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 export const name = 'agent_sentry_check_context';
 export const description =
@@ -30,7 +33,21 @@ export interface CheckContextResult {
   estimated_tokens: number;
   percent_used: number;
   messages: number;
+  message_count_source: 'provided' | 'state_file';
   recommendation: 'continue' | 'caution' | 'refresh';
+}
+
+function readMessageCountFromState(): number {
+  const stateDir = path.join(os.tmpdir(), 'agent-sentry');
+  const stateFile = path.join(stateDir, 'context-state');
+  try {
+    const content = fs.readFileSync(stateFile, 'utf8');
+    const match = content.match(/message_count=(\d+)/);
+    if (match) return parseInt(match[1], 10);
+  } catch {
+    // State file absent (fresh session or state cleared) — treat as 0
+  }
+  return 0;
 }
 
 export async function handler(
@@ -38,7 +55,10 @@ export async function handler(
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
     const parsed = argsSchema.parse(args);
-    const messages = parsed.message_count ?? 0;
+    // Use explicitly-provided count, or fall back to shared state file.
+    const messages = parsed.message_count ?? readMessageCountFromState();
+    const message_count_source: 'provided' | 'state_file' =
+      parsed.message_count !== undefined ? 'provided' : 'state_file';
     const estimated_tokens = messages * TOKENS_PER_MESSAGE;
     const percent_used = Math.min(
       100,
@@ -58,6 +78,7 @@ export async function handler(
       estimated_tokens,
       percent_used,
       messages,
+      message_count_source,
       recommendation,
     };
 
