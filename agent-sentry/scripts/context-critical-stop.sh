@@ -15,6 +15,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
 PREFIX="[AgentSentry]"
 
+# ── Global kill switch ───────────────────────────────────────────────
+ENABLED=$(jq -r '.enabled // true' "$CONFIG_FILE" 2>/dev/null || echo "true")
+if [[ "$ENABLED" == "false" ]]; then
+    exit 0
+fi
+
 # ── Config ────────────────────────────────────────────────────────────
 CTX_CRIT=$(jq -r '.context_health.context_percent_critical // 80' "$CONFIG_FILE" 2>/dev/null || echo 80)
 MSG_CRIT=$(jq -r '.context_health.message_count_critical // 30' "$CONFIG_FILE" 2>/dev/null || echo 30)

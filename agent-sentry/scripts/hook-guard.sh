@@ -40,6 +40,19 @@ readonly AS_RUNTIME_DATA_DIR="${HOME}/.agent-sentry/data"
 mkdir -p "$AS_STATE_DIR" "$AS_GUARD_DIR" "$AS_RUNTIME_DATA_DIR" 2>/dev/null
 
 # =============================================================================
+# PART 1b: GLOBAL KILL SWITCH
+# =============================================================================
+# If top-level "enabled" is false in the config, exit immediately (no-op).
+
+_AS_CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/../agent-sentry.config.json"
+if [[ -f "$_AS_CONFIG_FILE" ]] && command -v jq &>/dev/null; then
+    _AS_ENABLED=$(jq -r '.enabled // true' "$_AS_CONFIG_FILE" 2>/dev/null || echo "true")
+    if [[ "$_AS_ENABLED" == "false" ]]; then
+        exit 0
+    fi
+fi
+
+# =============================================================================
 # PART 2: CIRCUIT BREAKER (depth, reentrance, debounce)
 # =============================================================================
 

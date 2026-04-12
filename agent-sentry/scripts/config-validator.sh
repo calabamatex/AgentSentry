@@ -48,9 +48,11 @@ REQUIRED_SECTIONS=("save_points" "context_health" "rules_file" "task_sizing" "se
 # ---------------------------------------------------------------------------
 # 2a. Top-level "enabled" field (optional but must be boolean if present)
 # ---------------------------------------------------------------------------
-ENABLED_TYPE=$(jq -r '.enabled | type' "$CONFIG_FILE" 2>/dev/null || echo "null")
-if [[ "$ENABLED_TYPE" != "null" && "$ENABLED_TYPE" != "boolean" ]]; then
-    ERRORS+=("Top-level 'enabled' must be a boolean (true/false), got $ENABLED_TYPE")
+if jq -e 'has("enabled")' "$CONFIG_FILE" &>/dev/null; then
+    ENABLED_TYPE=$(jq -r '.enabled | type' "$CONFIG_FILE" 2>/dev/null || echo "null")
+    if [[ "$ENABLED_TYPE" != "boolean" ]]; then
+        ERRORS+=("Top-level 'enabled' must be a boolean (true/false), got $ENABLED_TYPE")
+    fi
 fi
 
 for section in "${REQUIRED_SECTIONS[@]}"; do

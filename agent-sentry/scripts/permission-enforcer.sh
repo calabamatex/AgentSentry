@@ -53,6 +53,9 @@ _AS_PERM_RUNTIME="${HOME}/.agent-sentry/data"
 mkdir -p "$_AS_PERM_RUNTIME" 2>/dev/null
 LOG_FILE="$_AS_PERM_RUNTIME/permission-log.ndjson"
 CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
+# Global kill switch
+_ENABLED=$(jq -r '.enabled // true' "$CONFIG_FILE" 2>/dev/null || echo "true")
+if [[ "$_ENABLED" == "false" ]]; then exit 0; fi
 PERMISSION_FAIL_MODE=$(jq -r '.security.permission_fail_mode // "block"' "$CONFIG_FILE" 2>/dev/null || echo "block")
 
 # ---------------------------------------------------------------------------
