@@ -7,6 +7,7 @@
     "max_uncommitted_files_warning": 5
   },
   "context_health": {
+    "tokens_per_message": 4000,
     "message_count_warning": 20,
     "message_count_critical": 30,
     "context_percent_warning": 60,

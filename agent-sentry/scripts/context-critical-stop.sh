@@ -11,66 +11,78 @@
 
 set -euo pipefail
 
+# Source shared hook guard for state management and estimation.
+# DEBOUNCE_SECONDS=0 disables per-hook debounce for the stop hook;
+# depth guard and reentrance protection in hook-guard still apply.
+HOOK_NAME="context-critical-stop"
+DEBOUNCE_SECONDS=0
+source "$(dirname "${BASH_SOURCE[0]}")/hook-guard.sh" || exit 0
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../agent-sentry.config.json"
 PREFIX="[AgentSentry]"
-
-# ── Global kill switch ───────────────────────────────────────────────
-ENABLED=$(jq -r '.enabled // true' "$CONFIG_FILE" 2>/dev/null || echo "true")
-if [[ "$ENABLED" == "false" ]]; then
-    exit 0
-fi
 
 # ── Config ────────────────────────────────────────────────────────────
 CTX_CRIT=$(jq -r '.context_health.context_percent_critical // 80' "$CONFIG_FILE" 2>/dev/null || echo 80)
 MSG_CRIT=$(jq -r '.context_health.message_count_critical // 30' "$CONFIG_FILE" 2>/dev/null || echo 30)
 MAX_TOKENS=${AGENT_SENTRY_MAX_TOKENS:-200000}
 
-# ── Session State ─────────────────────────────────────────────────────
-STATE_DIR="${TMPDIR:-/tmp}/agent-sentry"
-STATE_FILE="$STATE_DIR/context-state"
+# ── Session State (via shared state manager) ─────────────────────────
+MSG_COUNT=$(as_state_get "message_count" "0")
 
-# If no state file yet, context is fresh — allow
-if [[ ! -f "$STATE_FILE" ]]; then
-    exit 0
-fi
+# ── Token Estimation (via shared estimation function) ────────────────
+CTX_PERCENT=$(as_estimate_context_percent "$MAX_TOKENS")
 
-MSG_COUNT=$(grep -oP '(?<=message_count=)\d+' "$STATE_FILE" 2>/dev/null || echo 0)
+# ── Auto-generated git-state handoff ─────────────────────────────────
+# Fallback handoff when Claude didn't call generate_handoff proactively.
+# Collects git state and formats a paste-ready prompt for the next session.
+generate_shell_handoff() {
+    local branch last_commit uncommitted recent_commits
 
-# ── Token Estimation (same logic as context-estimator.sh) ─────────────
-TOTAL_CHARS=0
+    branch=$(git branch --show-current 2>/dev/null || echo "unknown")
+    last_commit=$(git log -1 --oneline 2>/dev/null || echo "no commits")
+    uncommitted=$(git status --short 2>/dev/null || echo "")
+    recent_commits=$(git log --oneline -5 2>/dev/null || echo "")
 
-if git rev-parse --is-inside-work-tree &>/dev/null; then
-    while IFS= read -r file; do
-        if [[ -f "$file" ]]; then
-            CHARS=$(wc -c < "$file" 2>/dev/null | tr -d ' ')
-            TOTAL_CHARS=$((TOTAL_CHARS + CHARS))
-        fi
-    done < <(git ls-files -z 2>/dev/null \
-        | xargs -0 ls -1t 2>/dev/null \
-        | head -50)
-fi
-
-CONVERSATION_TOKENS=$((MSG_COUNT * 500))
-FILE_TOKENS=$((TOTAL_CHARS / 4))
-ESTIMATED_TOKENS=$((FILE_TOKENS + CONVERSATION_TOKENS))
-
-if [[ "$MAX_TOKENS" -gt 0 ]]; then
-    CTX_PERCENT=$((ESTIMATED_TOKENS * 100 / MAX_TOKENS))
-else
-    CTX_PERCENT=0
-fi
-
-if [[ "$CTX_PERCENT" -gt 100 ]]; then
-    CTX_PERCENT=100
-fi
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "$PREFIX AUTO-GENERATED HANDOFF PROMPT"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Copy the block below into a fresh session to continue:"
+    echo ""
+    echo "---"
+    echo "Continue work on this project. Previous session handoff:"
+    echo ""
+    echo "Branch: $branch"
+    echo "Last commit: $last_commit"
+    if [[ -n "$uncommitted" ]]; then
+        echo ""
+        echo "Uncommitted changes:"
+        echo "$uncommitted"
+    fi
+    if [[ -n "$recent_commits" ]]; then
+        echo ""
+        echo "Recent commits:"
+        echo "$recent_commits"
+    fi
+    echo ""
+    echo "Note: Session summary and remaining work not available (context"
+    echo "was exhausted before handoff was generated). Review git log and"
+    echo "uncommitted changes to determine next steps."
+    echo "---"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
 
 # ── Decision ──────────────────────────────────────────────────────────
 # Block if context is critically full OR message count exceeds critical threshold
 if [[ "$CTX_PERCENT" -ge "$CTX_CRIT" ]] || [[ "$MSG_COUNT" -ge "$MSG_CRIT" ]]; then
+    generate_shell_handoff
     echo "$PREFIX BLOCKED: Context critically full (~${CTX_PERCENT}%, ${MSG_COUNT} messages)."
-    echo "$PREFIX ACTION REQUIRED: Run \`/agent-sentry:handoff\` to generate a handoff prompt before continuing."
-    echo "$PREFIX This is a blocking directive — the session cannot proceed until a handoff is created."
+    echo "$PREFIX Start a fresh session and paste the handoff prompt above to continue."
+    echo "$PREFIX To override and continue in this session anyway: set context_percent_critical"
+    echo "$PREFIX to a higher value in agent-sentry.config.json, or run with AGENT_SENTRY_MAX_TOKENS set higher."
     exit 2
 fi
 

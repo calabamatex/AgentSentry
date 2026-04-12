@@ -226,6 +226,16 @@ All settings in `agent-sentry/agent-sentry.config.json`:
 
 > **Note:** Migration tooling between providers is planned for a future release.
 
+### Context Health Details
+
+Context health monitors token usage via message count and triggers a two-stage handoff when the context window fills up:
+
+- **60% (warning):** Claude is directed to call `agent_sentry_generate_handoff` proactively with a session summary and remaining work items. This produces a complete handoff prompt.
+- **80% (critical):** The session is blocked (`exit 2`). A git-state-only handoff is auto-printed with branch, last commit, uncommitted changes, and a paste-ready continuation prompt. The user is prompted to start a fresh session.
+- **After `/compact`:** `message_count` resets to 0. Context health monitoring resumes from zero.
+
+Token estimation uses message count multiplied by `tokens_per_message` (default 4000, configurable). File scanning is not used — hooks cannot know which files Claude actually read into the context window.
+
 ---
 
 ## Dashboard
