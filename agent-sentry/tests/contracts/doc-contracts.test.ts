@@ -100,6 +100,7 @@ describe('No orphaned config keys', () => {
 
     // These are the known valid top-level keys consumed by src/
     const validKeys = new Set([
+      'enabled',
       'save_points',
       'context_health',
       'rules_file',

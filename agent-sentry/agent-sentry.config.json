@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "save_points": {
     "auto_commit_enabled": false,
     "auto_commit_after_minutes": 30,

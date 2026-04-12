@@ -10,7 +10,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync, execFileSync } from 'child_process';
-import { resolveConfigPath } from '../../config/resolve';
+import { resolveConfigPath, isGloballyEnabled } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { safeReadSync } from '../../utils/safe-io';
@@ -160,6 +160,10 @@ async function autoSaveHandoff(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  if (!isGloballyEnabled()) {
+    process.exit(0);
+  }
+
   const config = readConfig();
 
   // Ensure dashboard data directory exists

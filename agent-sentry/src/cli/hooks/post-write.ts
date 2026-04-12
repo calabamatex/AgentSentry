@@ -16,7 +16,7 @@ import * as path from 'path';
 import { execSync, execFileSync } from 'child_process';
 import { scanErrorHandling } from '../../analyzers/error-handling';
 import { scanPiiLogging } from '../../analyzers/pii-scanner';
-import { resolveConfigPath } from '../../config/resolve';
+import { resolveConfigPath, isGloballyEnabled } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { safeReadSync } from '../../utils/safe-io';
@@ -134,6 +134,10 @@ function checkBlastRadius(filePath: string): void {
 }
 
 async function main(): Promise<void> {
+  if (!isGloballyEnabled()) {
+    process.exit(0);
+  }
+
   // Read stdin
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) {
