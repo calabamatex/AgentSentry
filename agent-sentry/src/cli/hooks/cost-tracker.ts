@@ -11,7 +11,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveConfigPath } from '../../config/resolve';
+import { resolveConfigPath, isGloballyEnabled } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { errorMessage } from '../../utils/error-message';
 import { safeJsonParse } from '../../utils/safe-json';
@@ -225,6 +225,10 @@ export async function runCostTracker(hookInput: HookInput): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  if (!isGloballyEnabled()) {
+    return;
+  }
+
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) {
     chunks.push(chunk);
@@ -243,8 +247,10 @@ async function main(): Promise<void> {
   await runCostTracker(hookInput);
 }
 
-main().catch((e) => {
-  logger.debug('Cost tracker error', { error: errorMessage(e) });
-}).finally(() => {
-  process.exit(0);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    logger.debug('Cost tracker error', { error: errorMessage(e) });
+  }).finally(() => {
+    process.exit(0);
+  });
+}

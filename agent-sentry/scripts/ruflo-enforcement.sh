@@ -15,8 +15,13 @@
 
 set -euo pipefail
 
-PREFIX="[RuFlo]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Global kill switch
+if command -v jq &>/dev/null; then
+    _ENABLED=$(jq -r '.enabled // true' "$SCRIPT_DIR/../agent-sentry.config.json" 2>/dev/null || echo "true")
+    if [[ "$_ENABLED" == "false" ]]; then exit 0; fi
+fi
+PREFIX="[RuFlo]"
 STATE_DIR="${SCRIPT_DIR}/../.ruflo-state"
 SESSION_FILE="${STATE_DIR}/swarm-session"
 

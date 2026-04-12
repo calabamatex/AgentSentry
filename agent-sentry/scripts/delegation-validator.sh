@@ -51,6 +51,9 @@ fi
 
 PREFIX="[AgentSentry]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Global kill switch
+_ENABLED=$(jq -r '.enabled // true' "$SCRIPT_DIR/../agent-sentry.config.json" 2>/dev/null || echo "true")
+if [[ "$_ENABLED" == "false" ]]; then exit 0; fi
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DASHBOARD_DATA="$REPO_ROOT/agent-sentry/dashboard/data"
 _AS_DELEG_RUNTIME="${HOME}/.agent-sentry/data"

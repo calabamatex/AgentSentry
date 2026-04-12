@@ -25,6 +25,17 @@ fi
 PREFIX="[AgentSentry]"
 
 # ---------------------------------------------------------------------------
+# Global kill switch — exit immediately if top-level "enabled" is false
+# ---------------------------------------------------------------------------
+_CONFIG_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../agent-sentry.config.json"
+if [[ -f "$_CONFIG_FILE" ]]; then
+    _ENABLED=$(jq -r '.enabled // true' "$_CONFIG_FILE" 2>/dev/null || echo "true")
+    if [[ "$_ENABLED" == "false" ]]; then
+        exit 0
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # 1. Read hook input from stdin (Claude Code hook protocol)
 # ---------------------------------------------------------------------------
 INPUT="$(cat)"

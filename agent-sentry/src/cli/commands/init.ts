@@ -25,6 +25,7 @@ const DEFAULT_CONFIG_PATH = path.resolve('agent-sentry/agent-sentry.config.json'
 /** Minimal default config scaffolded by `agent-sentry init`. */
 function defaultConfig(level: number): Record<string, unknown> {
   return {
+    enabled: true,
     save_points: {
       auto_commit_enabled: false,
       auto_commit_after_minutes: 30,
