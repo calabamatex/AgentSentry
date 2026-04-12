@@ -208,22 +208,7 @@ as_estimate_context_percent() {
     local msg_count
     msg_count=$(as_state_get "message_count" "0")
 
-    local total_chars=0
-    if git rev-parse --is-inside-work-tree &>/dev/null; then
-        while IFS= read -r file; do
-            if [[ -f "$file" ]]; then
-                local chars
-                chars=$(wc -c < "$file" 2>/dev/null | tr -d ' ')
-                total_chars=$((total_chars + chars))
-            fi
-        done < <(git ls-files -z 2>/dev/null \
-            | xargs -0 ls -1t 2>/dev/null \
-            | head -50)
-    fi
-
-    local conversation_tokens=$((msg_count * 500))
-    local file_tokens=$((total_chars / 4))
-    local estimated_tokens=$((file_tokens + conversation_tokens))
+    local estimated_tokens=$((msg_count * 500))
 
     local ctx_percent=0
     if [[ "$max_tokens" -gt 0 ]]; then

@@ -37,23 +37,8 @@ fi
 
 MSG_COUNT=$(grep -oP '(?<=message_count=)\d+' "$STATE_FILE" 2>/dev/null || echo 0)
 
-# ── Token Estimation (same logic as context-estimator.sh) ─────────────
-TOTAL_CHARS=0
-
-if git rev-parse --is-inside-work-tree &>/dev/null; then
-    while IFS= read -r file; do
-        if [[ -f "$file" ]]; then
-            CHARS=$(wc -c < "$file" 2>/dev/null | tr -d ' ')
-            TOTAL_CHARS=$((TOTAL_CHARS + CHARS))
-        fi
-    done < <(git ls-files -z 2>/dev/null \
-        | xargs -0 ls -1t 2>/dev/null \
-        | head -50)
-fi
-
-CONVERSATION_TOKENS=$((MSG_COUNT * 500))
-FILE_TOKENS=$((TOTAL_CHARS / 4))
-ESTIMATED_TOKENS=$((FILE_TOKENS + CONVERSATION_TOKENS))
+# ── Token Estimation ─────────────────────────────────────────────────
+ESTIMATED_TOKENS=$((MSG_COUNT * 500))
 
 if [[ "$MAX_TOKENS" -gt 0 ]]; then
     CTX_PERCENT=$((ESTIMATED_TOKENS * 100 / MAX_TOKENS))
