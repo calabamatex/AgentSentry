@@ -1,0 +1,191 @@
+//@version=6
+indicator("AMD FVG Trade Setup [LuxAlgo]", shorttitle="AMD FVG Trade", overlay=true, max_boxes_count=500)
+
+// --- Settings ---
+accLen       = input.int(30, "Accumulation Length", minval=5, group="AMD Logic",
+                 tooltip="Lookback period for accumulation detection. 1m: 15-20, 5m: 20-30, 15m: 12-20.")
+accWidthBase = input.float(0.2, "Accumulation Range Base %", minval=0.1, step=0.1, group="AMD Logic")
+manLookBase  = input.int(10, "Manipulation Window Base (bars)", minval=1, group="AMD Logic")
+fvgThreshold = input.float(0.1, "Min FVG Gap (ATR Multiplier)", minval=0.0, step=0.05, group="AMD Logic",
+                 tooltip="Minimum size of the FVG gap relative to ATR. Higher values require 'stronger' (larger) gaps.")
+velSensitivity = input.float(1.0, "Velocity Sensitivity", minval=0.5, maxval=2.0, step=0.1, group="AMD Logic",
+                 tooltip="Scales how aggressively parameters adapt to velocity. 1.0 = neutral. Higher = more reactive.")
+
+// Trade Settings
+atrLen   = input.int(14, "ATR Length", group="Trade Settings")
+atrMult  = input.float(2.0, "ATR SL Multiplier", step=0.1, group="Trade Settings")
+rrr      = input.float(2.0, "Reward-to-Risk Ratio", step=0.1, group="Trade Settings")
+
+// Session Settings
+useSydney = input.bool(false, "Sydney Session (17:00-02:00 EST)", group="Sessions")
+useTokyo  = input.bool(false, "Tokyo Session (19:00-04:00 EST)", group="Sessions")
+useLondon = input.bool(false, "London Session (03:00-12:00 EST)", group="Sessions")
+useNY     = input.bool(true, "New York Session (08:00-17:00 EST)", group="Sessions")
+showSess  = input.bool(true, "Highlight Active Session Time", group="Sessions")
+
+// Colors
+accColor  = input.color(color.new(color.gray, 80), "Accumulation", group="Colors")
+manColor  = input.color(color.new(#f23645, 75), "Manipulation (Bear)", group="Colors")
+manColorB = input.color(color.new(#089981, 75), "Manipulation (Bull)", group="Colors")
+tpColor   = input.color(color.new(#089981, 75), "Take Profit Box", group="Colors")
+slColor   = input.color(color.new(#f23645, 75), "Stop Loss Box", group="Colors")
+fvgColor  = input.color(color.new(color.white, 60), "FVG Color", group="Colors")
+
+// Velocity Warning Toggle
+showVelWarning = input.bool(true, "Highlight High Velocity Bars", group="AMD Logic")
+
+// --- Logic ---
+inSession(sess) => not na(time(timeframe.period, sess, "America/New_York"))
+
+isInAnySession = (useSydney and inSession("1700-0200")) or
+                 (useTokyo  and inSession("1900-0400")) or
+                 (useLondon and inSession("0300-1200")) or
+                 (useNY     and inSession("0800-1700"))
+
+bgcolor(showSess and isInAnySession ? color.new(color.blue, 96) : na)
+
+var float accHigh = na
+var float accLow  = na
+var int   accStartBar = na
+var int   accEndBar = na
+var bool  manipOccurredHigh = false
+var bool  manipOccurredLow  = false
+var float manipExtremum = na
+
+// Trade State Management
+var box tpBox = na
+var box slBox = na
+var float tpLevel = na
+var float slLevel = na
+var bool isTradeActive = false
+var bool isBullishTrade = false
+
+// --- Velocity Ratio Infrastructure (Section 1) ---
+float atrShort      = ta.atr(atrLen)
+float atrLong       = ta.atr(atrLen * 4)
+float velocityRatio = atrShort / atrLong
+float vrClamped     = math.max(0.5, math.min(2.0, velocityRatio))
+float vrScaled      = 1.0 + ((vrClamped - 1.0) * velSensitivity)
+
+// --- Dynamic Parameters (Sections 2, 3, 4) ---
+float accWidthDynamic     = accWidthBase * vrScaled
+float fvgThresholdDynamic = fvgThreshold * vrScaled
+int   manLookDynamic      = math.max(3, math.min(30, math.round(manLookBase / vrScaled)))
+
+// Detect Accumulation
+highs = ta.highest(high, accLen)
+lows  = ta.lowest(low, accLen)
+rangePct = (highs - lows) / lows * 100
+isAccumulating = rangePct <= accWidthDynamic and isInAnySession
+
+if isAccumulating
+    accHigh := highs
+    accLow  := lows
+    accStartBar := bar_index - accLen + 1
+    accEndBar := bar_index
+    manipOccurredHigh := false
+    manipOccurredLow  := false
+    manipExtremum := na
+
+// Update Active Trade Boxes
+if isTradeActive
+    tpBox.set_right(bar_index)
+    slBox.set_right(bar_index)
+
+    // Check Exit Conditions
+    if isBullishTrade
+        if low <= slLevel or high >= tpLevel
+            isTradeActive := false
+    else
+        if high >= slLevel or low <= tpLevel
+            isTradeActive := false
+
+// Search for Manipulation and FVG
+inManipWindow = not isAccumulating and not na(accHigh) and bar_index <= accEndBar + manLookDynamic and isInAnySession
+
+if inManipWindow
+    // Bearish Case
+    if not manipOccurredHigh and not manipOccurredLow and high > accHigh
+        manipOccurredHigh := true
+        manipExtremum := high
+
+    if manipOccurredHigh
+        manipExtremum := math.max(manipExtremum, high)
+        fvgGap = low[2] - high
+        bearFVG = fvgGap > (atrShort * fvgThresholdDynamic) and close < accHigh
+
+        if bearFVG and not isTradeActive
+            // Pattern Visuals
+            box.new(accStartBar, accHigh, accEndBar, accLow, bgcolor=accColor, border_color=na)
+            box.new(accEndBar, manipExtremum, bar_index - 2, accHigh, bgcolor=manColor, border_color=na)
+            box.new(bar_index - 2, low[2], bar_index, high, bgcolor=fvgColor, border_color=fvgColor, border_style=line.style_dotted)
+
+            // Trade Setup (Dynamic SL)
+            slDist = atrShort * atrMult * vrScaled
+            slLevel := close + slDist
+            tpLevel := close - (slDist * rrr)
+            isTradeActive  := true
+            isBullishTrade := false
+
+            tpBox := box.new(bar_index, close, bar_index, tpLevel, bgcolor=tpColor, border_color=na)
+            slBox := box.new(bar_index, close, bar_index, slLevel, bgcolor=slColor, border_color=na)
+
+            label.new(bar_index, high,
+                      text      = "▼ AMD Bearish",
+                      tooltip   = "VR: "    + str.tostring(vrClamped,  "#.##")
+                                  + "\nW: " + str.tostring(accWidthDynamic, "#.##") + "%"
+                                  + "\nML: "+ str.tostring(manLookDynamic)
+                                  + "\nSL: "+ str.tostring(slLevel,    "#.##")
+                                  + "\nTP: "+ str.tostring(tpLevel,    "#.##"),
+                      color     = color.red,
+                      style     = label.style_label_down,
+                      textcolor = color.white,
+                      size      = size.tiny)
+            accHigh := na
+            manipOccurredHigh := false
+
+    // Bullish Case
+    if not manipOccurredLow and not manipOccurredHigh and low < accLow
+        manipOccurredLow := true
+        manipExtremum := low
+
+    if manipOccurredLow
+        manipExtremum := math.min(manipExtremum, low)
+        fvgGap = low - high[2]
+        bullFVG = fvgGap > (atrShort * fvgThresholdDynamic) and close > accLow
+
+        if bullFVG and not isTradeActive
+            // Pattern Visuals
+            box.new(accStartBar, accHigh, accEndBar, accLow, bgcolor=accColor, border_color=na)
+            box.new(accEndBar, accLow, bar_index - 2, manipExtremum, bgcolor=manColorB, border_color=na)
+            box.new(bar_index - 2, high[2], bar_index, low, bgcolor=fvgColor, border_color=fvgColor, border_style=line.style_dotted)
+
+            // Trade Setup (Dynamic SL)
+            slDist = atrShort * atrMult * vrScaled
+            slLevel := close - slDist
+            tpLevel := close + (slDist * rrr)
+            isTradeActive  := true
+            isBullishTrade := true
+
+            tpBox := box.new(bar_index, close, bar_index, tpLevel, bgcolor=tpColor, border_color=na)
+            slBox := box.new(bar_index, close, bar_index, slLevel, bgcolor=slColor, border_color=na)
+
+            label.new(bar_index, low,
+                      text      = "▲ AMD Bullish",
+                      tooltip   = "VR: "    + str.tostring(vrClamped,  "#.##")
+                                  + "\nW: " + str.tostring(accWidthDynamic, "#.##") + "%"
+                                  + "\nML: "+ str.tostring(manLookDynamic)
+                                  + "\nSL: "+ str.tostring(slLevel,    "#.##")
+                                  + "\nTP: "+ str.tostring(tpLevel,    "#.##"),
+                      color     = color.green,
+                      style     = label.style_label_up,
+                      textcolor = color.white,
+                      size      = size.tiny)
+            accHigh := na
+            manipOccurredLow := false
+
+// --- Velocity Ratio Visual Diagnostics (Section 6) ---
+plot(vrClamped, "Velocity Ratio", color=color.new(color.yellow, 0), display=display.pane)
+hline(0.8,  "VR Low",  color=color.new(color.green, 50), linestyle=hline.style_dashed)
+hline(1.2,  "VR High", color=color.new(color.red,   50), linestyle=hline.style_dashed)
+bgcolor(showVelWarning and vrClamped > 1.2 ? color.new(color.orange, 94) : na)
