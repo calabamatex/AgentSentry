@@ -199,7 +199,7 @@ Start at Level 1. Upgrade when ready. Each level builds on the last.
 
 All settings in `agent-sentry/agent-sentry.config.json`:
 
-| Section | Setting | Default |
+| Section | Setting | Default(s) |
 |---------|---------|---------|
 | enablement | level | 2 |
 | memory | provider | sqlite |
