@@ -18,6 +18,12 @@ set -euo pipefail
 PREFIX="[AgentSentry]"
 LIFECYCLE_DIR="${TMPDIR:-/tmp}/agent-sentry/lifecycle"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Global kill switch
+_AS_CFG="$SCRIPT_DIR/../agent-sentry.config.json"
+if [[ -f "$_AS_CFG" ]] && command -v jq &>/dev/null && [[ "$(jq -r '.enabled' "$_AS_CFG" 2>/dev/null)" == "false" ]]; then
+    exit 0
+fi
 RUNTIME_DATA="${HOME}/.agent-sentry/data"
 mkdir -p "$RUNTIME_DATA" 2>/dev/null
 EVENT_LOG="$RUNTIME_DATA/lifecycle.ndjson"

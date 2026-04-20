@@ -13,17 +13,19 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { MemoryStore } from '../../src/memory/store';
 import { SqliteProvider } from '../../src/memory/providers/sqlite-provider';
 import { NoopEmbeddingProvider } from '../../src/memory/embeddings';
 import { AgentCoordinator, CoordinatorOptions } from '../../src/coordination/coordinator';
 
-const TEST_DB = path.resolve(__dirname, '../fixtures/test-coordination.db');
+let testDir: string;
+let testDb: string;
 
 function createStore(): MemoryStore {
   return new MemoryStore({
-    provider: new SqliteProvider(TEST_DB),
+    provider: new SqliteProvider(testDb),
     embeddingProvider: new NoopEmbeddingProvider(),
   });
 }
@@ -47,9 +49,8 @@ describe('AgentCoordinator', () => {
   let store: MemoryStore;
 
   beforeEach(async () => {
-    const dir = path.dirname(TEST_DB);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    if (fs.existsSync(TEST_DB)) fs.unlinkSync(TEST_DB);
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'as-coord-'));
+    testDb = path.join(testDir, 'test-coordination.db');
 
     store = createStore();
     await store.initialize();
@@ -57,7 +58,7 @@ describe('AgentCoordinator', () => {
 
   afterEach(async () => {
     await store.close();
-    if (fs.existsSync(TEST_DB)) fs.unlinkSync(TEST_DB);
+    fs.rmSync(testDir, { recursive: true, force: true });
   });
 
   // -----------------------------------------------------------------------
