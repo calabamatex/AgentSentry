@@ -208,7 +208,7 @@ as_estimate_context_percent() {
     local msg_count
     msg_count=$(as_state_get "message_count" "0")
 
-    local estimated_tokens=$((msg_count * 500))
+    local estimated_tokens=$((msg_count * 4000))
 
     local ctx_percent=0
     if [[ "$max_tokens" -gt 0 ]]; then

@@ -38,7 +38,7 @@ fi
 MSG_COUNT=$(grep -oP '(?<=message_count=)\d+' "$STATE_FILE" 2>/dev/null || echo 0)
 
 # ── Token Estimation ─────────────────────────────────────────────────
-ESTIMATED_TOKENS=$((MSG_COUNT * 500))
+ESTIMATED_TOKENS=$((MSG_COUNT * 4000))
 
 if [[ "$MAX_TOKENS" -gt 0 ]]; then
     CTX_PERCENT=$((ESTIMATED_TOKENS * 100 / MAX_TOKENS))
