@@ -1,2 +1,4 @@
-// scoring — implemented in a later phase (see docs/risk-scoring-plan.md).
-export {};
+/**
+ * scoring — risk scorers. Deterministic core now; Bayesian layer in Phase D.
+ */
+export * from './deterministic';
