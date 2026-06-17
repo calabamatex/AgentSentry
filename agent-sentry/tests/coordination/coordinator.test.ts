@@ -43,6 +43,25 @@ function createCoordinator(
   });
 }
 
+/**
+ * Poll an async condition until it returns true or the timeout elapses.
+ * Replaces fixed `setTimeout` sleeps so timing-dependent assertions tolerate
+ * slow CI: more elapsed time is always safe, and we assert as soon as the
+ * expected state is observed rather than after an arbitrary fixed delay.
+ */
+async function waitFor(
+  condition: () => Promise<boolean> | boolean,
+  { timeoutMs = 2000, intervalMs = 10 }: { timeoutMs?: number; intervalMs?: number } = {},
+): Promise<boolean> {
+  const start = Date.now();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (await condition()) return true;
+    if (Date.now() - start >= timeoutMs) return false;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
 describe('AgentCoordinator', () => {
   let store: MemoryStore;
 
@@ -183,13 +202,12 @@ describe('AgentCoordinator', () => {
       const before = await coord.getAgent('agent-1');
       const beforeSeen = before!.lastSeen;
 
-      // Wait for a heartbeat cycle
-      await new Promise((r) => setTimeout(r, 120));
-
-      const after = await coord.getAgent('agent-1');
-      expect(new Date(after!.lastSeen).getTime()).toBeGreaterThanOrEqual(
-        new Date(beforeSeen).getTime(),
-      );
+      // Poll until a heartbeat cycle has advanced lastSeen (tolerant of slow CI).
+      const advanced = await waitFor(async () => {
+        const a = await coord.getAgent('agent-1');
+        return new Date(a!.lastSeen).getTime() > new Date(beforeSeen).getTime();
+      });
+      expect(advanced).toBe(true);
 
       await coord.stop();
     });
@@ -204,9 +222,6 @@ describe('AgentCoordinator', () => {
       await staleCoord.register();
       // Don't start heartbeat loop — just register once
 
-      // Wait past the offline threshold
-      await new Promise((r) => setTimeout(r, 50));
-
       // Observer uses same short interval so the threshold is 20ms
       const observer = createCoordinator(store, {
         agentId: 'observer',
@@ -215,10 +230,12 @@ describe('AgentCoordinator', () => {
       });
       await observer.register();
 
-      const agents = await observer.listAgents();
-      const stale = agents.find((a) => a.id === 'stale-agent');
-      expect(stale).toBeDefined();
-      expect(stale!.status).toBe('offline');
+      // Poll until the stale agent crosses the offline threshold (read-time check).
+      const wentOffline = await waitFor(async () => {
+        const agents = await observer.listAgents();
+        return agents.find((a) => a.id === 'stale-agent')?.status === 'offline';
+      });
+      expect(wentOffline).toBe(true);
     });
   });
 
@@ -297,11 +314,8 @@ describe('AgentCoordinator', () => {
       const gotA = await coordA.acquireLock('expiring', 50);
       expect(gotA).toBe(true);
 
-      // Wait for expiry
-      await new Promise((r) => setTimeout(r, 100));
-
-      // Now agent B should be able to acquire
-      const gotB = await coordB.acquireLock('expiring');
+      // Poll until the lease expires and B can acquire (returns false until expiry).
+      const gotB = await waitFor(() => coordB.acquireLock('expiring'));
       expect(gotB).toBe(true);
 
       await coordA.stop();
