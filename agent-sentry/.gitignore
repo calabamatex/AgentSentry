@@ -9,7 +9,7 @@ agentops/
 # CI benchmark artifacts (uploaded as workflow artifacts; not tracked)
 benchmarks/ci-latest.json
 
-# Generated coverage reports — never commit
+# Coverage reports (generated; never tracked — see Task 5.1)
 coverage/
 
 # Secrets / local env — never commit
