@@ -116,6 +116,55 @@ export interface MisbehaviorProfile {
 }
 
 // ---------------------------------------------------------------------------
+// Session topology — in-memory per-session state
+// ---------------------------------------------------------------------------
+
+export interface FileState {
+  path: string;
+  first_touched_ms: number;
+  last_touched_ms: number;
+  edit_count: number;
+  in_declared_scope: boolean;
+  active_risks: string[]; // RiskPattern IDs detected in this file
+}
+
+export interface IncidentSummary {
+  session_id: string;
+  event_type: string;
+  severity: string;
+  title: string;
+  timestamp: string;
+}
+
+export interface SessionOutcome {
+  session_id: string;
+  duration_minutes: number;
+  incidents: number;
+  violations: number;
+  final_risk_level: number;
+}
+
+/** Read-only snapshot of session state (what scorers consume). */
+export interface SessionTopologyState {
+  session_id: string;
+  started_at_ms: number;
+  files_touched: Record<string, FileState>;
+  context_utilization: number; // 0..1
+  tool_calls_count: number;
+  tool_call_errors: number;
+  last_commit_ms: number | null;
+  uncommitted_diff_size: number;
+  uncommitted_file_count: number;
+  estimated_session_cost: number;
+  budget_remaining: number;
+  session_duration_minutes: number;
+  minutes_since_last_commit: number; // Infinity if never committed
+  unique_directories: string[];
+  error_rate: number; // errors / tool calls (0 if no calls)
+  module_has_incident_history: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // Compound risk
 // ---------------------------------------------------------------------------
 

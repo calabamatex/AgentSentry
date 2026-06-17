@@ -1,2 +1,5 @@
-// knowledge — implemented in a later phase (see docs/risk-scoring-plan.md).
-export {};
+/**
+ * knowledge — in-memory knowledge stores for risk scoring.
+ */
+
+export { SessionTopology, type Clock } from './session-topology';
