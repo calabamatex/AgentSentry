@@ -40,11 +40,11 @@ const SKILL_DESCRIPTIONS: Record<string, string> = {
 
 export const enableCommand: CommandDefinition = {
   name: 'enable',
-  description: 'Set your AgentSentry enablement level (1-5)',
+  description: 'Set your AgentSentry enablement level (1-6)',
   usage: [
-    'Usage: agent-sentry enable --level <1-5> [options]',
+    'Usage: agent-sentry enable --level <1-6> [options]',
     '',
-    '  --level <N>   Set enablement level (1-5)',
+    '  --level <N>   Set enablement level (1-6)',
     '  --show        Show current level and active skills',
     '  --json        Output in JSON format',
     '',
@@ -86,8 +86,8 @@ export const enableCommand: CommandDefinition = {
     }
 
     const level = typeof levelRaw === 'string' ? parseInt(levelRaw, 10) : NaN;
-    if (isNaN(level) || level < 1 || level > 5) {
-      process.stderr.write('Error: --level must be an integer between 1 and 5\n');
+    if (isNaN(level) || level < 1 || level > 6) {
+      process.stderr.write('Error: --level must be an integer between 1 and 6\n');
       process.exitCode = 1;
       return;
     }

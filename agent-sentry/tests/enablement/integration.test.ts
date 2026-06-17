@@ -13,7 +13,7 @@ import { getDashboardPanels, getDashboardHeader } from '../../src/enablement/das
 // ---------------------------------------------------------------------------
 
 describe('integration: config generation -> validation -> dashboard', () => {
-  for (let level = 1; level <= 5; level++) {
+  for (let level = 1; level <= 6; level++) {
     it(`level ${level} (${LEVEL_NAMES[level]}): end-to-end flow`, () => {
       // Step 1: Generate config
       const config = generateConfigForLevel(level);
@@ -26,7 +26,7 @@ describe('integration: config generation -> validation -> dashboard', () => {
 
       // Step 3: Derive dashboard panels
       const panels = getDashboardPanels(config);
-      expect(panels).toHaveLength(6);
+      expect(panels).toHaveLength(7);
 
       // Step 4: Derive dashboard header
       const header = getDashboardHeader(config);
