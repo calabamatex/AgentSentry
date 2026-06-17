@@ -52,6 +52,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Cross-session intelligence | **Beta** | Session summaries, pattern detection, context recall |
 | Plugin registry | Experimental | Local directory scanning only |
 | Multi-agent coordination | Experimental | Event-sourced, single-machine only |
+| Authority enforcement | Experimental | Policy engine defined and tested, but not yet wired into the CLI/MCP decision path |
 
 ## MCP Tools
 

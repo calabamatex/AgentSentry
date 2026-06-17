@@ -139,17 +139,17 @@ Floors sit below measured coverage (lines/stmts ~85.5%, functions ~93.2%, branch
 
 ## Phase 6 — Architecture debt (separate PRs, after 1–5 are green)
 
-### [ ] Task 6.1 — Resolve the dead enforcement engine (`src/enforcement/engine.ts`)
-~200 LOC, fully implemented and validated but **never called**. Either (a) wire `evaluateAuthority` into the MCP `check-rules`/`size_task` path, or (b) quarantine with an `EXPERIMENTAL` export note + a `docs/adr/` record. Add a test for whichever path.
+### [x] Task 6.1 — Resolve the dead enforcement engine (`src/enforcement/engine.ts`)
+~200 LOC, fully implemented and validated but **never called** (only re-exported from `src/index.ts`). Chose option (b) — **quarantine, don't wire in**: wiring `evaluateAuthority` into the MCP/CLI decision path is feature work with real design choices, not hardening. Labeled `[experimental]` in the engine + index headers and `@experimental` JSDoc on `evaluateAuthority`/`validatePolicy`, and added a README capability-table row ("Authority enforcement | Experimental | …not yet wired into the CLI/MCP decision path"). Mirrors how coordination/Supabase/plugins are already labeled. (PR: enforcement-labeling.)
 
-### [ ] Task 6.2 — Make coordination concurrency-honest (`src/coordination/coordinator.ts:7`)
-Header admits "No CAS — race conditions possible." Either add an atomic guard (SQLite transaction / `INSERT … ON CONFLICT` compare‑and‑set) with a contended‑lock test, or mark the module `@experimental` in its public exports and the README capability table.
+### [x] Task 6.2 — Make coordination concurrency-honest (`src/coordination/coordinator.ts`)
+**Already done in the codebase** (verified): `coordinator.ts`/`lease.ts`/`index.ts` carry `[experimental]` headers, the coordinator emits a runtime experimental warning (suppressible via `AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN=1`), and README lists "Multi-agent coordination | Experimental | Event-sourced, single-machine only". The earlier "make it honest" finding was stale — it is honest. Adding real CAS atomicity remains optional future feature work, not a hardening gap.
 
 ### [ ] Task 6.3 — Strengthen over-mocked boundary tests (`tests/mcp/tools/*`, `tests/primitives/*`)
 These mock `MemoryStore`/`ContextRecaller` and assert on stubs. Convert high‑value ones (`recall-context`, `capture-event`) to drive a real in‑memory SQLite store, matching `tests/memory/providers/sqlite-provider.test.ts`.
 
-### [ ] Task 6.4 — Replace timing-based flakiness
-`setTimeout`/`Date.now()` sequencing (`tests/coordination/coordinator.test.ts:187,208,301,441`; `tests/memory/*` date math). Use `vi.useFakeTimers()` or an injectable clock.
+### [x] Task 6.4 — Replace timing-based flakiness
+Done in PR #21: added a `waitFor()` bounded-polling helper and converted the three fixed-sleep-then-assert sites in `coordinator.test.ts` (heartbeat, offline detection, lock expiry). The messaging timestamp-gap and the wall-clock perf benchmark were deliberately left as-is. (A separate mock-server socket leak found while diagnosing CI was fixed in PR #22.)
 
 ---
 
