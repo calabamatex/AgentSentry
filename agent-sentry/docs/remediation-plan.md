@@ -145,8 +145,12 @@ Floors sit below measured coverage (lines/stmts ~85.5%, functions ~93.2%, branch
 ### [x] Task 6.2 — Make coordination concurrency-honest (`src/coordination/coordinator.ts`)
 **Already done in the codebase** (verified): `coordinator.ts`/`lease.ts`/`index.ts` carry `[experimental]` headers, the coordinator emits a runtime experimental warning (suppressible via `AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN=1`), and README lists "Multi-agent coordination | Experimental | Event-sourced, single-machine only". The earlier "make it honest" finding was stale — it is honest. Adding real CAS atomicity remains optional future feature work, not a hardening gap.
 
-### [ ] Task 6.3 — Strengthen over-mocked boundary tests (`tests/mcp/tools/*`, `tests/primitives/*`)
-These mock `MemoryStore`/`ContextRecaller` and assert on stubs. Convert high‑value ones (`recall-context`, `capture-event`) to drive a real in‑memory SQLite store, matching `tests/memory/providers/sqlite-provider.test.ts`.
+### [~] Task 6.3 — Strengthen over-mocked boundary tests (`tests/mcp/tools/*`, `tests/primitives/*`)
+These mock `MemoryStore`/`ContextRecaller` and assert on stubs. **Done so far:** the two highest-value MCP-tool tests now drive a real in-memory SQLite store (only the `getSharedStore` getter is stubbed for DI):
+- `recall-context.test.ts` — runs the real `ContextRecaller` against a seeded store; asserts the real recall path surfaces the seeded session.
+- `capture-event.test.ts` — verifies real persistence (event read back via `store.list()`) and a real SHA-256 hash chain; a throwing stub is used only for the error-path test.
+
+**Remaining (future PRs):** the other store-mocking tests still assert on stubs — `tests/mcp/tools/{check-rules,search-history,check-context,check-git,health}.test.ts` and `tests/primitives/{event-capture,checkpoint-and-branch,scaffold-update,integration,rules-validation}.test.ts`. Convert as appetite allows, using the same DI-the-store pattern.
 
 ### [x] Task 6.4 — Replace timing-based flakiness
 Done in PR #21: added a `waitFor()` bounded-polling helper and converted the three fixed-sleep-then-assert sites in `coordinator.test.ts` (heartbeat, offline detection, lock expiry). The messaging timestamp-gap and the wall-clock perf benchmark were deliberately left as-is. (A separate mock-server socket leak found while diagnosing CI was fixed in PR #22.)
