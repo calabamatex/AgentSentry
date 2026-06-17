@@ -211,8 +211,8 @@ describe('sqlite-migrations', () => {
       expect(Number.isInteger(LATEST_VERSION)).toBe(true);
     });
 
-    it('equals 4 (current migration count)', () => {
-      expect(LATEST_VERSION).toBe(4);
+    it('equals 5 (current migration count)', () => {
+      expect(LATEST_VERSION).toBe(5);
     });
   });
 });

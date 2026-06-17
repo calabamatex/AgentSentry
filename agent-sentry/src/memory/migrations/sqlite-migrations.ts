@@ -5,6 +5,7 @@
 import type Database from 'better-sqlite3';
 import { MIGRATION_V3_SQL } from './migration-v3';
 import { MIGRATION_V4_SQL } from './migration-v4';
+import { MIGRATION_V5_SQL } from './migration-v5';
 import { Logger } from '../../observability/logger';
 import { errorMessage } from '../../utils/error-message';
 
@@ -77,6 +78,10 @@ const MIGRATIONS: { version: number; sql: string }[] = [
   {
     version: 4,
     sql: MIGRATION_V4_SQL,
+  },
+  {
+    version: 5,
+    sql: MIGRATION_V5_SQL,
   },
 ];
 
