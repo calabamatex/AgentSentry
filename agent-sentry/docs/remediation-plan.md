@@ -104,36 +104,36 @@ Apply to any other MCP‑reachable file reader (`check-rules`, `scan-security`).
 
 ---
 
-## Phase 4 — CI/CD restoration
+## Phase 4 — CI/CD  ✅ done
 
-### [ ] Task 4.1 — Add GitHub Actions gate
-`.github/workflows/` does not exist in this working tree — with no CI, the 2 red tests reached a commit. Create `.github/workflows/ci.yml`:
-- Trigger `push` + `pull_request` on `main`; Node 20; `npm ci`.
-- Gate on: `npm run build` → `npm run lint` → `npx tsc --noEmit` → `npm test` → `npm audit --omit=dev --audit-level=high`.
-- Cache `~/.npm`. Optionally re‑add CodeQL weekly (matches the advertised SECURITY.md).
+> **Correction (verified):** the original "no CI" finding was WRONG — it was based on a sub-agent looking only in `agent-sentry/.github`. The git root is the **parent** monorepo (`AgenticManagement`), whose remote is `calabamatex/AgentSentry`, and CI already lives at `<root>/.github/workflows/` (`ci.yml`, `codeql.yml`, `publish.yml`, `scorecard.yml`).
 
-**Acceptance:** workflow green on a clean tree; red if the level‑1 config is temporarily reintroduced (sanity‑check the gate, then revert).
+### [x] Task 4.1 — GitHub Actions gate (pre-existing; verified, not recreated)
+`.github/workflows/ci.yml` already gates, per PR/push to `main`, with pinned action SHAs and `permissions: read-all`:
+- `build-and-test` (Node 18/20/22 matrix) → build + `vitest run --coverage --coverage.thresholds.lines=80`
+- `lint`, `security` (`npm audit --omit=dev --audit-level=high`), `smoke-test-install`, `doc-validation`, `benchmark`.
 
-### [ ] Task 4.2 — Enforce coverage thresholds (`vitest.config.ts`)
-Coverage is measured but ungated. Add floors from current `npm run test:coverage` minus a small margin, then ratchet up:
+Note: the `security` job was effectively **red** before Phase 3.4 (2 prod highs); the `audit fix` there turns it green. No new workflow was created — the existing one is more thorough than the plan's draft.
+
+### [x] Task 4.2 — Enforce coverage thresholds (`vitest.config.ts`)
+CI enforced `lines=80` via CLI flag, but the config did not, so local `--coverage` runs were ungated. Added a `thresholds` block to `vitest.config.ts`:
 ```ts
-coverage: { /* ...existing... */ thresholds: { lines: 70, functions: 70, branches: 60, statements: 70 } }
+thresholds: { lines: 80, statements: 80, functions: 85, branches: 75 }
 ```
-**Acceptance:** `npx vitest run --coverage` exits non‑zero below threshold; passes at current levels.
+Floors sit below measured coverage (lines/stmts ~85.5%, functions ~93.2%, branches ~82.6%) so they pass now and guard against drift; `lines=80` mirrors CI.
+
+**Acceptance:** `npx vitest run --coverage` passes at current levels and would exit non-zero below a floor. ✅
 
 ---
 
-## Phase 5 — Repo hygiene
+## Phase 5 — Repo hygiene  ✅ done
 
-### [ ] Task 5.1 — Stop committing coverage artifacts (the 263 MB driver)
-117 files under `coverage/` are tracked.
-```bash
-echo "coverage/" >> .gitignore
-git rm -r --cached coverage/
-```
-(History still contains them; a `git filter-repo` shrink is optional, destructive, and needs explicit user sign‑off.)
+### [x] Task 5.1 — Stop committing coverage artifacts (the 263 MB driver)
+117 files under `agent-sentry/coverage/` were tracked. Added `coverage/` to `.gitignore` and ran `git rm -r --cached agent-sentry/coverage/` (117 deletions staged; working files kept).
 
-**Acceptance:** `git ls-files | grep -c '^coverage/'` → `0`; `git status` clean for `coverage/`.
+(History still contains them; a `git filter-repo` shrink is optional, destructive, and needs explicit user sign‑off — **not** done here.)
+
+**Acceptance:** `git ls-files | grep -c 'coverage/'` → `0`; `git check-ignore coverage/index.html` → ignored. ✅
 
 ---
 
