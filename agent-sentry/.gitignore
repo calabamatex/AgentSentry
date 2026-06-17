@@ -11,3 +11,12 @@ benchmarks/ci-latest.json
 
 # Generated coverage reports — never commit
 coverage/
+
+# Secrets / local env — never commit
+.env
+.env.local
+.env.*.local
+
+# OS / editor noise
+.DS_Store
+*.log

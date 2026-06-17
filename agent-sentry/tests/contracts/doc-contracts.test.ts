@@ -41,6 +41,32 @@ describe('Version consistency', () => {
       expect(content).not.toMatch(/const VERSION\s*=\s*['"]0\.5\.0['"]/);
     }
   });
+
+  it('README H1 version matches package.json', () => {
+    const pkg = JSON.parse(readFile('package.json'));
+    const readme = readFile('README.md');
+    const h1 = readme.match(/^#\s+AgentSentry\s+v([^\s]+)/m);
+    expect(h1).not.toBeNull();
+    expect(h1![1]).toBe(pkg.version);
+  });
+});
+
+describe('README accuracy — tool/command counts', () => {
+  it('README MCP tool count matches the source tools array', () => {
+    const server = readFile('src/mcp/server.ts');
+    // Extract the `export const tools: ToolDefinition[] = [ ... ];` array body.
+    const arrayBody = server.match(/export const tools:[^=]*=\s*\[([\s\S]*?)\]/);
+    expect(arrayBody).not.toBeNull();
+    const toolCount = arrayBody![1]
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0).length;
+
+    const readme = readFile('README.md');
+    const claim = readme.match(/(\d+)\s+tools/);
+    expect(claim).not.toBeNull();
+    expect(Number(claim![1])).toBe(toolCount);
+  });
 });
 
 describe('Enablement config consistency', () => {
@@ -90,6 +116,19 @@ describe('README accuracy', () => {
     };
     const expectedName = levelNames[configLevel];
     expect(defaultMatch![1]).toContain(expectedName);
+  });
+});
+
+describe('Supply-chain integrity', () => {
+  it('ONNX model + tokenizer download checksums are pinned (non-empty 64-char hex)', () => {
+    const src = readFile('src/memory/embeddings.ts');
+    for (const name of ['ONNX_MODEL_SHA256', 'ONNX_TOKENIZER_SHA256']) {
+      const m = src.match(new RegExp(`${name}\\s*=\\s*'([0-9a-f]*)'`));
+      expect(m, `${name} should be assigned a string literal`).not.toBeNull();
+      expect(m![1], `${name} must be a pinned sha256 so download verification runs`).toMatch(
+        /^[0-9a-f]{64}$/,
+      );
+    }
   });
 });
 
