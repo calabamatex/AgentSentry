@@ -35,8 +35,9 @@ describe('HTTP MCP Transport', () => {
       await cleanup();
       cleanup = null;
     }
-    // Always clean up env var
+    // Always clean up env vars
     delete process.env.AGENT_SENTRY_ACCESS_KEY;
+    delete process.env.AGENT_SENTRY_NO_AUTH;
   });
 
   it('health endpoint returns ok', async () => {
@@ -73,7 +74,7 @@ describe('HTTP MCP Transport', () => {
   it('rejects invalid access key with 401', async () => {
     process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
     const { createHttpTransport } = await import('../../src/mcp/transport');
-    const transport = createHttpTransport(0, 'test-secret-key');
+    const transport = createHttpTransport(0);
     await transport.ready;
     cleanup = () => transport.close();
 
@@ -93,21 +94,50 @@ describe('HTTP MCP Transport', () => {
     expect(res.status).toBe(401);
   });
 
-  it('accepts valid access key', async () => {
-    process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
+  it('fails closed: rejects /mcp with no key configured (401)', async () => {
+    // No AGENT_SENTRY_ACCESS_KEY and no AGENT_SENTRY_NO_AUTH set.
+    delete process.env.AGENT_SENTRY_ACCESS_KEY;
+    delete process.env.AGENT_SENTRY_NO_AUTH;
     const { createHttpTransport } = await import('../../src/mcp/transport');
-    const transport = createHttpTransport(0, 'test-secret-key');
+    const transport = createHttpTransport(0);
     await transport.ready;
     cleanup = () => transport.close();
 
-    const res = await httpRequest({
-      hostname: '127.0.0.1',
-      port: transport.port,
-      path: '/health',
-      method: 'GET',
-      headers: { 'x-agent-sentry-key': 'test-secret-key' },
-    });
-    expect(res.status).toBe(200);
+    const res = await httpRequest(
+      {
+        hostname: '127.0.0.1',
+        port: transport.port,
+        path: '/mcp',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      },
+      '{}',
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('accepts a valid access key on /mcp (not 401)', async () => {
+    process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
+    const { createHttpTransport } = await import('../../src/mcp/transport');
+    const transport = createHttpTransport(0);
+    await transport.ready;
+    cleanup = () => transport.close();
+
+    const res = await httpRequest(
+      {
+        hostname: '127.0.0.1',
+        port: transport.port,
+        path: '/mcp',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-agent-sentry-key': 'test-secret-key',
+        },
+      },
+      '{}',
+    );
+    // A correct key passes the auth gate; the MCP layer may 400/200 but must not 401.
+    expect(res.status).not.toBe(401);
   });
 
   it('CORS headers are present on responses', async () => {

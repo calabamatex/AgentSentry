@@ -35,11 +35,16 @@ export interface HttpTransportServer {
  * Uses the real StreamableHTTPServerTransport from the MCP SDK.
  *
  * @param port Port to listen on (use 0 for random available port)
- * @param accessKey Optional access key for authentication
+ * @param host Optional interface to bind (e.g. '127.0.0.1' to restrict to loopback)
+ *
+ * Authentication is delegated to validateAccessKey(), which is fail-closed:
+ * non-health requests are rejected unless AGENT_SENTRY_ACCESS_KEY is set (or
+ * AGENT_SENTRY_NO_AUTH opts out for local dev). The /health endpoint is
+ * intentionally unauthenticated so liveness probes work.
  */
 export function createHttpTransport(
   port: number,
-  accessKey?: string,
+  host?: string,
 ): HttpTransportServer {
   const rateLimiter = createRateLimiter(100, 60000);
 
@@ -51,8 +56,13 @@ export function createHttpTransport(
   let actualPort = port;
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-    // CORS headers
-    const corsOrigin = process.env.AGENT_SENTRY_CORS_ORIGIN || 'http://localhost';
+    // CORS headers. A wildcard origin is refused unless explicitly opted in,
+    // to avoid silently exposing the tool surface cross-origin.
+    let corsOrigin = process.env.AGENT_SENTRY_CORS_ORIGIN || 'http://localhost';
+    if (corsOrigin === '*' && process.env.AGENT_SENTRY_ALLOW_WILDCARD_CORS !== '1') {
+      logger.warn('Ignoring wildcard CORS origin; set AGENT_SENTRY_ALLOW_WILDCARD_CORS=1 to allow it');
+      corsOrigin = 'http://localhost';
+    }
     res.setHeader('Access-Control-Allow-Origin', corsOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-agent-sentry-key, Mcp-Session-Id');
@@ -63,27 +73,23 @@ export function createHttpTransport(
       return;
     }
 
-    // Access key validation
-    if (accessKey) {
-      const headerKey = req.headers['x-agent-sentry-key'] as string | undefined;
-      const providedKey = headerKey ?? '';
+    // Health check endpoint — unauthenticated liveness probe (served before auth).
+    if (req.method === 'GET' && (req.url === '/health' || req.url?.startsWith('/health?'))) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', transport: 'http' }));
+      return;
+    }
 
-      if (!validateAccessKey(providedKey)) {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Unauthorized: invalid or missing access key' }));
-        return;
-      }
+    // Access key validation — fail closed for every non-health request.
+    const providedKey = (req.headers['x-agent-sentry-key'] as string | undefined) ?? '';
+    if (!validateAccessKey(providedKey)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized: invalid or missing access key' }));
+      return;
     }
 
     // Rate limiting
     rateLimiter.middleware(req, res, () => {
-      // Health check endpoint
-      if (req.method === 'GET' && (req.url === '/health' || req.url?.startsWith('/health?'))) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', transport: 'http' }));
-        return;
-      }
-
       // Delegate all other requests to the MCP StreamableHTTPServerTransport
       mcpTransport.handleRequest(req, res).catch((err: unknown) => {
         if (!res.headersSent) {
@@ -97,14 +103,20 @@ export function createHttpTransport(
   });
 
   const ready = new Promise<void>((resolve) => {
-    server.listen(port, () => {
+    const onListen = () => {
       const addr = server.address() as AddressInfo;
       if (addr) {
         actualPort = addr.port;
         result.port = addr.port;
       }
       resolve();
-    });
+    };
+    // Bind to the requested host (e.g. loopback) when provided; otherwise all interfaces.
+    if (host) {
+      server.listen(port, host, onListen);
+    } else {
+      server.listen(port, onListen);
+    }
   });
 
   const result: HttpTransportServer = {

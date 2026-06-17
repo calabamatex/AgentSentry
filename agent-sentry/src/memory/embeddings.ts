@@ -53,9 +53,18 @@ const ONNX_TOKENIZER_FILE = 'tokenizer.json';
 const ONNX_MODEL_URL = 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx';
 const ONNX_TOKENIZER_URL = 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json';
 
-/** SHA-256 checksum for integrity verification (set to empty string to skip verification). */
-const ONNX_MODEL_SHA256 = '';
-const ONNX_TOKENIZER_SHA256 = '';
+/**
+ * SHA-256 checksums for download integrity verification (set to empty string to skip).
+ * Pinned to sentence-transformers/all-MiniLM-L6-v2 @ main:
+ *   onnx/model.onnx   (90,405,214 bytes)
+ *   tokenizer.json       (466,247 bytes)
+ * Recompute with `shasum -a 256 <file>` if the pinned ONNX_MODEL_URL/ONNX_TOKENIZER_URL change.
+ */
+const ONNX_MODEL_SHA256 = '6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452';
+const ONNX_TOKENIZER_SHA256 = 'be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037';
+
+/** Hard cap on a single model/tokenizer download to prevent disk exhaustion (model is ~90 MB). */
+const MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024;
 
 export class NoopEmbeddingProvider implements EmbeddingProvider {
   readonly name = 'noop';
@@ -224,7 +233,25 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
             reject(new Error(`Download failed: HTTP ${res.statusCode}`));
             return;
           }
+          // Reject oversized downloads up front via Content-Length when present.
+          const declared = Number(res.headers['content-length']);
+          if (Number.isFinite(declared) && declared > MAX_DOWNLOAD_BYTES) {
+            res.destroy();
+            reject(new Error(`Download too large: ${declared} bytes exceeds ${MAX_DOWNLOAD_BYTES}`));
+            return;
+          }
           const file = fs.createWriteStream(destPath);
+          // Enforce the cap as bytes stream in, in case Content-Length is absent or lies.
+          let received = 0;
+          res.on('data', (chunk: Buffer) => {
+            received += chunk.length;
+            if (received > MAX_DOWNLOAD_BYTES) {
+              res.destroy();
+              file.destroy();
+              fs.rm(destPath, { force: true }, () => {});
+              reject(new Error(`Download exceeded ${MAX_DOWNLOAD_BYTES} bytes; aborted`));
+            }
+          });
           res.pipe(file);
           file.on('finish', () => { file.close(); resolve(); });
           file.on('error', (err) => { fs.unlinkSync(destPath); reject(err); });

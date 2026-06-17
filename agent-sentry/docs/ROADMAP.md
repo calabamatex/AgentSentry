@@ -1,16 +1,16 @@
 # AgentSentry Roadmap
 
-## Now — Stable
+## Now — Stable (within beta)
 
-Production-ready features. Fully tested, documented, and supported.
+Feature-complete and covered by the test suite. The project is pre-1.0 (`0.6.0-beta.1`); these features are considered stable but not yet certified production-ready — see `docs/FOLLOWUPS.md` for pre-1.0 blockers.
 
 | Feature | Description |
 |---------|-------------|
 | SQLite Memory Store | Hash-chained event store with vector search support |
-| MCP Server (9 tools) | stdio/HTTP transport, all tools documented |
+| MCP Server (10 tools) | stdio/HTTP transport, all tools documented |
 | Claude Code Hooks | TypeScript implementations with shell wrappers for backward compat |
 | Progressive Enablement | 5 levels of incremental skill activation |
-| CLI (11 commands) | health, metrics, memory, stream, plugin, config, dashboard, enable, prune, export, import |
+| CLI (13 commands) | init, config, enable, health, memory, metrics, dashboard, stream, plugin, handoff, prune, export, import |
 | Enrichment | Auto-classification, cross-tagging, root cause hints |
 | Observability | Health checks, circuit breaker, structured logging, metrics |
 | Performance Benchmarks | CI-integrated regression tests with threshold enforcement |
