@@ -31,7 +31,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | **Memory Store** | Hash-chained event storage with auto-pruning, incremental chain verification, and chunked vector search |
 | **MCP Server** | 10 tools exposed via Model Context Protocol (stdio + HTTP) |
 | **Primitives** | 7 composable modules — risk scoring, rules validation, secret scanning, context health, git checks, task sizing, file analysis |
-| **Enablement Engine** | 5 progressive levels from Safe Ground to Full Guard |
+| **Enablement Engine** | 6 progressive levels from Safe Ground to Risk Watch |
 | **Enrichment** | Auto-classification by domain (auth, db, api, testing, config, infra) with root-cause detection |
 | **Intelligence** | Cross-session summaries, pattern detection, and context recall |
 | **Audit Index** | Full-text search over events, file audit trails, session timelines |
@@ -44,7 +44,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | SQLite memory store | **Stable** | Default provider, hash-chained, auto-pruning |
 | MCP server (10 tools) | **Stable** | stdio + HTTP transport |
 | Claude Code hooks | **Stable** | TypeScript implementations with shell wrappers |
-| Progressive enablement | **Stable** | 5 levels |
+| Progressive enablement | **Stable** | 6 levels (Level 6 risk_scoring is [experimental]) |
 | CLI (13 commands) | **Stable** | init, config, enable, health, memory, metrics, dashboard, stream, plugin, handoff, prune, export, import |
 | Enrichment & observability | **Stable** | Auto-classification, circuit breaker, structured logging |
 | Supabase provider | **Experimental** | Requires external Supabase instance; not recommended for production |
@@ -84,6 +84,7 @@ If you want to customize, adjust `enablement.level` in `agent-sentry.config.json
 | 3 | House Rules | + standing_orders (basic), + directive_compliance (full) |
 | 4 | Right Size | standing_orders→full, + small_bets (basic) |
 | 5 | Full Guard | small_bets→full, + proactive_safety (full) |
+| 6 | Risk Watch | + risk_scoring (full) — context-aware risk scoring [experimental] |
 
 ## Storage
 

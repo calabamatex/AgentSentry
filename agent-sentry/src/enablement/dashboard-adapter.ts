@@ -43,6 +43,7 @@ const SKILL_TITLES: Record<string, string> = {
   directive_compliance: 'Hook Safety',
   small_bets: 'Small Bets',
   proactive_safety: 'Proactive Safety',
+  risk_scoring: 'Risk Watch',
 };
 
 /**
@@ -55,6 +56,7 @@ const SKILL_UNLOCK_LEVEL: Record<string, number> = {
   directive_compliance: 3,
   small_bets: 4,
   proactive_safety: 5,
+  risk_scoring: 6,
 };
 
 // ---------------------------------------------------------------------------
