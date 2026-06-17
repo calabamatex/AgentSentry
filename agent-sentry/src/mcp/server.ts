@@ -136,9 +136,29 @@ export async function main(): Promise<void> {
 
   if (isHttp) {
     const accessKey = process.env.AGENT_SENTRY_ACCESS_KEY;
-    const httpTransport = createHttpTransport(port, accessKey);
+    const noAuth =
+      process.env.AGENT_SENTRY_NO_AUTH === 'true' || process.env.AGENT_SENTRY_NO_AUTH === '1';
+
+    // Fail closed: never expose the HTTP tool surface unauthenticated by default.
+    if (!accessKey && !noAuth) {
+      logger.error(
+        'Refusing to start HTTP transport without AGENT_SENTRY_ACCESS_KEY. ' +
+          'Set that env var, or set AGENT_SENTRY_NO_AUTH=true (binds to 127.0.0.1 only, unsafe) for trusted local use.',
+      );
+      process.exit(1);
+    }
+
+    // When running keyless by explicit opt-in, restrict the bind to loopback.
+    const host = accessKey ? undefined : '127.0.0.1';
+    if (!accessKey) {
+      logger.warn(
+        'HTTP transport starting WITHOUT an access key — unauthenticated and bound to 127.0.0.1 only. Do NOT expose this port.',
+      );
+    }
+
+    const httpTransport = createHttpTransport(port, host);
     await server.connect(httpTransport.transport);
-    logger.info('MCP HTTP server listening', { port: httpTransport.port });
+    logger.info('MCP HTTP server listening', { port: httpTransport.port, host: host ?? '0.0.0.0' });
 
     const shutdown = async () => {
       await shutdownSharedStore();

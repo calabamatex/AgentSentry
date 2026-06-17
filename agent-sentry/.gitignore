@@ -8,3 +8,12 @@ agentops/
 
 # CI benchmark artifacts (uploaded as workflow artifacts; not tracked)
 benchmarks/ci-latest.json
+
+# Secrets / local env — never commit
+.env
+.env.local
+.env.*.local
+
+# OS / editor noise
+.DS_Store
+*.log

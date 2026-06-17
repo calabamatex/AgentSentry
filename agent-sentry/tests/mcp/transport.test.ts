@@ -70,17 +70,22 @@ describe('Transport', () => {
       expect(body.status).toBe('ok');
     });
 
+    // Auth is enforced on tool endpoints (/mcp), not the unauthenticated /health probe.
     it('should reject requests without valid access key', async () => {
       const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
       process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
 
       try {
-        httpTransport = createHttpTransport(0, 'test-secret-key');
+        httpTransport = createHttpTransport(0);
         await httpTransport.ready;
         const addr = httpTransport.server.address();
         if (!addr || typeof addr === 'string') return;
 
-        const response = await fetch(`http://127.0.0.1:${addr.port}/health`);
+        const response = await fetch(`http://127.0.0.1:${addr.port}/mcp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
         expect(response.status).toBe(401);
       } finally {
         if (originalKey === undefined) {
@@ -91,40 +96,25 @@ describe('Transport', () => {
       }
     });
 
-    it('should accept requests with valid access key in header', async () => {
-      const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
-      process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
-
-      try {
-        httpTransport = createHttpTransport(0, 'test-secret-key');
-        await httpTransport.ready;
-        const addr = httpTransport.server.address();
-        if (!addr || typeof addr === 'string') return;
-
-        const response = await fetch(`http://127.0.0.1:${addr.port}/health`, {
-          headers: { 'x-agent-sentry-key': 'test-secret-key' },
-        });
-        expect(response.status).toBe(200);
-      } finally {
-        if (originalKey === undefined) {
-          delete process.env.AGENT_SENTRY_ACCESS_KEY;
-        } else {
-          process.env.AGENT_SENTRY_ACCESS_KEY = originalKey;
-        }
-      }
-    });
+    // The valid-key accept path is covered by http-transport.test.ts
+    // ("accepts a valid access key on /mcp (not 401)") without coupling to MCP
+    // session internals; not duplicated here to avoid a protocol-dependent hang.
 
     it('should reject requests with access key only in query param (S8: header-only auth)', async () => {
       const originalKey = process.env.AGENT_SENTRY_ACCESS_KEY;
       process.env.AGENT_SENTRY_ACCESS_KEY = 'test-secret-key';
 
       try {
-        httpTransport = createHttpTransport(0, 'test-secret-key');
+        httpTransport = createHttpTransport(0);
         await httpTransport.ready;
         const addr = httpTransport.server.address();
         if (!addr || typeof addr === 'string') return;
 
-        const response = await fetch(`http://127.0.0.1:${addr.port}/health?key=test-secret-key`);
+        const response = await fetch(`http://127.0.0.1:${addr.port}/mcp?key=test-secret-key`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
         expect(response.status).toBe(401);
       } finally {
         if (originalKey === undefined) {

@@ -4,11 +4,25 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { join, resolve } from 'path';
+import { join, resolve, sep } from 'path';
 import { Logger } from '../observability/logger';
 import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'rules-validation' });
+
+/**
+ * Resolve a caller-supplied path and confirm it stays within the project root.
+ * Returns the absolute path, or null if it escapes the tree (path-traversal guard).
+ */
+export function resolveWithinRoot(filePath: string): string | null {
+  const root = resolve(process.cwd());
+  const fullPath = resolve(root, filePath);
+  if (fullPath !== root && !fullPath.startsWith(root + sep)) {
+    logger.debug('Refusing path outside project root', { file: filePath });
+    return null;
+  }
+  return fullPath;
+}
 
 export interface RuleViolation {
   rule: string;
@@ -153,8 +167,8 @@ function buildRules(rulesContent: string): ParsedRule[] {
       severity: 'low',
       check: (filePath) => {
         try {
-          const fullPath = resolve(filePath);
-          if (existsSync(fullPath)) {
+          const fullPath = resolveWithinRoot(filePath);
+          if (fullPath && existsSync(fullPath)) {
             const content = readFileSync(fullPath, 'utf-8');
             const lineCount = content.split('\n').length;
             if (lineCount > 500) {

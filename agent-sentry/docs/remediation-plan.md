@@ -44,26 +44,32 @@
 
 ---
 
-## Phase 2 — Documentation honesty sync
+## Phase 2 — Documentation honesty sync  ✅ done
 
-### [ ] Task 2.1 — README version + maturity language
+### [x] Task 2.1 — README version + maturity language
 - `README.md:1` → `# AgentSentry v0.6.0-beta.1` (match `package.json`).
 - Re‑label any "production-ready" / "fully tested, supported" phrasing applied to a `0.x-beta` (e.g. `docs/ROADMAP.md`). Use "stable within beta" or move the phrase to a real `1.0.0` milestone. Must not contradict `docs/FOLLOWUPS.md` "Pre‑1.0 Blockers".
 
-### [ ] Task 2.2 — ROADMAP stale counts
+### [x] Task 2.2 — ROADMAP stale counts
 - `docs/ROADMAP.md:10` → `MCP Server (10 tools)` (verified in `src/mcp/server.ts:48`).
 - `docs/ROADMAP.md:13` → `CLI (13 commands)`; add the two missing: `init`, `handoff` (verified in `src/cli/index.ts:36`).
 
-### [ ] Task 2.3 — Harden the doc contract
+### [x] Task 2.3 — Harden the doc contract
 Add assertions to `tests/contracts/doc-contracts.test.ts`: README H1 version string equals `package.json` version; documented MCP‑tool count equals the source tool array length. (The existing version test passed without catching the H1 drift — close that gap.)
 
 **Acceptance:** `npx vitest run tests/contracts/doc-contracts.test.ts` passes including new assertions.
 
 ---
 
-## Phase 3 — Security hardening (verified findings)
+## Phase 3 — Security hardening (verified findings)  ✅ done
 
-### [ ] Task 3.1 — [HIGH] Re-enable ONNX download integrity (`src/memory/embeddings.ts:57-58`)
+> **Implementation notes (post-fix):**
+> - **3.1** Pinned real digests from HF `all-MiniLM-L6-v2@main`: model `6fd5d72f…46452`, tokenizer `be50c362…72037`; added `MAX_DOWNLOAD_BYTES` (200 MB) stream cap; added a contract test asserting both SHA constants stay non-empty 64-hex.
+> - **3.2** Root cause refined: `auth.ts` was already fail-closed; the bug was `transport.ts` only calling `validateAccessKey` when the `accessKey` *param* was truthy. Fix: removed that param, transport now **always** validates non-health requests via `validateAccessKey` (honors `AGENT_SENTRY_NO_AUTH`); `/health` is an unauthenticated liveness probe served before auth; `server.ts` refuses to start HTTP without a key unless `AGENT_SENTRY_NO_AUTH` opt-in, and binds `127.0.0.1` when keyless. CORS wildcard now refused unless `AGENT_SENTRY_ALLOW_WILDCARD_CORS=1`. Transport tests realigned to `/mcp`; added a fail-closed test.
+> - **3.3** Added exported `resolveWithinRoot()` guard + 5-case unit test (`tests/primitives/path-traversal.test.ts`).
+> - **3.4** `.gitignore` extended (`.env*`, `.DS_Store`, `*.log`). `npm audit fix` (non-breaking) cleared both prod **high** advisories (`fast-uri`, `hono`); prod tree now **1 moderate** (was 6 incl. 2 high). Remaining 7 full-tree vulns are dev-only (`vitest`/`esbuild` criticals) needing a `--force` major bump — see Task 3.4-followup.
+
+### [x] Task 3.1 — [HIGH] Re-enable ONNX download integrity (`src/memory/embeddings.ts:57-58`)
 `ONNX_MODEL_SHA256` / `ONNX_TOKENIZER_SHA256` are empty strings, so `verifyChecksum` is gated out (lines 98, 185). Downloads are unverified.
 1. Find the pinned URL constants (`ONNX_MODEL_URL`, tokenizer URL near line 50).
 2. `curl -sL "<URL>" -o /tmp/f && shasum -a 256 /tmp/f` for each; paste hex digests into the constants.
@@ -72,14 +78,14 @@ Add assertions to `tests/contracts/doc-contracts.test.ts`: README H1 version str
 
 **Acceptance:** new unit test calls `verifyChecksum` with good and tampered buffers → asserts throw‑on‑mismatch; `npx vitest run tests/memory` passes.
 
-### [ ] Task 3.2 — [MEDIUM] HTTP transport must fail closed (`src/mcp/transport.ts:67`, `src/mcp/server.ts:138`)
+### [x] Task 3.2 — [MEDIUM] HTTP transport must fail closed (`src/mcp/transport.ts:67`, `src/mcp/server.ts:138`)
 Auth runs only `if (accessKey)`; when `AGENT_SENTRY_ACCESS_KEY` is unset, HTTP is unauthenticated (stdio is the safe default). Make it fail closed:
 - If HTTP requested and key empty: refuse to start with a clear error, **or** bind `127.0.0.1` only AND `logger.warn` loudly. Recommended: require key for any non‑loopback bind.
 - Tighten CORS default (`transport.ts:55`): reject `*` unless an explicit env opt‑in is set.
 
 **Acceptance:** new `tests/mcp/` test — no key → throws or warns + loopback only; wrong `x-agent-sentry-key` → 401.
 
-### [ ] Task 3.3 — [LOW] Path sanitization in rules checker (`src/primitives/rules-validation.ts:156`)
+### [x] Task 3.3 — [LOW] Path sanitization in rules checker (`src/primitives/rules-validation.ts:156`)
 `resolve(filePath)` + `readFileSync` on caller‑influenced input (returns only a line count/boolean — info‑leak, not content disclosure). Guard to project root:
 ```ts
 const root = resolve(process.cwd());
@@ -90,7 +96,7 @@ Apply to any other MCP‑reachable file reader (`check-rules`, `scan-security`).
 
 **Acceptance:** unit test — `../../etc/passwd` → returns `null`, never reads.
 
-### [ ] Task 3.4 — [LOW] `.gitignore` + dependency audit
+### [x] Task 3.4 — [LOW] `.gitignore` + dependency audit
 - Add to `.gitignore`: `.env`, `.env.local`, `.env.*.local`, `.DS_Store`, `*.log` (preventive — no `.env` tracked today; verify `git ls-files | grep -i env`).
 - Prod‑only audit is `0 critical / 1 high / 5 moderate` (`npm audit --omit=dev`); the 2 criticals are dev‑only (`vitest`/`esbuild`). Fix prod high first (`npm audit fix`), then bump `vitest` + `@vitest/coverage-v8` to 4.x on a **separate commit** (major bump — isolate and re‑run full suite).
 
