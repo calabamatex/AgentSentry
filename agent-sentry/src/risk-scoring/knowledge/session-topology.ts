@@ -77,6 +77,14 @@ export class SessionTopology {
     this.contextUtilization = clamp01(utilization);
   }
 
+  /**
+   * Seed the commit age from an externally-known signal (e.g. an agent reporting
+   * "45 minutes since my last commit"). Pass null to mark "never committed".
+   */
+  setCommitAgeMinutes(minutes: number | null): void {
+    this.lastCommitMs = minutes === null ? null : this.clock() - Math.max(0, minutes) * 60000;
+  }
+
   updateUncommitted(diffSize: number, fileCount: number): void {
     this.uncommittedDiffSize = Math.max(0, diffSize);
     this.uncommittedFileCount = Math.max(0, fileCount);

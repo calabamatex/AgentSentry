@@ -29,7 +29,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Layer | What it does |
 |-------|-------------|
 | **Memory Store** | Hash-chained event storage with auto-pruning, incremental chain verification, and chunked vector search |
-| **MCP Server** | 10 tools exposed via Model Context Protocol (stdio + HTTP) |
+| **MCP Server** | 11 tools exposed via Model Context Protocol (stdio + HTTP) |
 | **Primitives** | 7 composable modules — risk scoring, rules validation, secret scanning, context health, git checks, task sizing, file analysis |
 | **Enablement Engine** | 6 progressive levels from Safe Ground to Risk Watch |
 | **Enrichment** | Auto-classification by domain (auth, db, api, testing, config, infra) with root-cause detection |
@@ -42,7 +42,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Feature | Status | Notes |
 |---------|--------|-------|
 | SQLite memory store | **Stable** | Default provider, hash-chained, auto-pruning |
-| MCP server (10 tools) | **Stable** | stdio + HTTP transport |
+| MCP server (11 tools) | **Stable** | stdio + HTTP transport (risk_score is [experimental], Level 6) |
 | Claude Code hooks | **Stable** | TypeScript implementations with shell wrappers |
 | Progressive enablement | **Stable** | 6 levels (Level 6 risk_scoring is [experimental]) |
 | CLI (13 commands) | **Stable** | init, config, enable, health, memory, metrics, dashboard, stream, plugin, handoff, prune, export, import |
@@ -70,6 +70,7 @@ Once wired, these tools are available in any Claude Code session:
 | `agent_sentry_check_git` | Git status and hygiene checks |
 | `agent_sentry_recall_context` | Cross-session context recall for current task |
 | `agent_sentry_generate_handoff` | Generate structured handoff message for session continuity |
+| `agent_sentry_risk_score` | Context-aware, confidence-labeled session risk scoring ([experimental], Level 6) |
 
 ## Progressive Enablement
 
