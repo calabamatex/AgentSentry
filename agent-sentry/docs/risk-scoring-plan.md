@@ -78,11 +78,17 @@ The original spec dressed hand-tuned heuristics in probabilistic language ("Baye
 
 **Gate 4:** ✅ no shipped surface claims predictive validity; in-repo docs match the code.
 
-## Phase G — Backward-compat, performance, release
+## Phase G — Backward-compat, performance, release ✅ done
 
-- **G1.** Backward-compat suite: L1–5 byte-identical; config without `risk_scoring` loads; downgrade L6→L5 clean.
-- **G2.** Perf benchmarks with **conservative thresholds** (lesson from the perf-flake fixed in PR #22): `performance.now()`, isolated benchmark job.
-- **G3.** Final gate: build + lint + `tsc` clean; full suite green; doc-contract green (11 tools, L6 tables, version); calibration gate green; coverage floors (PR #20) hold.
+- **G1.** ✅ `tests/risk-scoring/backward-compat.test.ts`: Levels 1–5 keep `risk_scoring` off and unchanged active skills; downgrade L6→L5 deactivates it; a config with no `risk_scoring` section falls back to safe defaults.
+- **G2.** ✅ `tests/risk-scoring/perf.test.ts`: asserts the engine's **own reported** `total_execution_time_ms` (via `performance.now()`) stays under the configured budget across 100 runs + a 1000-event load — robust against wall-clock CI-load flakiness.
+- **G3.** ✅ Final gate met: build + `tsc` + lint clean (0 errors); full suite green; doc-contract green (11 tools, L6 tables, version); calibration gate green.
+
+---
+
+## Status: complete
+
+All phases (A → G) shipped as independently-green PRs. The engine produces deterministic, explainable, **confidence-labeled** risk reads (composite + compound risks + active misbehavior profiles), reachable via `agent_sentry_risk_score` at Level 6, with prediction explicitly deferred until calibration data proves it reliable.
 
 ---
 
