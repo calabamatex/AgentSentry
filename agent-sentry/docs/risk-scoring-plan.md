@@ -71,12 +71,12 @@ The original spec dressed hand-tuned heuristics in probabilistic language ("Baye
 
 **Gate:** tool count 11 verified by doc-contract; Level 5 unchanged.
 
-## Phase F — Park the prediction story (Gate 4)
+## Phase F — Park the prediction story (Gate 4) ✅ done
 
-- **F1.** Monte Carlo implemented only as a documented `@experimental`, off-by-default stub (mirrors `enforcement`/`coordination` labeling), gated behind a reliability check current data can't pass. README/ROADMAP: "experimental — not calibrated; not for decisions."
-- **F2.** Rewrite narrative/marketing docs to match what ships ("context-aware heuristic scoring with explicit confidence"), not "predictive trajectory / category that doesn't exist / EU AI Act statistical backing."
+- **F1.** ✅ Trajectory/Monte-Carlo made an explicit, typed deferral: `scoring/trajectory.ts` `projectTrajectory()` always returns `{ available: false, reason }` rather than shipping a fabricated probability. README/ROADMAP mark risk scoring `[experimental]`. Guardrail tests assert `RiskScore` exposes no `trajectory`/`incident_probability` field.
+- **F2.** ✅ The marketing narratives from the proposal are not in the repo; instead, the canonical honest description ships as `docs/architecture/risk-scoring.md` ("deterministic, explainable, confidence-labeled — not probabilistic prediction"), with a "What it deliberately is *not*" section. README architecture index links it and corrects the stale "5-level" → "6-level".
 
-**Gate 4:** no shipped surface claims predictive validity; marketing matches code.
+**Gate 4:** ✅ no shipped surface claims predictive validity; in-repo docs match the code.
 
 ## Phase G — Backward-compat, performance, release
 
