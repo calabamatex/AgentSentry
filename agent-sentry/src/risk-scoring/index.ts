@@ -8,3 +8,14 @@
 
 export * from './types';
 export { DEFAULT_RISK_SCORING_CONFIG } from './constants';
+export { RiskScoringEngine, type LiveSignals } from './engine';
+export { SessionTopology } from './knowledge/session-topology';
+export { RiskCorrelator } from './correlation/correlator';
+export { DeterministicScorer } from './scoring/deterministic';
+export { evaluateGate, buildConfidence } from './calibration/gate';
+export {
+  brierScore,
+  reliabilityDiagram,
+  expectedCalibrationError,
+  type Prediction,
+} from './calibration/metrics';

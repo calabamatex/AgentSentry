@@ -25,6 +25,7 @@ import * as searchHistory from './tools/search-history';
 import * as health from './tools/health';
 import * as recallContext from './tools/recall-context';
 import * as generateHandoff from './tools/generate-handoff';
+import * as riskScore from './tools/risk-score';
 
 /**
  * Tool definition with name, description, inputSchema, and handler.
@@ -56,6 +57,7 @@ export const tools: ToolDefinition[] = [
   health,
   recallContext,
   generateHandoff,
+  riskScore,
 ];
 
 const toolMap = new Map<string, ToolDefinition>();

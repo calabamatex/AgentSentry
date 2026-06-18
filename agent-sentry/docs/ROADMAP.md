@@ -7,7 +7,7 @@ Feature-complete and covered by the test suite. The project is pre-1.0 (`0.6.0-b
 | Feature | Description |
 |---------|-------------|
 | SQLite Memory Store | Hash-chained event store with vector search support |
-| MCP Server (10 tools) | stdio/HTTP transport, all tools documented |
+| MCP Server (11 tools) | stdio/HTTP transport, all tools documented (risk_score is experimental, Level 6) |
 | Claude Code Hooks | TypeScript implementations with shell wrappers for backward compat |
 | Progressive Enablement | 6 levels of incremental skill activation (Level 6 risk_scoring is experimental) |
 | CLI (13 commands) | init, config, enable, health, memory, metrics, dashboard, stream, plugin, handoff, prune, export, import |
