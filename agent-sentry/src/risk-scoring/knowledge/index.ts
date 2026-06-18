@@ -3,3 +3,4 @@
  */
 
 export { SessionTopology, type Clock } from './session-topology';
+export { MisbehaviorProfileStore } from './misbehavior-profiles';

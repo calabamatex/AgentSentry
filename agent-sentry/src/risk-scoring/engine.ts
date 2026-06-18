@@ -11,6 +11,7 @@
 
 import type { OpsEvent } from '../memory/schema';
 import { SessionTopology, type Clock } from './knowledge/session-topology';
+import { MisbehaviorProfileStore } from './knowledge/misbehavior-profiles';
 import { DeterministicScorer } from './scoring/deterministic';
 import type { CorrelationSignals } from './correlation/correlator';
 import type { Prediction } from './calibration/metrics';
@@ -29,6 +30,7 @@ const MAX_TREND_HISTORY = 5;
 export class RiskScoringEngine {
   private topology: SessionTopology;
   private readonly scorer = new DeterministicScorer();
+  private readonly profiles = new MisbehaviorProfileStore();
   private recentLevels: number[] = [];
 
   constructor(
@@ -88,6 +90,9 @@ export class RiskScoringEngine {
       { state, signals, recentLevels: this.recentLevels, calibrationEvidence, timestamp },
       this.config,
     );
+
+    // Behavioral failure-mode matching (confidence-labeled, default_priors).
+    score.active_profiles = this.profiles.evaluate(state, this.config, calibrationEvidence);
 
     this.recentLevels.push(score.session_risk_level);
     if (this.recentLevels.length > MAX_TREND_HISTORY) this.recentLevels.shift();

@@ -83,6 +83,16 @@ describe('RiskScoringEngine', () => {
     expect(e.evaluate(TS).confidence.basis).toBe('default_priors');
   });
 
+  it('populates active_profiles from misbehavior matching', () => {
+    const fc = fakeClock();
+    const e = new RiskScoringEngine(cfg, 's1', fc.clock);
+    e.applySignals({ uncommitted_files: 14, minutes_since_commit: 60 });
+    for (let i = 0; i < 12; i++) e.applyEvent(evt({ affected_files: [`src/f${i}.ts`] }));
+    const score = e.evaluate(TS);
+    expect(score.active_profiles.map((p) => p.profile_id)).toContain('MBP-BULLDOZER');
+    expect(score.active_profiles.every((p) => p.confidence.basis === 'default_priors')).toBe(true);
+  });
+
   it('tracks recent levels for trend across evaluations', () => {
     const fc = fakeClock();
     const e = new RiskScoringEngine(cfg, 's1', fc.clock);

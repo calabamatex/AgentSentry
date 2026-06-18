@@ -113,6 +113,8 @@ export interface MisbehaviorProfile {
   base_likelihood: number;
   precondition_multipliers: Record<string, number>;
   observed_frequency: number;
+  /** Plain-language action surfaced when this profile is elevated. */
+  recommended_action: string;
 }
 
 // ---------------------------------------------------------------------------
