@@ -147,8 +147,9 @@ docs/           # Getting started, API reference, schema, roadmap
 ### Architecture
 
 - [Memory Model](docs/architecture/memory-model.md) — Hash-chained storage, search, and providers
-- [Enablement Model](docs/architecture/enablement-model.md) — The 5-level progressive system
+- [Enablement Model](docs/architecture/enablement-model.md) — The 6-level progressive system
 - [MCP Integration](docs/architecture/mcp-integration.md) — Tools, transports, and auth
+- [Risk Scoring](docs/architecture/risk-scoring.md) — Context-aware risk scoring (Level 6, experimental)
 
 ## Known Limitations
 
