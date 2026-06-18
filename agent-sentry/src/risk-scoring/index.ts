@@ -7,9 +7,10 @@
  */
 
 export * from './types';
-export { DEFAULT_RISK_SCORING_CONFIG } from './constants';
+export { DEFAULT_RISK_SCORING_CONFIG, DEFAULT_MISBEHAVIOR_PROFILES } from './constants';
 export { RiskScoringEngine, type LiveSignals } from './engine';
 export { SessionTopology } from './knowledge/session-topology';
+export { MisbehaviorProfileStore } from './knowledge/misbehavior-profiles';
 export { RiskCorrelator } from './correlation/correlator';
 export { DeterministicScorer } from './scoring/deterministic';
 export { evaluateGate, buildConfidence } from './calibration/gate';
