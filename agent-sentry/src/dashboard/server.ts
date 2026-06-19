@@ -8,6 +8,8 @@
  *   /api/metrics → Prometheus text metrics
  *   /api/plugins → Plugin list
  *   /api/stats  → Memory store stats
+ *   /api/enablement → Enablement level + skills
+ *   /api/risk   → Confidence-labeled risk score (Level 6 only)
  *
  * Zero external dependencies — uses only Node built-in http.
  */
@@ -27,6 +29,7 @@ import { VERSION } from '../version';
 import { MemoryStore } from '../memory/store';
 import { getDashboardHeader, getDashboardPanels } from '../enablement/dashboard-adapter';
 import type { EnablementConfig } from '../enablement/engine';
+import { RiskScoringEngine, DEFAULT_RISK_SCORING_CONFIG } from '../risk-scoring';
 import type { AgentCoordinator } from '../coordination/coordinator';
 
 // ---------------------------------------------------------------------------
@@ -220,6 +223,11 @@ export class DashboardServer {
       return;
     }
 
+    if (path === '/api/risk') {
+      void this.handleRisk(res);
+      return;
+    }
+
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not Found' }));
   }
@@ -349,6 +357,39 @@ export class DashboardServer {
       res.end(JSON.stringify({ available: true, ...header, panels }));
     } catch (e) {
       logger.warn('Failed to build enablement data', { error: errorMessage(e) });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false }));
+    }
+  }
+
+  /**
+   * Risk scoring for the dashboard (Level 6 only). Builds an engine from the
+   * most recent session's events and returns a confidence-labeled RiskScore.
+   * Returns { available: false } when risk scoring is not enabled or no store.
+   */
+  private async handleRisk(res: http.ServerResponse): Promise<void> {
+    const enabled = this.enablementConfig?.skills?.risk_scoring?.enabled === true;
+    if (!enabled || !this.memoryStore) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false }));
+      return;
+    }
+    try {
+      const recent = await this.memoryStore.list({ limit: 1 });
+      const sessionId = recent[0]?.session_id;
+      if (!sessionId) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ available: true, session_id: null }));
+        return;
+      }
+      const events = await this.memoryStore.list({ session_id: sessionId, limit: 1000 });
+      const engine = new RiskScoringEngine(DEFAULT_RISK_SCORING_CONFIG, sessionId);
+      engine.loadFromEvents([...events].reverse()); // store is newest-first
+      const score = engine.evaluate(new Date().toISOString());
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: true, session_id: sessionId, ...score }));
+    } catch (e) {
+      logger.warn('Failed to build risk data', { error: errorMessage(e) });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ available: false }));
     }

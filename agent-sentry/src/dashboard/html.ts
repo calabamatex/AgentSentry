@@ -115,6 +115,10 @@ nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
       <h2>Enablement <span class="badge" id="enablement-level">--</span></h2>
       <div id="enablement-content"><div class="empty">Loading...</div></div>
     </div>
+    <div class="panel" id="risk-panel" style="display:none">
+      <h2>Risk Watch <span class="badge" id="risk-level">--</span> <span class="badge" id="risk-confidence" title="Scores stay 'default priors' until calibrated against outcomes">--</span></h2>
+      <div id="risk-content"><div class="empty">Loading...</div></div>
+    </div>
     <div class="panel">
       <h2>Health Status <span class="badge" id="health-status">--</span></h2>
       <div id="health-checks"><div class="empty">Loading...</div></div>
@@ -213,7 +217,7 @@ nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
   }
 
   function pollForTab(tab) {
-    if (tab === 'overview') { pollStats(); pollHealth(); pollEnablement(); }
+    if (tab === 'overview') { pollStats(); pollHealth(); pollEnablement(); pollRisk(); }
     if (tab === 'events') { pollStreaming(); }
     if (tab === 'system') { pollSysHealth(); pollMetrics(); }
     if (tab === 'agents') { pollAgents(); }
@@ -392,6 +396,45 @@ nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
       }
     } catch(e) {
       document.getElementById('enablement-content').innerHTML = '<div class="empty">Failed to fetch enablement</div>';
+    }
+  }
+
+  async function pollRisk() {
+    var panel = document.getElementById('risk-panel');
+    try {
+      var r = await fetch('/api/risk');
+      var d = await r.json();
+      if (!d.available) { if (panel) panel.style.display = 'none'; return; }
+      if (panel) panel.style.display = '';
+      if (!d.session_id) {
+        document.getElementById('risk-level').textContent = 'no session';
+        document.getElementById('risk-confidence').textContent = '';
+        document.getElementById('risk-content').innerHTML = '<div class="empty">No session to score yet</div>';
+        return;
+      }
+      var lvl = (d.session_risk_level != null ? d.session_risk_level : 0);
+      document.getElementById('risk-level').textContent = lvl.toFixed(2) + ' (' + (d.risk_trend || 'stable') + ')';
+      var basis = d.confidence ? d.confidence.basis : 'default_priors';
+      document.getElementById('risk-confidence').textContent = basis === 'calibrated' ? 'calibrated' : 'default priors';
+      var html = '';
+      if (d.explanation) html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">' + escHtml(d.explanation) + '</div>';
+      function rows(title, items, valFn) {
+        if (!items || !items.length) return '';
+        var s = '<div class="skill-title" style="margin-top:8px">' + title + '</div>';
+        items.forEach(function(it) {
+          s += '<div class="skill-row"><span class="skill-title">' + escHtml(it.name || it.id) + '</span>' +
+               '<span class="skill-mode">' + valFn(it) + '</span></div>';
+        });
+        return s;
+      }
+      html += rows('Compound risks', d.compound_risks, function(c){ return c.compound_severity != null ? c.compound_severity.toFixed(2) : ''; });
+      html += rows('Active threats', d.active_threats, function(t){ return t.severity != null ? t.severity.toFixed(2) : ''; });
+      html += rows('Misbehavior profiles', d.active_profiles, function(p){ return p.likelihood != null ? p.likelihood.toFixed(2) : ''; });
+      var none = !(d.compound_risks && d.compound_risks.length) && !(d.active_threats && d.active_threats.length) && !(d.active_profiles && d.active_profiles.length);
+      if (none) html += '<div class="empty">No elevated risk</div>';
+      document.getElementById('risk-content').innerHTML = html;
+    } catch(e) {
+      if (panel) panel.style.display = 'none';
     }
   }
 
