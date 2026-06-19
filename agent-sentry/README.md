@@ -60,13 +60,13 @@ Once wired, these tools are available in any Claude Code session:
 
 | Tool | Purpose |
 |------|---------|
-| `agent_sentry_health` | Store stats, chain integrity, embedding state, enablement level |
+| `agent_sentry_health` | Store stats, chain integrity, embedding state, enablement level (+ risk summary at Level 6) |
 | `agent_sentry_capture_event` | Log a hash-chained event (decision, error, tool_use, etc.) |
 | `agent_sentry_check_rules` | Validate a file change against CLAUDE.md/AGENTS.md rules |
 | `agent_sentry_check_context` | Estimate context window usage |
 | `agent_sentry_size_task` | Score risk of a proposed change (LOW/MEDIUM/HIGH/CRITICAL) |
 | `agent_sentry_search_history` | Search the event audit trail |
-| `agent_sentry_scan_security` | Detect secrets in file content |
+| `agent_sentry_scan_security` | Detect secrets in file content (optional `probabilistic` mode for context-adjusted severity) |
 | `agent_sentry_check_git` | Git status and hygiene checks |
 | `agent_sentry_recall_context` | Cross-session context recall for current task |
 | `agent_sentry_generate_handoff` | Generate structured handoff message for session continuity |
