@@ -93,6 +93,20 @@ describe('RiskScoringEngine', () => {
     expect(score.active_profiles.every((p) => p.confidence.basis === 'default_priors')).toBe(true);
   });
 
+  it('populates active_threats from rule-based pattern detection', () => {
+    const fc = fakeClock();
+    const e = new RiskScoringEngine(cfg, 's1', fc.clock);
+    e.applySignals({ context_utilization: 0.85, uncommitted_files: 14, minutes_since_commit: 40 });
+    e.applyEvent(evt({ affected_files: ['.env'], tags: ['secret'] }));
+    const score = e.evaluate(TS);
+    const ids = score.active_threats.map((t) => t.pattern_id);
+    expect(ids).toContain('TPL-CTX-OVERFLOW');
+    expect(ids).toContain('TPL-SIZE-EXCESS');
+    expect(ids).toContain('TPL-SECRET-LEAK');
+    expect(score.active_threats.every((t) => t.confidence.basis === 'default_priors')).toBe(true);
+    expect(score.session_risk_level).toBeGreaterThan(0.5);
+  });
+
   it('tracks recent levels for trend across evaluations', () => {
     const fc = fakeClock();
     const e = new RiskScoringEngine(cfg, 's1', fc.clock);

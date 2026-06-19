@@ -5,13 +5,12 @@
  * session's stored events plus any live signals the caller supplies. Scores are
  * confidence-gated (default_priors until calibration data exists).
  *
- * The Bayesian layer (Phase D) and the pattern-library/rule-based severity layer
- * plug in here later; today active_threats is empty and severity is signal-derived.
  */
 
 import type { OpsEvent } from '../memory/schema';
 import { SessionTopology, type Clock } from './knowledge/session-topology';
 import { MisbehaviorProfileStore } from './knowledge/misbehavior-profiles';
+import { PatternLibrary } from './knowledge/pattern-library';
 import { DeterministicScorer } from './scoring/deterministic';
 import type { CorrelationSignals } from './correlation/correlator';
 import type { Prediction } from './calibration/metrics';
@@ -31,6 +30,7 @@ export class RiskScoringEngine {
   private topology: SessionTopology;
   private readonly scorer = new DeterministicScorer();
   private readonly profiles = new MisbehaviorProfileStore();
+  private readonly patterns = new PatternLibrary();
   private recentLevels: number[] = [];
 
   constructor(
@@ -79,19 +79,27 @@ export class RiskScoringEngine {
   evaluate(timestamp: string, calibrationEvidence: Prediction[] = []): RiskScore {
     const state = this.topology.getState();
 
-    // Active categories from files that have recorded risk detections.
+    // Rule-based pattern detection → active_threats + max individual severity.
+    const detection = this.patterns.detect(state, this.config, calibrationEvidence);
+
+    // Active categories drive cross-signal compound rules (e.g. secret_leak).
     const activeCategories = new Set<string>();
-    for (const f of Object.values(state.files_touched)) {
-      for (const cat of f.active_risks) activeCategories.add(cat);
+    for (const t of detection.threats) {
+      const p = this.patterns.get(t.pattern_id);
+      if (p) activeCategories.add(p.category);
     }
-    const signals: CorrelationSignals = { activeCategories, maxIndividualSeverity: 0 };
+    const signals: CorrelationSignals = {
+      activeCategories,
+      maxIndividualSeverity: detection.maxSeverity,
+    };
 
     const score = this.scorer.score(
       { state, signals, recentLevels: this.recentLevels, calibrationEvidence, timestamp },
       this.config,
     );
 
-    // Behavioral failure-mode matching (confidence-labeled, default_priors).
+    // Populate the rule-based threats and behavioral profiles (both default_priors).
+    score.active_threats = detection.threats;
     score.active_profiles = this.profiles.evaluate(state, this.config, calibrationEvidence);
 
     this.recentLevels.push(score.session_risk_level);
