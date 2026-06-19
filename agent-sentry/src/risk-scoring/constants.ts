@@ -7,7 +7,12 @@
  * config defaults, which the config loader (Phase A) needs now.
  */
 
-import { RiskScoringConfigSchema, type RiskScoringConfig, type MisbehaviorProfile } from './types';
+import {
+  RiskScoringConfigSchema,
+  type RiskScoringConfig,
+  type MisbehaviorProfile,
+  type RiskPattern,
+} from './types';
 
 /** Canonical default config — risk scoring is OFF unless Level 6 is enabled. */
 export const DEFAULT_RISK_SCORING_CONFIG: RiskScoringConfig = RiskScoringConfigSchema.parse({
@@ -101,5 +106,84 @@ export const DEFAULT_MISBEHAVIOR_PROFILES: MisbehaviorProfile[] = [
     precondition_multipliers: {},
     observed_frequency: 0,
     recommended_action: 'Step back and change approach — the current path is not converging.',
+  },
+];
+
+/**
+ * Risk pattern catalog. v1 ships the patterns that are evaluable from session
+ * topology + recorded detections (no raw-content re-scan at score time — secret
+ * detection arrives as captured events from the existing scan-security tool).
+ *
+ * `base_severity` values are hand-authored PRIORS. Scores derived from them are
+ * confidence-labeled `default_priors` until calibration data exists.
+ */
+export const DEFAULT_RISK_PATTERNS: RiskPattern[] = [
+  {
+    id: 'TPL-SECRET-LEAK',
+    name: 'Secret in touched file',
+    category: 'secret_leak',
+    detection_method: 'composite',
+    detection_config: { source: 'recorded_detection', category: 'secret_leak' },
+    base_severity: 0.85,
+    false_positive_rate: 0.15,
+    // Secrets in test fixtures are usually placeholders — much lower severity, higher FP.
+    context_modifiers: [
+      { condition: { file_type: 'test' }, severity_multiplier: 0.2, false_positive_adjustment: 0.6 },
+    ],
+    historical_frequency: 0,
+    correlated_patterns: [],
+    escalation_chain: [],
+  },
+  {
+    id: 'TPL-CTX-OVERFLOW',
+    name: 'Context window approaching limit',
+    category: 'context_degradation',
+    detection_method: 'threshold',
+    detection_config: { signal: 'context_utilization', threshold: 0.75 },
+    base_severity: 0.6,
+    false_positive_rate: 0.1,
+    context_modifiers: [],
+    historical_frequency: 0,
+    correlated_patterns: [],
+    escalation_chain: [],
+  },
+  {
+    id: 'TPL-CHKPT-GAP',
+    name: 'Extended period without commit',
+    category: 'checkpoint_gap',
+    detection_method: 'threshold',
+    detection_config: { signal: 'minutes_since_commit', threshold: 30, requires_uncommitted: true },
+    base_severity: 0.45,
+    false_positive_rate: 0.2,
+    context_modifiers: [],
+    historical_frequency: 0,
+    correlated_patterns: [],
+    escalation_chain: [],
+  },
+  {
+    id: 'TPL-SIZE-EXCESS',
+    name: 'Oversized change set',
+    category: 'oversized_change',
+    detection_method: 'threshold',
+    detection_config: { signal: 'uncommitted_files', threshold: 10 },
+    base_severity: 0.55,
+    false_positive_rate: 0.2,
+    context_modifiers: [],
+    historical_frequency: 0,
+    correlated_patterns: [],
+    escalation_chain: [],
+  },
+  {
+    id: 'TPL-SCOPE-DRIFT',
+    name: 'File access outside task scope',
+    category: 'scope_violation',
+    detection_method: 'heuristic',
+    detection_config: { signal: 'directories', threshold: 3 },
+    base_severity: 0.5,
+    false_positive_rate: 0.25,
+    context_modifiers: [],
+    historical_frequency: 0,
+    correlated_patterns: [],
+    escalation_chain: [],
   },
 ];
