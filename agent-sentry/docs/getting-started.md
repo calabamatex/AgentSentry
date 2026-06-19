@@ -160,13 +160,15 @@ The dashboard exposes these endpoints:
 | Feature                  | Status         | Notes                                    |
 |--------------------------|----------------|------------------------------------------|
 | SQLite memory store      | **Stable**     | Default provider, hash-chained, auto-pruning |
-| MCP server (9 tools)     | **Stable**     | stdio + HTTP transport                   |
+| MCP server (11 tools)    | **Stable**     | stdio + HTTP transport (`risk_score` is [experimental], Level 6) |
 | Claude Code hooks        | **Stable**     | TypeScript implementations with shell wrappers |
-| Progressive enablement   | **Stable**     | 5 levels                                 |
-| CLI (8 commands)         | **Stable**     | health, memory, config, enable, plugin, metrics, stream, dashboard |
+| Progressive enablement   | **Stable**     | 6 levels (Level 6 `risk_scoring` is [experimental]) |
+| CLI (13 commands)        | **Stable**     | init, config, enable, health, memory, metrics, dashboard, stream, plugin, handoff, prune, export, import |
 | Enrichment & observability | **Stable**   | Auto-classification, circuit breaker, structured logging |
-| Supabase provider        | Beta           | Requires external Supabase instance      |
+| Supabase provider        | Experimental   | Requires external Supabase instance; not recommended for production |
 | Dashboard / streaming    | Beta           | Local SSE/WebSocket, in-process bus      |
 | Cross-session intelligence | Beta         | Session summaries, pattern detection, context recall |
+| Context-aware risk scoring | Experimental | Level 6; deterministic + confidence-labeled (see architecture/risk-scoring.md) |
 | Plugin registry          | Experimental   | Local directory scanning only            |
 | Multi-agent coordination | Experimental   | Single-machine, event-sourced            |
+| Authority enforcement    | Experimental   | Defined and tested, not yet wired into the decision path |

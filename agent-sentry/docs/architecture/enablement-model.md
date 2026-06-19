@@ -8,7 +8,7 @@ Source file: `src/enablement/engine.ts`.
 
 ---
 
-## The 5 Levels
+## The 6 Levels
 
 Each level is a strict superset of the previous one. Skills are activated in either `basic` or `full` mode; `basic` enables core functionality while `full` unlocks the complete feature set.
 
@@ -16,23 +16,26 @@ Each level is a strict superset of the previous one. Skills are activated in eit
 |-------|------|-------------------|
 | 1 | Safe Ground | `save_points` (full) |
 | 2 | Clear Head | + `context_health` (full) |
-| 3 | House Rules | + `standing_orders` (basic) |
+| 3 | House Rules | + `standing_orders` (basic), + `directive_compliance` (full) |
 | 4 | Right Size | `standing_orders` upgrades to full, + `small_bets` (basic) |
 | 5 | Full Guard | `small_bets` upgrades to full, + `proactive_safety` (full) |
+| 6 | Risk Watch | + `risk_scoring` (full) — context-aware risk scoring **[experimental]** |
 
-At level 1, only save points (checkpointing) are enabled. By level 5, all five skills run at full capacity.
+At level 1, only save points (checkpointing) are enabled. Level 5 runs the core safety skills at full capacity; Level 6 additionally activates the [experimental] risk-scoring engine (see [risk-scoring.md](./risk-scoring.md)).
 
 ---
 
 ## Skill-to-Primitive Mapping
 
-The five skills correspond to the `Skill` enum defined in `src/memory/schema.ts`:
+The skills correspond to the enablement skill set in `src/enablement/engine.ts` (`ALL_SKILLS`):
 
 - **save_points**: Git state checkpointing and restore-point management.
 - **context_health**: Context window usage estimation and refresh recommendations.
 - **standing_orders**: Rule validation against `CLAUDE.md` and `AGENTS.md` policies.
+- **directive_compliance**: Ensures the agent acts on ACTION/RECOMMEND directives from AgentSentry hooks rather than ignoring them.
 - **small_bets**: Task sizing, complexity analysis, and risk-level estimation.
 - **proactive_safety**: Security scanning, vulnerability detection, and safety enforcement.
+- **risk_scoring** *(Level 6, [experimental])*: Context-aware, confidence-labeled session risk scoring; powers the `agent_sentry_risk_score` tool.
 
 Each skill maps to one or more MCP tools. For example, `standing_orders` powers the `agent_sentry_check_rules` tool, and `small_bets` powers `agent_sentry_size_task`.
 

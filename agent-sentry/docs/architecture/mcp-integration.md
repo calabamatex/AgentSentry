@@ -2,7 +2,7 @@
 
 ## Overview
 
-AgentSentry exposes its capabilities as a Model Context Protocol (MCP) server with 9 tools. The server supports two transport modes: stdio for local CLI usage and HTTP for networked/team deployments. HTTP mode adds access-key authentication and per-IP rate limiting.
+AgentSentry exposes its capabilities as a Model Context Protocol (MCP) server with 11 tools. The server supports two transport modes: stdio for local CLI usage and HTTP for networked/team deployments. HTTP mode adds access-key authentication and per-IP rate limiting.
 
 Source files: `src/mcp/server.ts`, `src/mcp/transport.ts`, `src/mcp/auth.ts`, `src/mcp/tools/*.ts`.
 
@@ -23,6 +23,8 @@ Each MCP tool is a thin adapter that validates input (via Zod schemas), delegate
 | `agent_sentry_search_history` | `MemoryStore.search()` | Searches event history using the vector/text/JS fallback chain |
 | `agent_sentry_recall_context` | `ContextRecaller.recall()` | Searches across session summaries and events for relevant prior context |
 | `agent_sentry_health` | Multiple subsystems | Aggregates store stats, chain verification, embedding status, and enablement level into a single health report |
+| `agent_sentry_generate_handoff` | `MemoryStore` + session summary | Generates a structured handoff message for session continuity |
+| `agent_sentry_risk_score` | `risk-scoring/` engine ([experimental], Level 6) | Context-aware, confidence-labeled session risk scoring; below Level 6 it returns an "enable Level 6" message |
 
 Tools that access the `MemoryStore` (`capture_event`, `search_history`, `recall_context`, `health`) create a fresh store instance, initialize it, perform the operation, and close it in a `finally` block.
 
