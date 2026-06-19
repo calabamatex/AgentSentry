@@ -32,6 +32,7 @@ npx @calabamatex/agentsentry dashboard --host 0.0.0.0 # Listen on all interfaces
 | `/api/enablement` | Current enablement level and active skills |
 | `/api/streaming` | Stream statistics (clients, events published) |
 | `/api/coordination` | Agent coordination status (experimental) |
+| `/api/risk` | Confidence-labeled risk score for the current session (Level 6 only; returns `{ available: false }` otherwise) |
 
 ## Real-Time Event Stream
 
@@ -89,8 +90,8 @@ await dashboard.stop();
 | `eventStream` | EventStream | new instance | Event stream to subscribe to |
 | `healthChecker` | HealthChecker | new instance | Health checker for /api/health |
 | `pluginRegistry` | PluginRegistry | new instance | Plugin registry for /api/plugins |
-| `memoryStore` | MemoryStore | undefined | Memory store for /api/stats |
-| `enablementConfig` | EnablementConfig | undefined | Enablement config for /api/enablement |
+| `memoryStore` | MemoryStore | undefined | Memory store for /api/stats and /api/risk |
+| `enablementConfig` | EnablementConfig | undefined | Enablement config for /api/enablement; gates /api/risk to Level 6 |
 | `coordinator` | AgentCoordinator | undefined | Coordinator for /api/coordination |
 
 ## CLI Streaming

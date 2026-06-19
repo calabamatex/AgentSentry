@@ -10,6 +10,8 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - **Context-aware risk scoring (enablement Level 6 "Risk Watch") — [experimental].** A new 6th progressive level activates a deterministic, **confidence-labeled** risk-scoring engine. Reachable via the new `agent_sentry_risk_score` MCP tool (now **11 tools** total), gated to Level 6. Components: in-memory `SessionTopology`, a 5-rule compound-risk correlator, 5 behavioral misbehavior profiles, and a calibration harness (Brier score / reliability diagram) with a gate that enforces honest labeling. Every scored number carries a `Confidence { value, basis, sample_size }`; scores stay `default_priors` (heuristic, capped at 0.5) until labeled outcomes pass the calibration gate. Forward "trajectory/Monte-Carlo" prediction is deliberately deferred (`projectTrajectory()` returns "not available") rather than shipped uncalibrated. Additive `migration-v5` adds four tables; zero behavioral change at Levels 1–5. See `docs/architecture/risk-scoring.md`.
+- **Rule-based pattern catalog** populates `active_threats` with **context-adjusted severity** — e.g. a secret detected in a test fixture is downgraded 0.85 → 0.17 via context modifiers.
+- **Dashboard "Risk Watch" panel** (Level 6): the live dashboard adds an `/api/risk` endpoint and a panel showing the composite risk level + trend, a confidence badge (`default priors` vs `calibrated`), and compound risks / active threats / misbehavior profiles.
 
 ### Fixed
 
