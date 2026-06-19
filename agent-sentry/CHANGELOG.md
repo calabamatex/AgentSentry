@@ -5,6 +5,29 @@ All notable changes to AgentSentry are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Context-aware risk scoring (enablement Level 6 "Risk Watch") — [experimental].** A new 6th progressive level activates a deterministic, **confidence-labeled** risk-scoring engine. Reachable via the new `agent_sentry_risk_score` MCP tool (now **11 tools** total), gated to Level 6. Components: in-memory `SessionTopology`, a 5-rule compound-risk correlator, 5 behavioral misbehavior profiles, and a calibration harness (Brier score / reliability diagram) with a gate that enforces honest labeling. Every scored number carries a `Confidence { value, basis, sample_size }`; scores stay `default_priors` (heuristic, capped at 0.5) until labeled outcomes pass the calibration gate. Forward "trajectory/Monte-Carlo" prediction is deliberately deferred (`projectTrajectory()` returns "not available") rather than shipped uncalibrated. Additive `migration-v5` adds four tables; zero behavioral change at Levels 1–5. See `docs/architecture/risk-scoring.md`.
+
+### Fixed
+
+- De-flaked timing-sensitive tests: coordinator heartbeat/lock tests now poll instead of fixed sleeps; pooled-supabase request timing uses `performance.now()` (sub-millisecond); a mock-server socket leak in the provider tests; the `enforcement-evasion` ReDoS test asserts completion-with-correct-verdict rather than a wall-clock bound.
+- Documentation honesty: README H1 version synced to `package.json`; MCP tool count (now 11) and enablement level count (now 6) corrected across README, ROADMAP, getting-started, api-reference, configuration, and the architecture docs; de-hyped pre-1.0 "production-ready" language.
+- Strengthened over-mocked boundary tests (`recall-context`, `capture-event`) to drive a real in-memory store.
+
+### Security
+
+- Re-enabled ONNX model/tokenizer **download integrity verification** (pinned SHA-256 checksums; previously skipped via empty constants) and added a download size cap.
+- MCP HTTP transport now **fails closed**: non-health requests always validate via `validateAccessKey`; `/health` is an unauthenticated liveness probe; the server refuses keyless HTTP unless `AGENT_SENTRY_NO_AUTH` and binds loopback when keyless; wildcard CORS refused unless explicitly opted in.
+- Added a project-root **path-traversal guard** to the rules checker; cleared both production-tree `high` npm advisories (`fast-uri`, `hono`); `.gitignore` now excludes `.env*`.
+- Labeled the unused authority-enforcement engine `@experimental` (defined and tested, not yet wired into the decision path).
+
+### Changed
+
+- CI coverage thresholds added to `vitest.config.ts` (matching the CI gate); stopped tracking generated `coverage/` artifacts.
+
 ## [0.6.0-beta.1] - 2026-04-11
 
 ### Breaking Changes
