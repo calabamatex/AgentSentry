@@ -27,6 +27,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - MCP HTTP transport now **fails closed**: non-health requests always validate via `validateAccessKey`; `/health` is an unauthenticated liveness probe; the server refuses keyless HTTP unless `AGENT_SENTRY_NO_AUTH` and binds loopback when keyless; wildcard CORS refused unless explicitly opted in.
 - Added a project-root **path-traversal guard** to the rules checker; cleared both production-tree `high` npm advisories (`fast-uri`, `hono`); `.gitignore` now excludes `.env*`.
 - Labeled the unused authority-enforcement engine `@experimental` (defined and tested, not yet wired into the decision path).
+- **Bumped `vitest` + `@vitest/coverage-v8` from 2.x to 4.x**, clearing the remaining dev-only `esbuild`/`vitest` critical advisories. The full `npm audit` tree drops from 7 (2 critical, 1 high) to 1 moderate (unrelated `uuid`). Dev-only — never shipped to consumers. (Vitest 4 uses rolldown; on Apple Silicon a fresh worktree may need `npm install @rolldown/binding-darwin-arm64@<locked-version> --no-save` due to npm's optional-deps bug.)
 
 ### Changed
 
