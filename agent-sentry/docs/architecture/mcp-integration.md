@@ -18,11 +18,11 @@ Each MCP tool is a thin adapter that validates input (via Zod schemas), delegate
 | `agent_sentry_check_context` | Arithmetic estimation | Estimates context window usage from message count (4000 tokens/message against a 200K ceiling) |
 | `agent_sentry_check_rules` | `primitives/rules-validation.validateRules()` | Checks a proposed file change against CLAUDE.md/AGENTS.md rules, returns violations |
 | `agent_sentry_size_task` | Keyword + heuristic scoring | Analyzes task description for risk keywords (migration, security, destructive ops) and file count to produce a risk level |
-| `agent_sentry_scan_security` | Regex pattern matching | Scans code content for API keys, hardcoded passwords, SQL injection patterns, eval usage, and private keys |
+| `agent_sentry_scan_security` | Regex pattern matching | Scans code content for API keys, hardcoded passwords, SQL injection patterns, eval usage, and private keys. Optional `probabilistic: true` adds context-adjusted severity + heuristic false-positive estimates per finding |
 | `agent_sentry_capture_event` | `MemoryStore.capture()` | Writes an event into the hash-chained memory store |
 | `agent_sentry_search_history` | `MemoryStore.search()` | Searches event history using the vector/text/JS fallback chain |
 | `agent_sentry_recall_context` | `ContextRecaller.recall()` | Searches across session summaries and events for relevant prior context |
-| `agent_sentry_health` | Multiple subsystems | Aggregates store stats, chain verification, embedding status, and enablement level into a single health report |
+| `agent_sentry_health` | Multiple subsystems | Aggregates store stats, chain verification, embedding status, and enablement level into a single health report. At Level 6, adds a `risk_assessment` summary |
 | `agent_sentry_generate_handoff` | `MemoryStore` + session summary | Generates a structured handoff message for session continuity |
 | `agent_sentry_risk_score` | `risk-scoring/` engine ([experimental], Level 6) | Context-aware, confidence-labeled session risk scoring; below Level 6 it returns an "enable Level 6" message |
 

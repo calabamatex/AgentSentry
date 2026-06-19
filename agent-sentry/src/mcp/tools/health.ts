@@ -8,6 +8,7 @@ import { detectEmbeddingProvider } from '../../memory/embeddings';
 import { getActiveSkills, generateConfigForLevel, validateLevelMatchesSkills, LEVEL_NAMES } from '../../enablement/engine';
 import type { EnablementConfig } from '../../enablement/engine';
 import { resolveConfigPath } from '../../config/resolve';
+import { RiskScoringEngine, DEFAULT_RISK_SCORING_CONFIG } from '../../risk-scoring';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { errorMessage } from '../../utils/error-message';
@@ -59,6 +60,16 @@ export interface HealthResult {
     max_events: number;
     auto_prune_days: number;
     database_path: string;
+  };
+  /** Present only at enablement Level 6 (risk scoring active). Heuristic, not calibrated. */
+  risk_assessment?: {
+    session_id: string;
+    session_risk_level: number;
+    risk_trend: string;
+    confidence_basis: 'default_priors' | 'calibrated';
+    active_threats: number;
+    active_profiles: number;
+    top_compound_risk: string | null;
   };
   issues: string[];
 }
@@ -170,6 +181,32 @@ export async function handler(
       if (overallStatus === 'healthy') overallStatus = 'degraded';
     }
 
+    // Risk assessment (Level 6 only) — a compact, confidence-labeled summary.
+    let riskAssessment: HealthResult['risk_assessment'];
+    if (enablementLevel >= 6) {
+      try {
+        const recent = await store.list({ limit: 1 });
+        const sessionId = recent[0]?.session_id;
+        if (sessionId) {
+          const events = await store.list({ session_id: sessionId, limit: 1000 });
+          const engine = new RiskScoringEngine(DEFAULT_RISK_SCORING_CONFIG, sessionId);
+          engine.loadFromEvents([...events].reverse());
+          const score = engine.evaluate(new Date().toISOString());
+          riskAssessment = {
+            session_id: sessionId,
+            session_risk_level: score.session_risk_level,
+            risk_trend: score.risk_trend,
+            confidence_basis: score.confidence.basis,
+            active_threats: score.active_threats.length,
+            active_profiles: score.active_profiles.length,
+            top_compound_risk: score.compound_risks[0]?.id ?? null,
+          };
+        }
+      } catch (e) {
+        logger.debug('Risk assessment failed for health', { error: errorMessage(e) });
+      }
+    }
+
     const result: HealthResult = {
       status: overallStatus,
       store: {
@@ -189,6 +226,7 @@ export async function handler(
         auto_prune_days: memConfig.auto_prune_days,
         database_path: memConfig.database_path,
       },
+      ...(riskAssessment ? { risk_assessment: riskAssessment } : {}),
       issues,
     };
 
