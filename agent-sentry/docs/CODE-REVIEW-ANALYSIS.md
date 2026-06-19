@@ -31,7 +31,7 @@ The project is well-engineered for its stage. Architecture is clean and modular,
 | Core dependencies | 4 (`@modelcontextprotocol/sdk`, `better-sqlite3`, `uuid`, `zod`) |
 | Optional dependencies | 1 (`onnxruntime-node`) |
 | Node.js requirement | >= 18 |
-| CI matrix | Node 18, 20, 22 |
+| CI matrix | Node 20, 22, 24 |
 
 ---
 
@@ -189,7 +189,7 @@ The project is well-engineered for its stage. Architecture is clean and modular,
 
 | Capability | Evidence |
 |-----------|----------|
-| CI/CD pipeline | `.github/workflows/ci.yml` — Node 18/20/22 matrix, build + test + lint + smoke |
+| CI/CD pipeline | `.github/workflows/ci.yml` — Node 20/22/24 matrix, build + test + lint + smoke |
 | npm publish automation | `.github/workflows/publish.yml` — triggered on GitHub release |
 | Install smoke test | CI job `smoke-test-install` — packs, installs in fresh dir, verifies exports |
 | Graceful shutdown | `src/observability/shutdown.ts` — ordered shutdown with configurable timeout |

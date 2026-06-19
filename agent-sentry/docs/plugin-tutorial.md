@@ -18,7 +18,7 @@ The three primitives you will use:
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - The `agent-sentry` package (local or installed)
 - Basic familiarity with TypeScript and async/await
 

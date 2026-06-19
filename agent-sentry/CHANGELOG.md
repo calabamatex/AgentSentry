@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- **Dropped Node 18 support.** `engines.node` is now `>=20` (was `>=18`) and CI tests Node 20/22/24 (was 18/20/22). Node 18 reached end-of-life on 2025-04-30, and the test toolchain (vitest 4 / rolldown) requires Node ≥ 20.12. Users on Node 18 should upgrade to an active LTS.
+
 ### Added
 
 - **Context-aware risk scoring (enablement Level 6 "Risk Watch") — [experimental].** A new 6th progressive level activates a deterministic, **confidence-labeled** risk-scoring engine. Reachable via the new `agent_sentry_risk_score` MCP tool (now **11 tools** total), gated to Level 6. Components: in-memory `SessionTopology`, a 5-rule compound-risk correlator, 5 behavioral misbehavior profiles, and a calibration harness (Brier score / reliability diagram) with a gate that enforces honest labeling. Every scored number carries a `Confidence { value, basis, sample_size }`; scores stay `default_priors` (heuristic, capped at 0.5) until labeled outcomes pass the calibration gate. Forward "trajectory/Monte-Carlo" prediction is deliberately deferred (`projectTrajectory()` returns "not available") rather than shipped uncalibrated. Additive `migration-v5` adds four tables; zero behavioral change at Levels 1–5. See `docs/architecture/risk-scoring.md`.
