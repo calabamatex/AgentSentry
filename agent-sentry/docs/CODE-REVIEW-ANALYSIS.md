@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-AgentSentry is a memory-aware management and safety framework for AI coding agents. It provides persistent event memory (SQLite + vector search), safety guardrails (secret detection, risk scoring, PII scanning), an MCP server exposing 10 tools, a progressive enablement engine (5 levels), multi-agent coordination (experimental), and a CLI with 8+ commands.
+AgentSentry is a memory-aware management and safety framework for AI coding agents. It provides persistent event memory (SQLite + vector search), safety guardrails (secret detection, risk scoring, PII scanning), an MCP server exposing 11 tools, a progressive enablement engine (6 levels), multi-agent coordination (experimental), and a CLI with 13 commands.
 
 The project is well-engineered for its stage. Architecture is clean and modular, security fundamentals are solid, test coverage is thorough, and the progressive enablement model is a genuine differentiator for adoption. The main gaps are in production hardening (no structured error codes, no container config, dashboard lacks auth) and a few medium-severity correctness issues around concurrency and supply-chain verification.
 
@@ -45,7 +45,7 @@ The project is well-engineered for its stage. Architecture is clean and modular,
 
 2. **Hash-chain integrity** — `src/memory/schema.ts:87-104` computes SHA-256 over all event fields plus `prev_hash`, creating a tamper-evident append-only log. `src/memory/store.ts:285-329` implements incremental verification with checkpoint persistence.
 
-3. **Progressive enablement** — `src/enablement/engine.ts:80-128` maps 5 levels to 6 skills with `off`/`basic`/`full` modes. Includes drift detection (`validateLevelMatchesSkills` at line 283-305) that catches configuration inconsistencies. This is a genuine UX innovation for gradual adoption.
+3. **Progressive enablement** — `src/enablement/engine.ts:80-128` maps 6 levels to 7 skills with `off`/`basic`/`full` modes. Includes drift detection (`validateLevelMatchesSkills` at line 283-305) that catches configuration inconsistencies. This is a genuine UX innovation for gradual adoption.
 
 4. **Graceful embedding degradation** — `src/memory/embeddings.ts:186-256` chains: ONNX local → Ollama → OpenAI → Voyage → Noop. Each provider implements the same `EmbeddingProvider` interface (dimension + embed). System remains functional even with zero ML infrastructure.
 
@@ -153,9 +153,9 @@ The project is well-engineered for its stage. Architecture is clean and modular,
 |---------|----------|--------|
 | SQLite memory store | `src/memory/store.ts`, `src/memory/providers/sqlite-provider.ts` | Stable |
 | Vector search (cosine similarity) | `src/memory/providers/sqlite-provider.ts:137-207` | Stable |
-| MCP server (10 tools) | `src/mcp/server.ts`, `src/mcp/tools/` | Stable |
-| Progressive enablement (5 levels) | `src/enablement/engine.ts` | Stable |
-| CLI (8+ commands) | `src/cli/` | Stable |
+| MCP server (11 tools) | `src/mcp/server.ts`, `src/mcp/tools/` | Stable |
+| Progressive enablement (6 levels) | `src/enablement/engine.ts` | Stable |
+| CLI (13 commands) | `src/cli/` | Stable |
 | Hash chain with incremental verification | `src/memory/store.ts:226-329` | Stable |
 | Secret detection | `src/primitives/secret-detection.ts` | Stable |
 | Risk scoring | `src/primitives/risk-scoring.ts` | Stable |
@@ -300,7 +300,7 @@ AgentSentry targets the emerging need for **AI agent operational oversight** —
 | Capability | AgentSentry | Alternative |
 |-----------|-------------|-------------|
 | Memory persistence | SQLite + vector search | Most agent frameworks lack this |
-| MCP integration | Native (10 tools) | Few competitors support MCP |
+| MCP integration | Native (11 tools) | Few competitors support MCP |
 | Progressive enablement | 5-level model | Unique differentiator |
 | Hash chain audit | SHA-256 chain | Unusual for agent tooling |
 | Secret detection | Built-in | Typically external (gitleaks, truffleHog) |
