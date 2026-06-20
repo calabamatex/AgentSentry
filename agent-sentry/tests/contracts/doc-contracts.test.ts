@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { generateConfigForLevel, validateLevelMatchesSkills } from '../../src/enablement/engine';
 
@@ -65,6 +65,28 @@ describe('README accuracy — tool/command counts', () => {
     const readme = readFile('README.md');
     const claim = readme.match(/(\d+)\s+tools/);
     expect(claim).not.toBeNull();
+    expect(Number(claim![1])).toBe(toolCount);
+  });
+
+  // The repo-root README.md is what GitHub renders on the landing page. It is a
+  // separate file from agent-sentry/README.md and previously drifted unnoticed.
+  it('repo-root README (GitHub landing page) stays in sync, if present', () => {
+    const rootReadmePath = resolve(agentSentryRoot, '..', 'README.md');
+    if (!existsSync(rootReadmePath)) return; // not present in standalone-package layouts
+    const root = readFileSync(rootReadmePath, 'utf8');
+
+    // Version H1 matches package.json.
+    const pkg = JSON.parse(readFile('package.json'));
+    const h1 = root.match(/^#\s+AgentSentry\s+v([^\s]+)/m);
+    expect(h1, 'root README should have an "# AgentSentry vX" heading').not.toBeNull();
+    expect(h1![1]).toBe(pkg.version);
+
+    // Tool count matches the source tools array.
+    const server = readFile('src/mcp/server.ts');
+    const arrayBody = server.match(/export const tools:[^=]*=\s*\[([\s\S]*?)\]/);
+    const toolCount = arrayBody![1].split(',').map((s) => s.trim()).filter((s) => s.length > 0).length;
+    const claim = root.match(/(\d+)\s+tools/);
+    expect(claim, 'root README should state a tool count').not.toBeNull();
     expect(Number(claim![1])).toBe(toolCount);
   });
 });

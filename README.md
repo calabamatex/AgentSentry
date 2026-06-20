@@ -1,4 +1,4 @@
-# AgentSentry v0.5.0-beta
+# AgentSentry v0.6.0-beta.1
 
 ![AgentSentry Banner](agent-sentry/dashboard/assets/agent-sentry-banner.png)
 
@@ -58,10 +58,10 @@ What makes it different: AgentSentry *remembers*. Every decision, violation, inc
 ### Memory & Intelligence
 
 - **Persistent Memory Store** -- Vector-indexed database with semantic search. SQLite with JS cosine similarity locally, Supabase [experimental] for teams.
-- **MCP Server Interface** -- All 5 core skills plus memory read/write exposed as 10 MCP tools. Works with any MCP-compatible client.
+- **MCP Server Interface** -- Core skills plus memory read/write exposed as 11 MCP tools. Works with any MCP-compatible client.
 - **Primitives Library** -- 7 reusable management patterns (checkpoint-and-branch, risk-scoring, secret-detection, rules-validation, context-estimation, scaffold-update, event-capture).
 - **Auto-Classification** -- Events enriched with tags, root cause hints, related event links, and severity context.
-- **Progressive Enablement** -- 5 levels from beginner to advanced. Start simple, add capabilities when ready.
+- **Progressive Enablement** -- 6 levels from beginner to advanced (Level 6 adds experimental risk scoring). Start simple, add capabilities when ready.
 
 ### Advanced Capabilities
 
@@ -162,7 +162,7 @@ Prompts for your enablement level (1-5) and generates `agent-sentry.config.json`
 
 ## MCP Tools
 
-When running as an MCP server, AgentSentry exposes 10 tools:
+When running as an MCP server, AgentSentry exposes 11 tools:
 
 | Tool | What It Does |
 |------|-------------|
@@ -175,7 +175,8 @@ When running as an MCP server, AgentSentry exposes 10 tools:
 | `agent_sentry_search_history` | Semantic search across all stored operational events |
 | `agent_sentry_recall_context` | Cross-session context recall -- finds relevant prior session data for current task |
 | `agent_sentry_generate_handoff` | Generates a structured handoff message for session continuity |
-| `agent_sentry_health` | Current health scores, KPIs, and skill-level status |
+| `agent_sentry_health` | Current health scores, KPIs, and skill-level status (+ risk summary at Level 6) |
+| `agent_sentry_risk_score` | Context-aware, confidence-labeled session risk scoring (experimental, Level 6) |
 
 > **Security note (v0.6.0+):** The MCP server now **requires authentication by default**. Set `AGENT_SENTRY_ACCESS_KEY` to a strong random value to start the server. For local development, set `AGENT_SENTRY_NO_AUTH=true` to disable authentication (unsafe — emits a stderr warning). The deprecated `AGENT_SENTRY_REQUIRE_AUTH` variable has been removed.
 
@@ -190,6 +191,7 @@ When running as an MCP server, AgentSentry exposes 10 tools:
 | 3 | House Rules | + standing_orders (basic), + directive_compliance (full) | 15 min |
 | 4 | Right Size | standing_orders → full, + small_bets (basic) | 15 min |
 | 5 | Full Guard | small_bets → full, + proactive_safety (full) | 15 min |
+| 6 | Risk Watch | + risk_scoring (full) — context-aware risk scoring (experimental) | 15 min |
 
 Start at Level 1. Upgrade when ready. Each level builds on the last.
 
@@ -297,7 +299,7 @@ npm run benchmark  # Run performance benchmarks
 agent-sentry/
   src/
     memory/           # MemoryStore, embeddings, providers, migrations
-    mcp/              # MCP server, 10 tools, transport, auth
+    mcp/              # MCP server, 11 tools, transport, auth
     primitives/       # 7 reusable management patterns
     cli/              # CLI commands, TypeScript hook handlers
   scripts/            # Thin wrapper hooks, setup wizard, validators
@@ -354,7 +356,7 @@ MIT -- see [LICENSE](LICENSE) for details.
 - [Implementation Guide](docs/planning/Agent-Management-Implementation-Guide.md) -- Practical guide for managing AI agents
 - [Synopsis](docs/planning/AgentSentry-Synopsis.md) -- Non-technical project overview
 - [Memory Model](agent-sentry/docs/architecture/memory-model.md) -- Hash chains, search, and storage providers
-- [Enablement Model](agent-sentry/docs/architecture/enablement-model.md) -- 5 levels with skill mapping
+- [Enablement Model](agent-sentry/docs/architecture/enablement-model.md) -- 6 levels with skill mapping
 - [MCP Integration](agent-sentry/docs/architecture/mcp-integration.md) -- Tools, transports, and auth
 - [Configuration Reference](agent-sentry/docs/configuration.md) -- Every config option explained
 - [Dashboard Guide](agent-sentry/docs/dashboard-guide.md) -- Monitoring dashboard and streaming
