@@ -133,6 +133,25 @@ git. If design work requires a re-edit, the source needs to be re-exported.
 Fix: commit the source PSD / high-res PNG to a separate `dashboard/assets/src/`
 directory and gitignore it by default (or use Git LFS if retention matters).
 
+### 14. vitest 4.x migration (deferred — PR #38 closed)
+`vitest`/`@vitest/coverage-v8` are on 2.x. Bumping to 4.x clears the remaining
+**dev-only** `esbuild`/`vitest` critical advisories (full `npm audit` 7 → 1
+moderate). It was attempted in PR #38 and **deferred** because the cost is
+disproportionate to dev-only cleanup that never ships and doesn't affect the
+prod-security gate (already clean at `--omit=dev --audit-level=high`):
+
+- Vitest 4 / rolldown require **Node ≥ 20.12** → drops EOL Node 18 (a breaking
+  `engines` change; `>=18` → `>=20`, CI matrix `[18,20,22]` → `[20,22,24]`).
+- Vitest 4 rejects mocked constructors defined with arrows
+  (`X: vi.fn().mockImplementation(() => ({...}))`) — ~9 test files
+  (`Logger`/`MemoryStore`/`Server`/`Transport` mocks) must convert to
+  `vi.fn(function () { ... })`, plus likely further incompatibilities across the
+  ~1,450 untested tests (several CI rounds).
+
+Do this as a **deliberate** combined "vitest 4 + drop Node 18" migration when
+there is a real driver, not as collateral. A worked example of the mock fix is
+in the closed PR #38 (`tests/mcp/transport.test.ts`).
+
 ---
 
 ## P4 — Docs
