@@ -5,6 +5,21 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     globals: true,
     testTimeout: 10000,
+    // Bound the worker pool. Vitest defaults to one fork per CPU core; each fork
+    // loads the heavy e2e suite (real `npm install`/`npm pack` in temp dirs) and
+    // the benchmark suites. On many-core machines that explodes memory — observed
+    // at 20GB+ locally — and OOM-killed workers surface as intermittent
+    // "Worker exited unexpectedly" / SIGTERM failures (the documented flake).
+    // Capping concurrency keeps peak memory bounded while still parallelizing.
+    // CI runners (~4 vCPU) are essentially unaffected; the cap only bites on
+    // large dev boxes.
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxForks: 4,
+        minForks: 1,
+      },
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
