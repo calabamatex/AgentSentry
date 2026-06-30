@@ -34,7 +34,7 @@ cd AgentSentry/agent-sentry && npm install && npm run build
 
 ---
 
-## What AgentSentry Does
+## What is AgentSentry? 
 
 AgentSentry is a local-first memory and safety layer for AI coding sessions. Primary integration: **Claude Code**. The MCP server interface enables compatibility with any MCP-compatible tool (Cursor, Codex, ChatGPT, GitHub Copilot, etc.).
 
