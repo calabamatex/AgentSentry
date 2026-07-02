@@ -54,10 +54,10 @@ Uses `StreamableHTTPServerTransport` from the MCP SDK, wrapped in a Node.js HTTP
 
 The HTTP server handles:
 
-- **CORS**: Configurable origin. If an access key is set, uses `AGENT_SENTRY_CORS_ORIGIN` env var (defaults to `http://localhost`). Without an access key, allows `*`.
+- **CORS**: Configurable origin via `AGENT_SENTRY_CORS_ORIGIN` (defaults to `http://localhost`). A wildcard (`*`) origin is **refused** unless `AGENT_SENTRY_ALLOW_WILDCARD_CORS=1` is explicitly set.
 - **OPTIONS preflight**: Returns 204 with appropriate headers.
-- **Health endpoint**: `GET /health` returns `{"status": "ok", "transport": "http"}` (bypasses MCP transport).
-- **All other requests**: Delegated to `mcpTransport.handleRequest()`.
+- **Health endpoint**: `GET /health` returns `{"status": "ok", "transport": "http"}` — an unauthenticated liveness probe served before auth.
+- **All other requests**: Validated via `validateAccessKey` (fail-closed), then delegated to `mcpTransport.handleRequest()`.
 
 Use HTTP when: team/shared deployments, remote agents, or when multiple clients need concurrent access.
 
@@ -65,14 +65,14 @@ Use HTTP when: team/shared deployments, remote agents, or when multiple clients 
 
 ## Authentication (HTTP mode only)
 
-Access key authentication is controlled by the `AGENT_SENTRY_ACCESS_KEY` environment variable. If the variable is not set, all requests are accepted (open access).
+Access key authentication is controlled by the `AGENT_SENTRY_ACCESS_KEY` environment variable and is **required by default since 0.6.0 (fail-closed)**: if no key is configured, non-health HTTP requests are rejected, and the server refuses to start HTTP mode without a key unless `AGENT_SENTRY_NO_AUTH=true|1` is set (local development escape hatch — emits a startup warning and binds `127.0.0.1` when keyless).
 
-When set, every request must provide the key via either:
+When a key is set, every request must provide it via either:
 
 - `x-agent-sentry-key` HTTP header, or
 - `?key=` query parameter.
 
-Key validation in `auth.ts` uses constant-time comparison to prevent timing attacks: it XORs each character pair and accumulates mismatches, returning `false` if any bit differs or if lengths do not match.
+Key validation uses Node's `crypto.timingSafeEqual` through the shared `timingSafeStringEqual` utility (`src/utils/timing-safe.ts` — the same comparator the dashboard uses), with a dummy self-comparison on length mismatch so the early return does not leak the expected key's length. See `docs/migration-0.5-to-0.6.md` for upgrade steps.
 
 ---
 

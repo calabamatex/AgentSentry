@@ -349,6 +349,7 @@ MIT -- see [LICENSE](LICENSE) for details.
 ## Links
 
 - [Getting Started Guide](agent-sentry/docs/getting-started.md)
+- [Migrating 0.5 → 0.6](agent-sentry/docs/migration-0.5-to-0.6.md) -- Auth-required breaking changes and upgrade checklist
 - [First Session Walkthrough](agent-sentry/docs/first-session.md)
 - [API Reference](agent-sentry/docs/api-reference.md)
 - [Product Specification](docs/planning/AgentSentry-Product-Spec.md) -- Full spec covering architecture, skills, memory, MCP, and integrations

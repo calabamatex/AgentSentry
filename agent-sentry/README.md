@@ -134,6 +134,7 @@ docs/           # Getting started, API reference, schema, roadmap
 
 - [First Session Walkthrough](docs/first-session.md) — See AgentSentry in action with concrete examples
 - [Getting Started](docs/getting-started.md) — Install and first audit
+- [Migrating 0.5 → 0.6](docs/migration-0.5-to-0.6.md) — Auth-required breaking changes and upgrade checklist
 - [API Reference](docs/api-reference.md) — Every module and method
 - [Memory Schema](docs/memory-schema.md) — Event schema for building integrations
 - [Plugin Tutorial](docs/plugin-tutorial.md) — Build custom plugins
