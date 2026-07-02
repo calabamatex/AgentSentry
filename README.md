@@ -68,7 +68,7 @@ What makes it different: AgentSentry *remembers*. Every decision, violation, inc
 - **Tracing** -- Span-based tracing with OpenTelemetry-compatible context propagation
 - **Permissions** -- File-level and command-level enforcement with allowlist/denylist
 - **Cost Management** -- Per-session and monthly budget tracking with warn and hard-stop thresholds
-- **Audit Trail** -- Append-only, hash-chained event log with semantic search (EU AI Act Article 12 compliant)
+- **Audit Trail** -- Append-only, hash-chained event log with semantic search — designed to support EU AI Act Article 12 record-keeping/audit-trail requirements
 - **Plugins** -- 4 categories (monitors, auditors, dashboards, integrations) with templates and 11 validation checks
 - **Evals** -- Built-in evaluation harness for testing safety rules against known attack patterns
 
