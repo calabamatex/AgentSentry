@@ -5,6 +5,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { evaluateAuthority } from '../../src/enforcement/engine';
+import { scanForSecrets } from '../../src/primitives/secret-detection';
+import { normalizeForMatching } from '../../src/utils/unicode-normalize';
 import type { AuthorityPolicy } from '../../src/enforcement/types';
 
 function denyPolicy(pattern: string, opts: { is_regex?: boolean } = {}): AuthorityPolicy {
@@ -131,5 +133,78 @@ describe('Enforcement evasion prevention', () => {
     );
     // The condition should not match (metadata doesn't have toString as a key)
     expect(result.tier).toBe('default');
+  });
+});
+
+describe('Unicode/homoglyph evasion prevention (WI-014)', () => {
+  const ZWSP = '\u200B';
+  const ZWJ = '\u200D';
+  const RLO = '\u202E';
+  const PDF = '\u202C';
+
+  describe('enforcement matcher', () => {
+    it('zero-width splice inside a denied keyword does not bypass', () => {
+      const policy = denyPolicy('delete');
+      for (const action of [`de${ZWSP}lete`, `del${ZWJ}ete`, `d${ZWSP}e${ZWSP}lete_file`]) {
+        expect(evaluateAuthority({ action }, policy).action).toBe('deny');
+      }
+    });
+
+    it('fullwidth Latin does not bypass', () => {
+      const policy = denyPolicy('delete');
+      // NFKC folds fullwidth forms to ASCII
+      expect(evaluateAuthority({ action: '\uFF44\uFF45\uFF4C\uFF45\uFF54\uFF45' }, policy).action).toBe('deny');
+    });
+
+    it('NFD decomposition does not bypass a pattern containing an accent', () => {
+      // Pattern authored in NFC; action arrives NFD-decomposed
+      const policy = denyPolicy('caf\u00E9_drop');
+      expect(evaluateAuthority({ action: 'cafe\u0301_drop' }, policy).action).toBe('deny');
+    });
+
+    it('RTL-override wrapping does not bypass', () => {
+      const policy = denyPolicy('delete');
+      expect(evaluateAuthority({ action: `${RLO}delete${PDF}` }, policy).action).toBe('deny');
+    });
+  });
+
+  describe('secret scanner', () => {
+    it('zero-width splice inside an AWS key prefix does not evade detection', () => {
+      const key = `AKIA${ZWSP}IOSFODNN7EXAMPLE1`;
+      const findings = scanForSecrets(`const k = "${key}";`);
+      expect(findings.some((f) => f.description.includes('AWS Access Key'))).toBe(true);
+    });
+
+    it('fullwidth characters inside a GitHub token do not evade detection', () => {
+      // ghp_ prefix written with fullwidth g/h/p folds back under NFKC
+      const token = '\uFF47\uFF48\uFF50_' + 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8';
+      const findings = scanForSecrets(`token = "${token}"`);
+      expect(findings.some((f) => f.description.includes('GitHub'))).toBe(true);
+    });
+
+    it('bidi-override wrapping does not evade detection', () => {
+      const findings = scanForSecrets(`x = "${RLO}AKIAIOSFODNN7EXAMPLE1${PDF}"`);
+      expect(findings.some((f) => f.description.includes('AWS Access Key'))).toBe(true);
+    });
+
+    it('normalization does not change line numbers', () => {
+      const content = `line one\nk = "AKIA${ZWSP}IOSFODNN7EXAMPLE1"\nline three`;
+      const findings = scanForSecrets(content);
+      const aws = findings.find((f) => f.description.includes('AWS Access Key'));
+      expect(aws?.line).toBe(2);
+    });
+  });
+
+  describe('normalizeForMatching', () => {
+    it('is idempotent and preserves plain ASCII', () => {
+      const plain = 'rm -rf / AKIA1234567890ABCDEF';
+      expect(normalizeForMatching(plain)).toBe(plain);
+      const once = normalizeForMatching(`de${ZWSP}lete`);
+      expect(normalizeForMatching(once)).toBe(once);
+    });
+
+    it('preserves newlines', () => {
+      expect(normalizeForMatching(`a${ZWSP}\nb`)).toBe('a\nb');
+    });
   });
 });

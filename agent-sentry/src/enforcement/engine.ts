@@ -13,6 +13,7 @@
  */
 
 import { Logger } from '../observability/logger';
+import { normalizeForMatching } from '../utils/unicode-normalize';
 import type {
   AuthorityPolicy,
   PolicyRule,
@@ -103,17 +104,22 @@ export function evaluateAuthority(
 }
 
 function matchesRule(context: ActionContext, rule: PolicyRule): boolean {
+  // Normalize before matching (WI-014): NFKC + zero-width/bidi stripping so a
+  // zero-width splice ("d​elete") or fullwidth Latin cannot evade an
+  // ASCII-authored pattern.
+  const action = normalizeForMatching(context.action);
+
   // Check action pattern
   let actionMatch: boolean;
   if (rule.is_regex) {
     try {
-      actionMatch = new RegExp(rule.pattern, 'i').test(context.action);
+      actionMatch = new RegExp(rule.pattern, 'i').test(action);
     } catch {
       // Invalid regex — treat as no match (logged during validation)
       return false;
     }
   } else {
-    actionMatch = context.action.toLowerCase().includes(rule.pattern.toLowerCase());
+    actionMatch = action.toLowerCase().includes(normalizeForMatching(rule.pattern).toLowerCase());
   }
 
   if (!actionMatch) return false;

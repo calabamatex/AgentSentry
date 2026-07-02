@@ -3,6 +3,8 @@
  * Used by Skills 1 (save_points) and 5 (proactive_safety).
  */
 
+import { normalizeForMatching } from '../utils/unicode-normalize';
+
 export interface SecretFinding {
   type: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -142,7 +144,11 @@ export function scanForSecrets(
   filePath?: string
 ): SecretFinding[] {
   const findings: SecretFinding[] = [];
-  const lines = content.split('\n');
+  // Normalize before scanning (WI-014): NFKC + zero-width/bidi stripping so
+  // secrets obfuscated with zero-width splices or fullwidth characters still
+  // match the ASCII-authored patterns. Neither transform introduces or
+  // removes newlines, so line numbers are preserved.
+  const lines = normalizeForMatching(content).split('\n');
 
   // Skip scanning for known safe file types
   if (filePath) {
