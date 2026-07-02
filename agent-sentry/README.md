@@ -51,7 +51,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Dashboard / streaming | **Beta** | Local SSE/WebSocket, in-process bus |
 | Cross-session intelligence | **Beta** | Session summaries, pattern detection, context recall |
 | Plugin registry | Experimental | Local directory scanning only |
-| Multi-agent coordination | Experimental | Event-sourced, single-machine only |
+| Multi-agent coordination | Experimental | Single-machine; atomic CAS locking with the SQLite provider (event-sourced best-effort fallback without one) |
 | Authority enforcement | Experimental | Policy engine defined and tested, but not yet wired into the CLI/MCP decision path |
 
 ## MCP Tools
