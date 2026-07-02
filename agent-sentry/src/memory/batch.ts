@@ -94,6 +94,10 @@ export class BatchProcessor {
   ): Promise<BatchSearchResult> {
     const start = performance.now();
 
+    // Fail-fast Promise.all is intentional (WI-009): searchBatch is a public
+    // batch-query API whose result type has no per-query error channel;
+    // surfacing a partial failure would be a breaking shape change. Callers
+    // that want per-query isolation should call search() individually.
     const settled = await Promise.all(
       queries.map(async ({ query, options }) => {
         const results = await this.store.search(query, options);
@@ -109,6 +113,9 @@ export class BatchProcessor {
    * Runs multiple list queries in parallel using Promise.all.
    */
   async listBatch(optionsList: QueryOptions[]): Promise<OpsEvent[][]> {
+    // Fail-fast Promise.all intentional (WI-009): the OpsEvent[][] return type
+    // is positional with no error channel; a partial failure can't be
+    // represented without a breaking shape change.
     return Promise.all(
       optionsList.map((options) => this.store.list(options)),
     );

@@ -295,6 +295,9 @@ export class BenchmarkSuite {
     });
 
     const overallStart = performance.now();
+    // Fail-fast Promise.all intentional (WI-009): a benchmark measuring
+    // concurrent R/W throughput is only meaningful if every task completes; a
+    // failed task invalidates the run and should surface, not be averaged over.
     const allResults = await Promise.all([...writerTasks, ...readerTasks]);
     const overallTimeMs = performance.now() - overallStart;
 

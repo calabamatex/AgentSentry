@@ -152,7 +152,9 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
   async aggregate(options: AggregateOptions): Promise<OpsStats> {
     const baseParams = this.buildAggregateParams(options);
 
-    // Run all counts in parallel instead of sequentially
+    // Fail-fast Promise.all intentional (WI-009): every count feeds one
+    // OpsStats object; a partial result would be a silently-wrong aggregate,
+    // so any failing count must fail the whole call.
     const [total, ...enumCounts] = await Promise.all([
       this.countWithParams(baseParams),
       ...EVENT_TYPES.map((t) => this.countWithParams([...baseParams, `event_type=eq.${encodeURIComponent(t)}`])),
@@ -175,6 +177,8 @@ export abstract class SupabaseBaseProvider implements StorageProvider {
     const firstParams = [...baseParams, 'select=timestamp', 'order=timestamp.asc', 'limit=1'];
     const lastParams = [...baseParams, 'select=timestamp', 'order=timestamp.desc', 'limit=1'];
 
+    // Fail-fast Promise.all intentional (WI-009): both timestamps are part of
+    // the same OpsStats result; a partial fetch would misreport the range.
     const [firstRows, lastRows] = await Promise.all([
       this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${firstParams.join('&')}`, { method: 'GET' }),
       this.request<Array<{ timestamp?: string }>>(`/rest/v1/ops_events?${lastParams.join('&')}`, { method: 'GET' }),
