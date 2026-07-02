@@ -9,7 +9,9 @@ import * as http from 'http';
 import { Logger } from '../observability/logger';
 import { safeJsonParse } from '../utils/safe-json';
 import { safeReadSync } from '../utils/safe-io';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
+import { Transform } from 'stream';
+import { pipeline } from 'stream/promises';
 import { errorMessage } from '../utils/error-message';
 
 const logger = new Logger({ module: 'embeddings' });
@@ -100,13 +102,10 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     const tokenizerPath = path.join(ONNX_MODEL_DIR, ONNX_TOKENIZER_FILE);
 
     if (!fs.existsSync(modelPath)) {
-      await this.downloadModel(modelPath);
+      await this.downloadAndVerify(ONNX_MODEL_URL, modelPath, ONNX_MODEL_SHA256);
     }
     if (!fs.existsSync(tokenizerPath)) {
-      await this.downloadFile(ONNX_TOKENIZER_URL, tokenizerPath);
-      if (ONNX_TOKENIZER_SHA256) {
-        await this.verifyChecksum(tokenizerPath, ONNX_TOKENIZER_SHA256);
-      }
+      await this.downloadAndVerify(ONNX_TOKENIZER_URL, tokenizerPath, ONNX_TOKENIZER_SHA256);
     }
 
     try {
@@ -189,10 +188,22 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     return tokens.slice(0, 128);
   }
 
-  private async downloadModel(destPath: string): Promise<void> {
-    await this.downloadFile(ONNX_MODEL_URL, destPath);
-    if (ONNX_MODEL_SHA256) {
-      await this.verifyChecksum(destPath, ONNX_MODEL_SHA256);
+  /**
+   * Download to a random temp name, verify the checksum, and only then
+   * rename into place (WI-008) — destPath is never observable in a
+   * partially-written or unverified state, so a crash or failed download
+   * cannot leave a corrupt file that a later ensureLoaded() would trust.
+   */
+  private async downloadAndVerify(url: string, destPath: string, expectedHash: string): Promise<void> {
+    const tmpPath = `${destPath}.download-${randomBytes(6).toString('hex')}`;
+    try {
+      await this.downloadFile(url, tmpPath);
+      if (expectedHash) {
+        await this.verifyChecksum(tmpPath, expectedHash);
+      }
+      fs.renameSync(tmpPath, destPath);
+    } finally {
+      fs.rmSync(tmpPath, { force: true });
     }
   }
 
@@ -211,25 +222,28 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    return new Promise((resolve, reject) => {
-      const follow = (url: string, redirects: number) => {
+    // Resolve redirects and status first, then stream the body.
+    const response = await new Promise<http.IncomingMessage>((resolve, reject) => {
+      const follow = (u: string, redirects: number) => {
         if (redirects > 5) {
           reject(new Error('Too many redirects'));
           return;
         }
-        const client = url.startsWith('https') ? https : http;
-        client.get(url, (res) => {
+        const client = u.startsWith('https') ? https : http;
+        client.get(u, (res) => {
           if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            res.resume(); // drain the redirect body so the socket is freed
             let redirectUrl = res.headers.location;
             // Handle relative redirects
             if (redirectUrl.startsWith('/')) {
-              const parsed = new URL(url);
+              const parsed = new URL(u);
               redirectUrl = `${parsed.protocol}//${parsed.host}${redirectUrl}`;
             }
             follow(redirectUrl, redirects + 1);
             return;
           }
           if (res.statusCode !== 200) {
+            res.resume();
             reject(new Error(`Download failed: HTTP ${res.statusCode}`));
             return;
           }
@@ -240,25 +254,34 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
             reject(new Error(`Download too large: ${declared} bytes exceeds ${MAX_DOWNLOAD_BYTES}`));
             return;
           }
-          const file = fs.createWriteStream(destPath);
-          // Enforce the cap as bytes stream in, in case Content-Length is absent or lies.
-          let received = 0;
-          res.on('data', (chunk: Buffer) => {
-            received += chunk.length;
-            if (received > MAX_DOWNLOAD_BYTES) {
-              res.destroy();
-              file.destroy();
-              fs.rm(destPath, { force: true }, () => {});
-              reject(new Error(`Download exceeded ${MAX_DOWNLOAD_BYTES} bytes; aborted`));
-            }
-          });
-          res.pipe(file);
-          file.on('finish', () => { file.close(); resolve(); });
-          file.on('error', (err) => { fs.unlinkSync(destPath); reject(err); });
+          resolve(res);
         }).on('error', reject);
       };
       follow(url, 0);
     });
+
+    // Enforce the cap as bytes stream in (Content-Length may be absent or lie).
+    // As a Transform inside pipeline(), an over-cap error tears down BOTH the
+    // response and the write stream — no orphaned streams, no settle race (WI-008).
+    let received = 0;
+    const capGuard = new Transform({
+      transform(chunk: Buffer, _encoding, callback) {
+        received += chunk.length;
+        if (received > MAX_DOWNLOAD_BYTES) {
+          callback(new Error(`Download exceeded ${MAX_DOWNLOAD_BYTES} bytes; aborted`));
+          return;
+        }
+        callback(null, chunk);
+      },
+    });
+
+    try {
+      await pipeline(response, capGuard, fs.createWriteStream(destPath));
+    } catch (err) {
+      // pipeline() has already destroyed all three streams; remove the partial file.
+      fs.rmSync(destPath, { force: true });
+      throw err;
+    }
   }
 }
 
