@@ -3,7 +3,7 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'http';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeStringEqual } from '../utils/timing-safe';
 
 /**
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
@@ -52,15 +52,8 @@ export function validateAccessKey(key: string): boolean {
     return false;
   }
 
-  // Constant-time comparison to prevent timing attacks
-  const keyBuf = Buffer.from(key);
-  const expectedBuf = Buffer.from(expected);
-  if (keyBuf.length !== expectedBuf.length) {
-    // Dummy comparison to avoid leaking key length via timing
-    timingSafeEqual(expectedBuf, expectedBuf);
-    return false;
-  }
-  return timingSafeEqual(keyBuf, expectedBuf);
+  // Constant-time comparison to prevent timing attacks (shared util, WI-003)
+  return timingSafeStringEqual(key, expected);
 }
 
 /**

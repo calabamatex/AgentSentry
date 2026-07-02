@@ -29,6 +29,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- **BREAKING: dashboard authentication now fails closed** (parity with the MCP server). `DashboardServer` refuses to start without a token — set `AGENT_SENTRY_DASHBOARD_TOKEN`, pass `{ token }`, use the new CLI `--dev` flag to auto-generate one, or set `AGENT_SENTRY_NO_AUTH=1` (unsafe; warned at startup). Token comparisons (bearer and SSE query-param) are now constant-time via a comparator shared with the MCP auth layer (`src/utils/timing-safe.ts`), and the token no longer appears in server logs. The SSE query-param exposure trade-off is documented in `docs/dashboard-guide.md`.
 - Re-enabled ONNX model/tokenizer **download integrity verification** (pinned SHA-256 checksums; previously skipped via empty constants) and added a download size cap.
 - MCP HTTP transport now **fails closed**: non-health requests always validate via `validateAccessKey`; `/health` is an unauthenticated liveness probe; the server refuses keyless HTTP unless `AGENT_SENTRY_NO_AUTH` and binds loopback when keyless; wildcard CORS refused unless explicitly opted in.
 - Added a project-root **path-traversal guard** to the rules checker; cleared both production-tree `high` npm advisories (`fast-uri`, `hono`); `.gitignore` now excludes `.env*`.

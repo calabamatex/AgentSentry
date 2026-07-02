@@ -16,7 +16,11 @@ export const dashboardCommand: CommandDefinition = {
     'Options:',
     '  --port <n>       Port to listen on (default 9200)',
     '  --host <addr>    Host to bind to (default 127.0.0.1)',
+    '  --dev            Auto-generate an auth token (development only)',
     '  --json           Output server info as JSON',
+    '',
+    'Authentication (required): set AGENT_SENTRY_DASHBOARD_TOKEN, or pass --dev',
+    'to auto-generate a token, or set AGENT_SENTRY_NO_AUTH=1 (unsafe).',
     '',
     'Press Ctrl+C to stop.',
   ].join('\n'),
@@ -25,15 +29,28 @@ export const dashboardCommand: CommandDefinition = {
     const json = isJson(args.flags);
     const port = typeof args.flags['port'] === 'string' ? parseInt(args.flags['port'], 10) : 9200;
     const host = typeof args.flags['host'] === 'string' ? args.flags['host'] : '127.0.0.1';
+    const devMode = args.flags['dev'] === true;
 
-    const server = new DashboardServer({ port, host });
+    let server: DashboardServer;
+    try {
+      server = new DashboardServer({ port, host, devMode });
+    } catch (e) {
+      // Fail-closed constructor (WI-003): surface the fix, exit non-zero.
+      const message = e instanceof Error ? e.message : String(e);
+      output(`Error: ${message}`, json);
+      process.exitCode = 1;
+      return;
+    }
 
     const info = await server.start();
 
     if (json) {
-      output(info, true);
+      output({ ...info, ...(devMode ? { token: server.getToken() } : {}) }, true);
     } else {
       output(`Dashboard running at ${info.url}`, false);
+      if (devMode && server.getToken()) {
+        output(`Dev auth token (this run only): ${server.getToken()}`, false);
+      }
       output('Press Ctrl+C to stop.', false);
     }
 
