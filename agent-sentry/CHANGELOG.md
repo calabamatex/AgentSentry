@@ -31,6 +31,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - CI coverage thresholds added to `vitest.config.ts` (matching the CI gate); stopped tracking generated `coverage/` artifacts.
+- `docs/remediation-plan.md` replaced with the v1.2 agent-executable workplan (supersedes the completed phased plan; its open Phase-6 items were ported as WI-025/WI-026/WI-103 — nothing dropped; prior implementation notes remain in git history).
 
 ## [0.6.0-beta.1] - 2026-04-11
 
