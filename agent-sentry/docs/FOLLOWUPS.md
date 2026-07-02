@@ -58,24 +58,10 @@ Remaining work:
 
 ## P2 — Quality & Coverage
 
-### 3. ESLint warnings (16 remaining)
-`npm run lint` passes with 0 errors but 16 pre-existing warnings. These are
-all shallow fixes:
-
-| File | Warnings |
-|------|----------|
-| `src/cli/commands/config.ts` | 2× unused imports (`fs`, `ensureDirectorySafe`) |
-| `src/cli/commands/enable.ts` | unused `fs`; 1× `any` |
-| `src/cli/commands/handoff-templates.ts` | unused `TodoItem` |
-| `src/cli/commands/handoff.ts` | unused `readMemoryFiles` |
-| `src/cli/commands/init.ts` | 1× `any`; 1× `require()` import |
-| `src/enforcement/engine.ts` | unused `EnforcementAction` |
-| `src/mcp/server.ts` | 2× `no-misused-promises` in SIGINT/SIGTERM handlers |
-| `src/mcp/tools/health.ts` | 2× `require()` imports; 2× `any` |
-| `src/mcp/transport.ts` | unused `actualPort` |
-
-Fix: one pass to delete dead imports, type the `any`s, convert dynamic
-`require()` to `await import()`, and wrap signal handlers in a `void` IIFE.
+### 3. ESLint warnings — RESOLVED (WI-021, 0.6.0-beta.2)
+All 18 warnings cleared (the count here previously said 16 — a dynamic
+verification run measured 18; both stale). `lint` now runs with
+`--max-warnings 0`, so any new warning is CI-blocking.
 
 ### 4. Coverage floor ratchet
 Current line coverage: **85.7%**. CI floor: 80%. The floor was deliberately set

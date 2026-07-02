@@ -69,37 +69,6 @@ function git(args: string[], cwd?: string): string {
 // Memory helpers
 // ---------------------------------------------------------------------------
 
-/** Read memory files from the Claude project memory directory. */
-function readMemoryFiles(projectDir?: string): { index: string; handoffs: string[] } {
-  const memoryDir = resolveMemoryDir(projectDir);
-  let index = '';
-  const handoffs: string[] = [];
-
-  if (!memoryDir || !fs.existsSync(memoryDir)) {
-    return { index, handoffs };
-  }
-
-  // Read MEMORY.md index
-  const indexPath = path.join(memoryDir, 'MEMORY.md');
-  if (fs.existsSync(indexPath)) {
-    index = safeReadSync(indexPath).toString('utf-8');
-  }
-
-  // Read all handoff files
-  try {
-    const files = fs.readdirSync(memoryDir);
-    for (const file of files) {
-      if (file.startsWith('project_handoff_') && file.endsWith('.md')) {
-        handoffs.push(file);
-      }
-    }
-  } catch {
-    logger.debug('Could not list handoff files');
-  }
-
-  return { index, handoffs };
-}
-
 /** Resolve the Claude project memory directory. */
 function resolveMemoryDir(projectDir?: string): string | undefined {
   const home = process.env.HOME ?? process.env.USERPROFILE ?? '';

@@ -19,7 +19,6 @@ import type {
   PolicyCondition,
   ActionContext,
   EnforcementResult,
-  EnforcementAction,
 } from './types';
 
 const logger = new Logger({ module: 'enforcement' });

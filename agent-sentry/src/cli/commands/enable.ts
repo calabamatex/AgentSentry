@@ -5,7 +5,6 @@
  * prints what skills it enables, and stores the level change in MemoryStore.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { resolveConfigPath } from '../../config/resolve';
@@ -159,8 +158,8 @@ export const enableCommand: CommandDefinition = {
 function loadEnablementLevel(): number {
   try {
     const cfgPath = getConfigPath();
-    const raw = safeJsonParse<Record<string, any>>(safeReadSync(cfgPath).toString('utf-8'));
-    const level = raw?.enablement?.level;
+    const raw = safeJsonParse<Record<string, unknown>>(safeReadSync(cfgPath).toString('utf-8'));
+    const level = (raw?.enablement as { level?: number } | undefined)?.level;
     if (typeof level === 'number' && level >= 1 && level <= 5) return level;
   } catch (e) {
     logger.debug('Failed to load enablement level from config', { error: errorMessage(e) });

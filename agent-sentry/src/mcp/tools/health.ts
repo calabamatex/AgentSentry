@@ -2,6 +2,8 @@
  * health.ts — agent_sentry_health tool: comprehensive system health check.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { getSharedStore } from '../shared-store';
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { detectEmbeddingProvider } from '../../memory/embeddings';
@@ -109,8 +111,8 @@ export async function handler(
     }
 
     // Check embedding provider
-    const onnxModelPath = require('path').resolve(__dirname, '../../../models/all-MiniLM-L6-v2.onnx');
-    const onnxModelPresent = require('fs').existsSync(onnxModelPath);
+    const onnxModelPath = path.resolve(__dirname, '../../../models/all-MiniLM-L6-v2.onnx');
+    const onnxModelPresent = fs.existsSync(onnxModelPath);
     let embeddingInfo = { provider: 'noop', dimension: 0, available: false, onnx_model_present: onnxModelPresent };
     try {
       const embProvider = await detectEmbeddingProvider();
@@ -136,10 +138,10 @@ export async function handler(
     try {
       const cfgPath = resolveConfigPath();
       if (cfgPath) {
-        const fsModule = await import('fs');
-        const raw = safeJsonParse<Record<string, any>>(fsModule.readFileSync(cfgPath, 'utf8'));
-        if (raw.enablement?.level && typeof raw.enablement.level === 'number') {
-          enablementLevel = raw.enablement.level;
+        const raw = safeJsonParse<Record<string, unknown>>(fs.readFileSync(cfgPath, 'utf8'));
+        const enablement = raw.enablement as { level?: number } | undefined;
+        if (enablement?.level && typeof enablement.level === 'number') {
+          enablementLevel = enablement.level;
         }
       }
     } catch (e) {
@@ -156,10 +158,10 @@ export async function handler(
     try {
       const cfgPath2 = resolveConfigPath();
       if (cfgPath2) {
-        const fsModule2 = await import('fs');
-        const rawConfig = safeJsonParse<Record<string, any>>(fsModule2.readFileSync(cfgPath2, 'utf8'));
-        if (rawConfig.enablement?.skills) {
-          const drift = validateLevelMatchesSkills(enablementLevel, rawConfig.enablement.skills as EnablementConfig['skills']);
+        const rawConfig = safeJsonParse<Record<string, unknown>>(fs.readFileSync(cfgPath2, 'utf8'));
+        const enablement2 = rawConfig.enablement as { skills?: unknown } | undefined;
+        if (enablement2?.skills) {
+          const drift = validateLevelMatchesSkills(enablementLevel, enablement2.skills as EnablementConfig['skills']);
           enablementInfo.config_drift = {
             has_drift: !drift.valid,
             drifted_skills: drift.drifted,

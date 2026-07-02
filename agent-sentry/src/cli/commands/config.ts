@@ -4,14 +4,13 @@
  * Reads/writes agent-sentry.config.json via the provider-factory loader.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { CommandDefinition, ParsedArgs, output, isJson, table } from '../parser';
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { resolveConfigPath } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
-import { atomicWriteSync, safeReadSync, ensureDirectorySafe } from '../../utils/safe-io';
+import { atomicWriteSync, safeReadSync } from '../../utils/safe-io';
 import { errorMessage } from '../../utils/error-message';
 
 const logger = new Logger({ module: 'cli-config' });

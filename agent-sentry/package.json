@@ -41,7 +41,7 @@
     "sync-metadata": "tsx scripts/sync-release-metadata.ts",
     "sync-metadata:patch": "tsx scripts/sync-release-metadata.ts --patch",
     "sync-metadata:check": "tsx scripts/sync-release-metadata.ts --check",
-    "lint": "eslint src/"
+    "lint": "eslint src/ --max-warnings 0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

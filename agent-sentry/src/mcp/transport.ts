@@ -52,9 +52,6 @@ export function createHttpTransport(
     sessionIdGenerator: () => randomUUID(),
   });
 
-  // Track the actual listening port (updated once server starts)
-  let actualPort = port;
-
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     // CORS headers. A wildcard origin is refused unless explicitly opted in,
     // to avoid silently exposing the tool surface cross-origin.
@@ -106,7 +103,6 @@ export function createHttpTransport(
     const onListen = () => {
       const addr = server.address() as AddressInfo;
       if (addr) {
-        actualPort = addr.port;
         result.port = addr.port;
       }
       resolve();

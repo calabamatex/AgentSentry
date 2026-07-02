@@ -7,6 +7,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import { CommandDefinition, ParsedArgs, output, isJson } from '../parser';
 import { resolveConfigPath } from '../../config/resolve';
 import { generateConfigForLevel, getActiveSkills, LEVEL_NAMES, ALL_SKILLS } from '../../enablement/engine';
@@ -163,14 +164,15 @@ export const initCommand: CommandDefinition = {
       } else {
         // Config exists — update enablement level
         try {
-          const existing = safeJsonParse<Record<string, any>>(safeReadSync(configPath).toString('utf-8'));
+          const existing = safeJsonParse<Record<string, unknown>>(safeReadSync(configPath).toString('utf-8'));
           if (!existing.enablement || typeof existing.enablement !== 'object') {
             existing.enablement = {};
           }
+          const enablement = existing.enablement as Record<string, unknown>;
           const canonical = generateConfigForLevel(level);
-          existing.enablement.level = level;
-          existing.enablement.skills = canonical.skills;
-          existing.enablement.updated_at = new Date().toISOString();
+          enablement.level = level;
+          enablement.skills = canonical.skills;
+          enablement.updated_at = new Date().toISOString();
           atomicWriteSync(configPath, JSON.stringify(existing, null, 2) + '\n');
         } catch (e) {
           logger.debug('Failed to update existing config', { error: errorMessage(e) });
@@ -191,9 +193,7 @@ export const initCommand: CommandDefinition = {
     let rulesAppended = false;
     if (!dryRun && level >= 3) {
       try {
-        const repoRoot = require('child_process')
-          .execSync('git rev-parse --show-toplevel', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] })
-          .trim();
+        const repoRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
         rulesAppended = appendAgentSentryRulesToClaudeMd(repoRoot);
       } catch {
         logger.debug('Not in git repo or CLAUDE.md not found — skipping rule append');
