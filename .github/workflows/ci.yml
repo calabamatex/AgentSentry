@@ -88,6 +88,21 @@ jobs:
         run: |
           cd /tmp/test-install
           node -e "const { resolveConfigPath } = require('@calabamatex/agentsentry'); console.log('Config path:', resolveConfigPath() || 'defaults')"
+      - name: Real CLI round-trip — init + health (WI-013)
+        run: |
+          cd /tmp/test-install
+          npx agentsentry init --json
+          npx agentsentry health --json > health.json
+          cat health.json
+          node -e "
+            const h = JSON.parse(require('fs').readFileSync('health.json', 'utf8'));
+            if (!h.status) throw new Error('health output missing status key');
+            console.log('CLI smoke OK: status=' + h.status);
+          "
+      - name: Real MCP round-trip over stdio (WI-013)
+        run: |
+          cd /tmp/test-install
+          node "$GITHUB_WORKSPACE/agent-sentry/scripts/mcp-smoke.cjs"
 
   doc-validation:
     runs-on: ubuntu-latest
