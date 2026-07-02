@@ -20,3 +20,6 @@ coverage/
 # OS / editor noise
 .DS_Store
 *.log
+# Local benchmark runs (WI-023): only baseline.json is tracked, refreshed
+# deliberately via `npm run benchmark -- --update-baseline`.
+benchmarks/results-*.json
