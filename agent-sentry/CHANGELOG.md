@@ -24,6 +24,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- MCP rate limiting is now proxy- and multi-tenant-aware (WI-010): authenticated requests are bucketed per access key (SHA-256), so distinct keys behind one NAT/proxy IP get independent budgets; unauthenticated requests bucket by IP. `AGENT_SENTRY_TRUST_PROXY=1` opts into keying on the first `X-Forwarded-For` hop (ignored by default so the header can't be forged to spoof buckets). Documented in `docs/configuration.md`.
 - Event enrichment no longer discards all providers' output when one throws (WI-009): the multi-provider fan-out now uses `Promise.allSettled`, merges the fulfilled results, and logs each rejection with its provider index. The remaining `Promise.all` sites (batch search/list public API, benchmark harness, Supabase aggregate counts) are genuinely all-or-nothing and now carry justification comments.
 - Default enablement level unified at **2 (Clear Head)**: `health.ts` silently fell back to level 3 when no config was readable, contradicting the shipped config, README, and package docs. All fallbacks now use the exported `DEFAULT_ENABLEMENT_LEVEL` constant; `enablement-model.md` §Default Level Rationale corrected (said 3); a contract test pins constant = shipped config = documented default.
 - `getNextLevel()` intent made explicit: Level 6 (Risk Watch, [experimental]) is **never auto-suggested** — the suggestion ceiling is a named constant (`MAX_AUTO_SUGGEST_LEVEL = 5`), test-pinned and documented; reaching L6 requires explicit opt-in.

@@ -156,8 +156,23 @@ Until a project accumulates enough calibrated samples, all scores are reported a
 |----------|---------|-------------|
 | `SUPABASE_URL` | Supabase provider | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase provider | Service role API key |
-| `AGENT_SENTRY_ACCESS_KEY` | MCP server | Authentication key for MCP requests |
+| `AGENT_SENTRY_ACCESS_KEY` | MCP server | Authentication key for MCP HTTP requests (required by default; see the migration guide) |
+| `AGENT_SENTRY_NO_AUTH` | MCP server + dashboard | `1`/`true` disables authentication (local dev only, unsafe) |
+| `AGENT_SENTRY_DASHBOARD_TOKEN` | Dashboard | Auth token for the dashboard (required unless `--dev` or `NO_AUTH`) |
+| `AGENT_SENTRY_TRUST_PROXY` | MCP server | `1`/`true` to rate-limit on the first `X-Forwarded-For` hop instead of the socket address (see below) |
+| `AGENT_SENTRY_CORS_ORIGIN` | MCP server | Allowed CORS origin (default `http://localhost`) |
+| `AGENT_SENTRY_ALLOW_WILDCARD_CORS` | MCP server | `1` to permit a `*` CORS origin (refused otherwise) |
+| `AGENT_SENTRY_SQLITE_SYNCHRONOUS` | SQLite provider | `NORMAL` (default) or `FULL` — durability vs. write speed trade-off |
 | `AGENT_SENTRY_SUPPRESS_EXPERIMENTAL_WARN` | Coordinator | Set to `1` to suppress experimental warnings |
+
+### Rate limiting and proxies
+
+The MCP HTTP server rate-limits requests (default 100 per 60 s). The bucket key is chosen as follows:
+
+1. **Authenticated requests** are bucketed per access key (by SHA-256 hash), so two clients using different keys behind the same NAT/proxy IP get independent budgets and one cannot exhaust another's.
+2. **Unauthenticated requests** (only reachable under `AGENT_SENTRY_NO_AUTH`) are bucketed by client IP.
+
+For IP bucketing, the socket peer address is used by default. If AgentSentry runs behind a reverse proxy or load balancer, set `AGENT_SENTRY_TRUST_PROXY=1` to bucket on the first `X-Forwarded-For` hop instead. **Only enable this when a trusted proxy sets the header** — otherwise clients can forge `X-Forwarded-For` to evade or spoof rate-limit buckets. The header is ignored entirely when the variable is unset.
 
 ## Example: Minimal Config
 
