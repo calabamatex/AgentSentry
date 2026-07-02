@@ -35,6 +35,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - MCP HTTP transport now **fails closed**: non-health requests always validate via `validateAccessKey`; `/health` is an unauthenticated liveness probe; the server refuses keyless HTTP unless `AGENT_SENTRY_NO_AUTH` and binds loopback when keyless; wildcard CORS refused unless explicitly opted in.
 - Added a project-root **path-traversal guard** to the rules checker; cleared both production-tree `high` npm advisories (`fast-uri`, `hono`); `.gitignore` now excludes `.env*`.
 - Labeled the unused authority-enforcement engine `@experimental` (defined and tested, not yet wired into the decision path).
+- npm publishes now carry a **provenance attestation** (`npm publish --provenance` with OIDC `id-token: write`), and the publish job is gated behind the `npm-publish` GitHub environment so required reviewers can be enforced. Migrating to npm Trusted Publishing (removing the stored `NPM_TOKEN`) is a pending owner action.
 
 ### Changed
 
