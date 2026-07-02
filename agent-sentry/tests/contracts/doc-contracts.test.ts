@@ -49,6 +49,13 @@ describe('Version consistency', () => {
     expect(h1).not.toBeNull();
     expect(h1![1]).toBe(pkg.version);
   });
+
+  it('bash CLI resolves version from package.json, never a hardcoded literal (WI-001)', () => {
+    // bin/agent-sentry.sh shipped VERSION="4.0.0" against a 0.6.0-beta package.
+    const shell = readFile('bin/agent-sentry.sh');
+    expect(shell).not.toMatch(/^\s*VERSION="[0-9]/m);
+    expect(shell).toContain("require('$AGENT_SENTRY_ROOT/package.json').version");
+  });
 });
 
 describe('README accuracy — tool/command counts', () => {

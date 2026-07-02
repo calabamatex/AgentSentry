@@ -5,6 +5,11 @@ All notable changes to AgentSentry are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> **Versioning history:** tags `v4.0.0` and `v4.1.0-beta` predate the deliberate
+> 4.x → 0.x version reset (the AgentOps-era numbering) and do not correspond to
+> npm releases of this package. They are scheduled for removal from the remote;
+> their commits remain in history. Canonical versioning starts at `0.6.0-beta.1`.
+
 ## [Unreleased]
 
 ### Added
@@ -17,6 +22,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `bin/agent-sentry.sh` reported a hardcoded `v4.0.0` (AgentOps-era) against the `0.6.0-beta` package; it now resolves its version from `package.json` at runtime. A contract test and `sync-metadata:check` guard against reintroducing a hardcoded literal.
 - De-flaked timing-sensitive tests: coordinator heartbeat/lock tests now poll instead of fixed sleeps; pooled-supabase request timing uses `performance.now()` (sub-millisecond); a mock-server socket leak in the provider tests; the `enforcement-evasion` ReDoS test asserts completion-with-correct-verdict rather than a wall-clock bound.
 - Documentation honesty: README H1 version synced to `package.json`; MCP tool count (now 11) and enablement level count (now 6) corrected across README, ROADMAP, getting-started, api-reference, configuration, and the architecture docs; de-hyped pre-1.0 "production-ready" language.
 - Strengthened over-mocked boundary tests (`recall-context`, `capture-event`) to drive a real in-memory store.
