@@ -76,14 +76,17 @@ Remaining:
   locally due to the full-suite OOM).
 - Never lower a floor without a CHANGELOG entry.
 
-### 5. Supabase integration tests
-`tests/memory/providers/supabase-integration.test.ts` uses `describe.skipIf(!HAS_SUPABASE)`
-and is skipped in CI (no test project provisioned). The Supabase provider is
-marked experimental but is still shipped in `src/`. Options:
-- Provision a disposable Supabase project for CI and wire its URL/key into
-  GitHub secrets.
-- Or explicitly gate the Supabase provider behind an experimental flag and
-  document that the integration tests only run locally.
+### 5. Supabase integration tests — CI job added (WI-012)
+An optional `supabase-integration` CI job now runs the integration + smoke
+tests when the `SUPABASE_TEST_URL` / `SUPABASE_TEST_KEY` repository secrets are
+present, and exits 0 (clean skip) when they are not, so forks stay green. Setup
+is documented in `docs/supabase-setup.md`.
+
+Remaining refinement: the tests currently isolate by timestamped `session_id`
+and prune on teardown against a shared test project. Stronger isolation — a
+per-run, UUID-suffixed schema created and dropped around each run — is still
+open. Provision a dedicated test project and add the two secrets to activate
+the job.
 
 ---
 
