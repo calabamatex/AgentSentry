@@ -119,7 +119,9 @@ export class QueryOptimizer {
     db.pragma('cache_size = -64000');
     db.pragma('temp_store = MEMORY');
     db.pragma('mmap_size = 268435456');
-    db.pragma('synchronous = NORMAL');
+    // NOTE (WI-011): do NOT set `synchronous` here. It is owned by
+    // SqliteProvider.initialize() and driven by AGENT_SENTRY_SQLITE_SYNCHRONOUS;
+    // setting it here previously clobbered a caller's FULL choice back to NORMAL.
   }
 }
 

@@ -50,6 +50,41 @@ describe('SqliteProvider', () => {
     expect(provider.mode).toBe('local');
   });
 
+  describe('AGENT_SENTRY_SQLITE_SYNCHRONOUS (WI-011)', () => {
+    const SYNC_DB = path.resolve(__dirname, '../../fixtures/test-sqlite-sync.db');
+    // pragma('synchronous') returns the numeric level: 1 = NORMAL, 2 = FULL.
+    const readSync = async (): Promise<number> => {
+      const p = new SqliteProvider(SYNC_DB);
+      await p.initialize();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const level = ((p as any).db.pragma('synchronous', { simple: true })) as number;
+      await p.close();
+      return level;
+    };
+
+    afterEach(() => {
+      delete process.env.AGENT_SENTRY_SQLITE_SYNCHRONOUS;
+      for (const suffix of ['', '-wal', '-shm']) {
+        const f = SYNC_DB + suffix;
+        if (fs.existsSync(f)) fs.unlinkSync(f);
+      }
+    });
+
+    it('defaults to NORMAL (1)', async () => {
+      expect(await readSync()).toBe(1);
+    });
+
+    it('honors FULL (2)', async () => {
+      process.env.AGENT_SENTRY_SQLITE_SYNCHRONOUS = 'FULL';
+      expect(await readSync()).toBe(2);
+    });
+
+    it('falls back to NORMAL for an invalid value', async () => {
+      process.env.AGENT_SENTRY_SQLITE_SYNCHRONOUS = 'bananas';
+      expect(await readSync()).toBe(1);
+    });
+  });
+
   it('inserts and retrieves by ID', async () => {
     const event = makeOpsEvent({ id: 'evt-1' });
     await provider.insert(event);
