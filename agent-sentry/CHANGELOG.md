@@ -55,6 +55,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CI tarball smoke test now performs **real end-to-end calls**: `agentsentry init` + `health --json` (asserting exit 0 and a `status` key) and a live MCP stdio round-trip (`initialize` → `tools/list` → `agent_sentry_check_context`) via `scripts/mcp-smoke.cjs` — a packed artifact with a broken CLI or MCP surface now fails CI.
 - All 18 ESLint warnings cleared (unused imports, `any` types, `require()` imports, misused-promise signal handlers, dead `readMemoryFiles`); `lint` now runs `--max-warnings 0` so warnings are CI-blocking.
 - CI coverage thresholds added to `vitest.config.ts` (matching the CI gate); stopped tracking generated `coverage/` artifacts.
+- Coverage floor ratcheted 80 → 84 for lines and statements (WI-022), in both `vitest.config.ts` and the CI flag (measured ~85.7%). Move to 85 after two stable releases; never lower without a CHANGELOG entry.
 - `docs/remediation-plan.md` replaced with the v1.2 agent-executable workplan (supersedes the completed phased plan; its open Phase-6 items were ported as WI-025/WI-026/WI-103 — nothing dropped; prior implementation notes remain in git history).
 
 ## [0.6.0-beta.1] - 2026-04-11

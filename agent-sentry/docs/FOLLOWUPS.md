@@ -63,15 +63,18 @@ All 18 warnings cleared (the count here previously said 16 — a dynamic
 verification run measured 18; both stale). `lint` now runs with
 `--max-warnings 0`, so any new warning is CI-blocking.
 
-### 4. Coverage floor ratchet
-Current line coverage: **85.7%**. CI floor: 80%. The floor was deliberately set
-5 points below baseline to avoid false-positive failures, but the goal is to
-tighten it over time.
+### 4. Coverage floor ratchet — IN PROGRESS (WI-022)
+Current line coverage: **85.7%**. CI floor raised **80 → 84** (lines + statements)
+in 0.6.0-beta.2; functions (85) and branches (75) remain gated via
+`vitest.config.ts`. The CI flag (`--coverage.thresholds.lines=84`) mirrors the
+config.
 
-Plan:
-- After 2–3 stable beta releases, raise floor to 85%.
-- Branch + function coverage are *not* currently gated — add them at the same
-  ratchet step.
+Remaining:
+- After two stable releases, raise the lines/statements floor to 85.
+- Raise the branches floor toward the measured ~83% once verified in a full CI
+  coverage run (not raised now — kept at 75 to avoid a floor we can't measure
+  locally due to the full-suite OOM).
+- Never lower a floor without a CHANGELOG entry.
 
 ### 5. Supabase integration tests
 `tests/memory/providers/supabase-integration.test.ts` uses `describe.skipIf(!HAS_SUPABASE)`
