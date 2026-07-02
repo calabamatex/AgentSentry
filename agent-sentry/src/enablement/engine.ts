@@ -161,12 +161,21 @@ export function getActiveSkills(config: EnablementConfig): string[] {
 }
 
 /**
- * Return info about the next level, or null if already at max.
+ * Highest level getNextLevel() will ever suggest. Level 6 (Risk Watch) is
+ * [experimental] and strictly opt-in — it is never auto-suggested as a next
+ * step (decided 2026-07-02; see docs/architecture/risk-scoring.md and WI-004
+ * in docs/remediation-plan.md).
+ */
+const MAX_AUTO_SUGGEST_LEVEL = 5;
+
+/**
+ * Return info about the next level, or null when at or above the maximum
+ * auto-suggested level (levels beyond it are opt-in only, never suggested).
  */
 export function getNextLevel(
   config: EnablementConfig,
 ): { level: number; name: string; unlocks: string[] } | null {
-  if (config.level >= 5) {
+  if (config.level >= MAX_AUTO_SUGGEST_LEVEL) {
     return null;
   }
 

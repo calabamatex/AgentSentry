@@ -152,8 +152,20 @@ describe('getNextLevel', () => {
     );
   });
 
-  it('returns null at level 5', () => {
+  it('never auto-suggests Level 6 — null at level 5 (Risk Watch is opt-in only, WI-004)', () => {
+    // Pinned product decision (2026-07-02): L6 is [experimental] and strictly
+    // opt-in; getNextLevel() must not surface it as a next step.
     expect(getNextLevel(generateConfigForLevel(5))).toBeNull();
+  });
+
+  it('returns null at level 6 (already at true max)', () => {
+    expect(getNextLevel(generateConfigForLevel(6))).toBeNull();
+  });
+
+  it('suggests level 5, not 6, from level 4', () => {
+    const next = getNextLevel(generateConfigForLevel(4));
+    expect(next).not.toBeNull();
+    expect(next!.level).toBe(5);
   });
 });
 

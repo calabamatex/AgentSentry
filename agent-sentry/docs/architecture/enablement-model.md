@@ -75,7 +75,7 @@ The engine exports several query functions:
 
 - `isSkillEnabled(config, skill)`: Returns whether a specific skill is enabled.
 - `getActiveSkills(config)`: Returns the list of currently active skill names.
-- `getNextLevel(config)`: Returns what the next level would unlock. At level 5, returns `null`. For skills that change mode (e.g., `standing_orders` going from `basic` to `full`), the unlock description includes the upgrade notation.
+- `getNextLevel(config)`: Returns what the next level would unlock. **By design, it never suggests Level 6** — Risk Watch is [experimental] and strictly opt-in, so the suggestion ceiling is Level 5 (`MAX_AUTO_SUGGEST_LEVEL`); at level 5 or above it returns `null`. Reaching Level 6 requires an explicit `enable --level 6`. For skills that change mode (e.g., `standing_orders` going from `basic` to `full`), the unlock description includes the upgrade notation.
 
 ---
 
