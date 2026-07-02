@@ -63,9 +63,11 @@ The invariants are enforced by `validateEnablementConfig()`:
 
 ## Default Level Rationale
 
-The default level is **3 (House Rules)**. This activates save points, context health monitoring, and basic standing orders -- the minimum set needed to prevent common operational mistakes (uncommitted work loss, context overflow, rule violations) without requiring teams to understand task sizing or security scanning workflows.
+The default level is **2 (Clear Head)**. This activates save points and context health monitoring -- the minimum set needed to prevent the two most common operational losses (uncommitted work and context overflow) without imposing rules enforcement, task sizing, or security scanning workflows on teams that have not opted into them. Standing orders and the higher-touch skills are one `enable` step away when a team wants them.
 
-Level 3 is read from the project configuration file under `enablement.level`. If not set or if the config file is missing, level 3 is used as the fallback (see `src/mcp/tools/health.ts`).
+The level is read from the project configuration file under `enablement.level` (the shipped config sets `2`). If not set or if the config file is missing, code paths fall back to the exported `DEFAULT_ENABLEMENT_LEVEL` constant in `src/enablement/engine.ts` -- also `2`. A contract test (`tests/contracts/doc-contracts.test.ts`) pins this document, the shipped config, and the constant to the same value, so this class of drift is caught mechanically.
+
+Note: `agentsentry init` deliberately scaffolds *new* projects at level 1 (Safe Ground) unless `--level` is passed -- a conservative starting point for first-time adoption; its usage text documents this. The *default* described here is what the shipped configuration and fallback paths use.
 
 ---
 

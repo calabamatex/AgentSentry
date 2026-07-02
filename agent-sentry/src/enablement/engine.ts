@@ -161,6 +161,14 @@ export function getActiveSkills(config: EnablementConfig): string[] {
 }
 
 /**
+ * Canonical default enablement level: 2 (Clear Head) — save points +
+ * context health. This is the single source of truth: the shipped
+ * agent-sentry.config.json, README, and every fallback path must agree
+ * with it (pinned by tests/contracts/doc-contracts.test.ts, WI-018).
+ */
+export const DEFAULT_ENABLEMENT_LEVEL = 2;
+
+/**
  * Highest level getNextLevel() will ever suggest. Level 6 (Risk Watch) is
  * [experimental] and strictly opt-in — it is never auto-suggested as a next
  * step (decided 2026-07-02; see docs/architecture/risk-scoring.md and WI-004

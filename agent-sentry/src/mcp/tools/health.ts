@@ -5,7 +5,7 @@
 import { getSharedStore } from '../shared-store';
 import { loadMemoryConfig } from '../../memory/providers/provider-factory';
 import { detectEmbeddingProvider } from '../../memory/embeddings';
-import { getActiveSkills, generateConfigForLevel, validateLevelMatchesSkills, LEVEL_NAMES } from '../../enablement/engine';
+import { getActiveSkills, generateConfigForLevel, validateLevelMatchesSkills, LEVEL_NAMES, DEFAULT_ENABLEMENT_LEVEL } from '../../enablement/engine';
 import type { EnablementConfig } from '../../enablement/engine';
 import { resolveConfigPath } from '../../config/resolve';
 import { RiskScoringEngine, DEFAULT_RISK_SCORING_CONFIG } from '../../risk-scoring';
@@ -132,7 +132,7 @@ export async function handler(
     }
 
     // Check enablement
-    let enablementLevel = 3; // default
+    let enablementLevel = DEFAULT_ENABLEMENT_LEVEL;
     try {
       const cfgPath = resolveConfigPath();
       if (cfgPath) {

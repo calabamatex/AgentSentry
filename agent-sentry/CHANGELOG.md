@@ -22,6 +22,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Default enablement level unified at **2 (Clear Head)**: `health.ts` silently fell back to level 3 when no config was readable, contradicting the shipped config, README, and package docs. All fallbacks now use the exported `DEFAULT_ENABLEMENT_LEVEL` constant; `enablement-model.md` §Default Level Rationale corrected (said 3); a contract test pins constant = shipped config = documented default.
 - `getNextLevel()` intent made explicit: Level 6 (Risk Watch, [experimental]) is **never auto-suggested** — the suggestion ceiling is a named constant (`MAX_AUTO_SUGGEST_LEVEL = 5`), test-pinned and documented; reaching L6 requires explicit opt-in.
 - `bin/agent-sentry.sh` reported a hardcoded `v4.0.0` (AgentOps-era) against the `0.6.0-beta` package; it now resolves its version from `package.json` at runtime. A contract test and `sync-metadata:check` guard against reintroducing a hardcoded literal.
 - De-flaked timing-sensitive tests: coordinator heartbeat/lock tests now poll instead of fixed sleeps; pooled-supabase request timing uses `performance.now()` (sub-millisecond); a mock-server socket leak in the provider tests; the `enforcement-evasion` ReDoS test asserts completion-with-correct-verdict rather than a wall-clock bound.
