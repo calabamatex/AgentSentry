@@ -451,8 +451,13 @@ describe('AgentCoordinator', () => {
 
       await coordA.send('agent-b', 'events', { n: 1 });
 
+      // The `since` filter is timestamp-based (ms granularity), so the second
+      // message must carry a strictly-later timestamp than `cutoff`. Instead of
+      // a fixed sleep (flaky if both sends land in the same ms), wait only until
+      // the wall clock has actually advanced past the cutoff — deterministic in
+      // effect: n:2 is guaranteed after cutoff, however slow or fast CI is.
       const cutoff = new Date().toISOString();
-      await new Promise((r) => setTimeout(r, 10));
+      await waitFor(() => new Date().toISOString() > cutoff, { timeoutMs: 1000, intervalMs: 1 });
 
       await coordA.send('agent-b', 'events', { n: 2 });
 

@@ -34,6 +34,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - De-flaked timing-sensitive tests: coordinator heartbeat/lock tests now poll instead of fixed sleeps; pooled-supabase request timing uses `performance.now()` (sub-millisecond); a mock-server socket leak in the provider tests; the `enforcement-evasion` ReDoS test asserts completion-with-correct-verdict rather than a wall-clock bound.
 - Documentation honesty: README H1 version synced to `package.json`; MCP tool count (now 11) and enablement level count (now 6) corrected across README, ROADMAP, getting-started, api-reference, configuration, and the architecture docs; de-hyped pre-1.0 "production-ready" language.
 - Strengthened over-mocked boundary tests (`recall-context`, `capture-event`) to drive a real in-memory store.
+- Removed the last fixed-sleep in the coordinator tests (WI-026): the `receive ... since` test now waits only until the wall clock advances past its cutoff (deterministic ordering) instead of a magic 10 ms delay. Verified green 3× consecutively.
 
 ### Security
 
