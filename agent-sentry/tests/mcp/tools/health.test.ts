@@ -82,6 +82,7 @@ vi.mock('../../../src/enablement/engine', () => ({
   }),
   getActiveSkills: vi.fn().mockReturnValue(['save_points', 'context_health', 'standing_orders']),
   LEVEL_NAMES: { 1: 'Safe Ground', 2: 'Clear Head', 3: 'House Rules', 4: 'Right Size', 5: 'Full Guard' },
+  DEFAULT_ENABLEMENT_LEVEL: 2,
 }));
 
 import { handler } from '../../../src/mcp/tools/health';

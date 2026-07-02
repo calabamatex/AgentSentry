@@ -86,6 +86,7 @@ function getEnablementDefault(): { level: number; name: string } {
     3: 'House Rules',
     4: 'Right Size',
     5: 'Full Guard',
+    6: 'Risk Watch',
   };
 
   const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
@@ -155,6 +156,17 @@ function checkDrift(metadata: ReleaseMetadata): boolean {
     const readmeCount = parseInt(match[1], 10);
     if (readmeCount !== metadata.testCount) {
       console.error(`DRIFT: README says ${readmeCount} tests, actual is ${metadata.testCount}`);
+      drifted = true;
+    }
+  }
+
+  // WI-001: the bash CLI must resolve its version from package.json at runtime,
+  // never from a hardcoded literal (v4.0.0 shipped against a 0.6.0-beta package).
+  const shellPath = path.join(ROOT, 'bin', 'agent-sentry.sh');
+  if (fs.existsSync(shellPath)) {
+    const shell = fs.readFileSync(shellPath, 'utf-8');
+    if (/^\s*VERSION="[0-9]/m.test(shell)) {
+      console.error('DRIFT: bin/agent-sentry.sh contains a hardcoded VERSION="<semver>" literal');
       drifted = true;
     }
   }

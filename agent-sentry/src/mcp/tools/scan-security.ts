@@ -3,6 +3,7 @@
  */
 
 import { z } from 'zod';
+import { MAX_SCAN_BYTES } from '../../primitives/secret-detection';
 
 export const name = 'agent_sentry_scan_security';
 export const description =
@@ -98,6 +99,8 @@ function clamp01(x: number): number {
 export interface ScanSecurityResult {
   findings: SecurityFinding[];
   clean: boolean;
+  /** True when input exceeded MAX_SCAN_BYTES and only the prefix was scanned. */
+  truncated?: boolean;
 }
 
 interface SecurityPattern {
@@ -107,7 +110,8 @@ interface SecurityPattern {
   description: string;
 }
 
-const SECURITY_PATTERNS: SecurityPattern[] = [
+/** @internal Exported for the ReDoS audit test (WI-007) only. */
+export const SECURITY_PATTERNS: SecurityPattern[] = [
   // API Keys
   {
     type: 'api-key',
@@ -159,17 +163,24 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     pattern: /(?:secret|token)\s*[:=]\s*['"][a-zA-Z0-9_\-]{8,}['"]/gi,
     description: 'Possible hardcoded secret or token detected',
   },
-  // SQL injection patterns
+  // SQL injection patterns.
+  // Bounded quantifiers (WI-007): the original unbounded `.*?` between the
+  // opening quote and the sink was 2nd-degree-polynomial under ReDoS analysis.
+  // Bounding the gap to 500 non-quote/newline chars is linear and still covers
+  // realistic single-line query calls.
   {
     type: 'sql-injection',
     severity: 'high',
-    pattern: /(?:query|exec|execute)\s*\(\s*['"`].*?\$\{/g,
+    // Gap excludes the '$' it searches for (removes the run/delimiter overlap
+    // that made the original `.*?` ~840ms on 500KB); bounded to 500 chars.
+    pattern: /(?:query|exec|execute)\s{0,10}\(\s{0,10}['"`][^$\n]{0,500}\$\{/g,
     description: 'Possible SQL injection via template literal interpolation',
   },
   {
     type: 'sql-injection',
     severity: 'high',
-    pattern: /(?:query|exec|execute)\s*\(\s*['"].*?\+\s*(?:req\.|args\.|input\.|user)/g,
+    // Gap excludes the '+' it searches for; bounded to 500 chars.
+    pattern: /(?:query|exec|execute)\s{0,10}\(\s{0,10}['"][^+\n]{0,500}\+\s{0,10}(?:req\.|args\.|input\.|user)/g,
     description: 'Possible SQL injection via string concatenation with user input',
   },
   // eval usage
@@ -200,7 +211,12 @@ export async function handler(
   try {
     const parsed = argsSchema.parse(args);
     const findings: SecurityFinding[] = [];
-    const lines = parsed.content.split('\n');
+    // Defense-in-depth input cap (WI-007): bound the work any single scan can
+    // do, independent of per-pattern complexity. Scanning stops at the cap and
+    // the result flags truncation.
+    const truncated = parsed.content.length > MAX_SCAN_BYTES;
+    const content = truncated ? parsed.content.slice(0, MAX_SCAN_BYTES) : parsed.content;
+    const lines = content.split('\n');
 
     for (const secPattern of SECURITY_PATTERNS) {
       for (let i = 0; i < lines.length; i++) {
@@ -225,6 +241,7 @@ export async function handler(
     const result: ScanSecurityResult = {
       findings,
       clean: findings.length === 0,
+      ...(truncated ? { truncated: true } : {}),
     };
 
     return {

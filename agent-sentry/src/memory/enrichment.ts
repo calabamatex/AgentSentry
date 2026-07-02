@@ -234,9 +234,25 @@ export class EventEnricher {
       limit: 100,
     });
 
-    const results = await Promise.all(
+    // Independent fan-out (WI-009): enrichment providers are mutually
+    // independent, so one throwing must not discard the others' results.
+    // allSettled + merge the fulfilled; log rejections with the provider index.
+    const settled = await Promise.allSettled(
       this.providers.map((provider) => provider.enrich(event, recentEvents)),
     );
+
+    const results: EnrichmentResult[] = [];
+    for (let i = 0; i < settled.length; i++) {
+      const outcome = settled[i];
+      if (outcome.status === 'fulfilled') {
+        results.push(outcome.value);
+      } else {
+        logger.warn('Enrichment provider failed; skipping its contribution', {
+          providerIndex: i,
+          error: errorMessage(outcome.reason),
+        });
+      }
+    }
 
     return mergeResults(results);
   }

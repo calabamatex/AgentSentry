@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { validateAccessKey, createRateLimiter, resetAuthWarning } from '../../src/mcp/auth';
+import { validateAccessKey, createRateLimiter, resetAuthWarning, deriveRateLimitKey } from '../../src/mcp/auth';
 import { IncomingMessage, ServerResponse } from 'http';
 
 describe('validateAccessKey', () => {
@@ -191,5 +191,45 @@ describe('createRateLimiter', () => {
       limiter.middleware(req, res, next);
       expect(next).toHaveBeenCalled();
     });
+  });
+});
+
+describe('deriveRateLimitKey (WI-010)', () => {
+  const mkReq = (headers: Record<string, string | string[]>, remoteAddress = '10.0.0.1'): IncomingMessage =>
+    ({ headers, socket: { remoteAddress } } as unknown as IncomingMessage);
+
+  afterEach(() => {
+    delete process.env.AGENT_SENTRY_TRUST_PROXY;
+  });
+
+  it('defaults to the socket peer address', () => {
+    expect(deriveRateLimitKey(mkReq({}, '203.0.113.5'))).toBe('ip:203.0.113.5');
+  });
+
+  it('ignores X-Forwarded-For unless trust-proxy is enabled', () => {
+    const req = mkReq({ 'x-forwarded-for': '1.2.3.4' }, '10.0.0.1');
+    expect(deriveRateLimitKey(req)).toBe('ip:10.0.0.1');
+  });
+
+  it('honors the first X-Forwarded-For hop when trust-proxy is enabled', () => {
+    process.env.AGENT_SENTRY_TRUST_PROXY = '1';
+    const req = mkReq({ 'x-forwarded-for': '1.2.3.4, 5.6.7.8' }, '10.0.0.1');
+    expect(deriveRateLimitKey(req)).toBe('ip:1.2.3.4');
+  });
+
+  it('buckets per access key, isolating two keys from one IP', () => {
+    const a = deriveRateLimitKey(mkReq({ 'x-agent-sentry-key': 'key-A' }, '10.0.0.1'));
+    const b = deriveRateLimitKey(mkReq({ 'x-agent-sentry-key': 'key-B' }, '10.0.0.1'));
+    expect(a).not.toBe(b);
+    expect(a.startsWith('key:')).toBe(true);
+    // Same key from a different IP → same bucket (per-key, not per-IP)
+    const aElsewhere = deriveRateLimitKey(mkReq({ 'x-agent-sentry-key': 'key-A' }, '198.51.100.9'));
+    expect(a).toBe(aElsewhere);
+  });
+
+  it('access key takes precedence over trusted XFF', () => {
+    process.env.AGENT_SENTRY_TRUST_PROXY = '1';
+    const req = mkReq({ 'x-agent-sentry-key': 'key-A', 'x-forwarded-for': '1.2.3.4' });
+    expect(deriveRateLimitKey(req).startsWith('key:')).toBe(true);
   });
 });

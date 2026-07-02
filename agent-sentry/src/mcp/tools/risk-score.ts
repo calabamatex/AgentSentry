@@ -10,7 +10,9 @@
 
 import { z } from 'zod';
 import { getSharedStore } from '../shared-store';
+import { readFileSync } from 'fs';
 import { resolveConfigPath } from '../../config/resolve';
+import { DEFAULT_ENABLEMENT_LEVEL } from '../../enablement/engine';
 import { RiskScoringEngine, DEFAULT_RISK_SCORING_CONFIG, RiskScoringConfigSchema } from '../../risk-scoring';
 import type { RiskScoringConfig } from '../../risk-scoring';
 import { Logger } from '../../observability/logger';
@@ -58,13 +60,12 @@ const argsSchema = z.object({
 });
 
 function readConfig(): { level: number; riskConfig: RiskScoringConfig } {
-  let level = 2;
+  let level = DEFAULT_ENABLEMENT_LEVEL;
   let riskConfig = DEFAULT_RISK_SCORING_CONFIG;
   try {
     const cfgPath = resolveConfigPath();
     if (cfgPath) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const raw = safeJsonParse<Record<string, unknown>>(require('fs').readFileSync(cfgPath, 'utf8'));
+      const raw = safeJsonParse<Record<string, unknown>>(readFileSync(cfgPath, 'utf8'));
       const enablement = raw.enablement as { level?: number } | undefined;
       if (typeof enablement?.level === 'number') level = enablement.level;
       if (raw.risk_scoring) {

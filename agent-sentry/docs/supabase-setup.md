@@ -184,6 +184,16 @@ CREATE POLICY "Service role has full access"
   USING (auth.role() = 'service_role');
 ```
 
+## CI Integration Testing (WI-012)
+
+The Supabase integration and smoke tests (`tests/memory/providers/supabase-integration.test.ts`, `tests/e2e/supabase-smoke.test.ts`) self-skip when no credentials are present, so they stay green on forks. To run them in CI against a **disposable test project**:
+
+1. Provision a dedicated Supabase project (not production) and apply the schema above.
+2. Add two repository secrets: `SUPABASE_TEST_URL` and `SUPABASE_TEST_KEY` (service-role key).
+3. The `supabase-integration` CI job maps those to `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` and runs the tests; when the secret is absent the job exits 0 with a skip notice.
+
+The tests namespace their data by a timestamped `session_id` and prune on teardown, so they can share a dedicated test project safely. Stronger isolation (a per-run, UUID-suffixed schema created and dropped around each run) is tracked as a follow-up in `docs/FOLLOWUPS.md`.
+
 ## Troubleshooting
 
 - **"function not found"**: Run the SQL schema above; the `ensure_ops_schema` function is missing.

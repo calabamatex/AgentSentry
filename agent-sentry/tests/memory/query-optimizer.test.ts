@@ -179,12 +179,14 @@ describe('QueryOptimizer', () => {
       expect(result.cache_size).toBe(-64000);
     });
 
-    it('sets synchronous to NORMAL', () => {
+    it('does not touch synchronous — it is owned by the provider (WI-011)', () => {
+      // The provider sets synchronous from AGENT_SENTRY_SQLITE_SYNCHRONOUS
+      // before calling optimizeConnection; the optimizer must not clobber it.
+      db.pragma('synchronous = FULL'); // 2
       optimizer.optimizeConnection(db);
 
       const result = db.prepare('PRAGMA synchronous').get() as { synchronous: number };
-      // NORMAL = 1
-      expect(result.synchronous).toBe(1);
+      expect(result.synchronous).toBe(2); // still FULL, not reset to NORMAL
     });
   });
 });

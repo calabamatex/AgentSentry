@@ -68,7 +68,7 @@ What makes it different: AgentSentry *remembers*. Every decision, violation, inc
 - **Tracing** -- Span-based tracing with OpenTelemetry-compatible context propagation
 - **Permissions** -- File-level and command-level enforcement with allowlist/denylist
 - **Cost Management** -- Per-session and monthly budget tracking with warn and hard-stop thresholds
-- **Audit Trail** -- Append-only, hash-chained event log with semantic search (EU AI Act Article 12 compliant)
+- **Audit Trail** -- Append-only, hash-chained event log with semantic search — designed to support EU AI Act Article 12 record-keeping/audit-trail requirements
 - **Plugins** -- 4 categories (monitors, auditors, dashboards, integrations) with templates and 11 validation checks
 - **Evals** -- Built-in evaluation harness for testing safety rules against known attack patterns
 
@@ -242,12 +242,12 @@ Token estimation uses message count multiplied by `tokens_per_message` (default 
 
 ## Dashboard
 
-Single-file HTML dashboard with no external dependencies. Adapts to your enablement level.
+Live web dashboard served over HTTP with no external dependencies. Adapts to your enablement level. Authentication is required — see the [Dashboard Guide](agent-sentry/docs/dashboard-guide.md#authentication).
 
 ```bash
-open agent-sentry/dashboard/agent-sentry-dashboard.html
-# Or serve it:
-npx serve agent-sentry/dashboard/
+AGENT_SENTRY_DASHBOARD_TOKEN=<token> npx agentsentry dashboard
+# Or for local development (auto-generates a token):
+npx agentsentry dashboard --dev
 ```
 
 ---
@@ -349,6 +349,7 @@ MIT -- see [LICENSE](LICENSE) for details.
 ## Links
 
 - [Getting Started Guide](agent-sentry/docs/getting-started.md)
+- [Migrating 0.5 → 0.6](agent-sentry/docs/migration-0.5-to-0.6.md) -- Auth-required breaking changes and upgrade checklist
 - [First Session Walkthrough](agent-sentry/docs/first-session.md)
 - [API Reference](agent-sentry/docs/api-reference.md)
 - [Product Specification](docs/planning/AgentSentry-Product-Spec.md) -- Full spec covering architecture, skills, memory, MCP, and integrations

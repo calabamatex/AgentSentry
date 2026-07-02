@@ -105,7 +105,7 @@ These extend the 5 core skills into a full framework for production agent manage
 
 **Testing & Evals** — Golden datasets for every AgentSentry module. Regression testing on every rules file or agent definition change. If you change a prompt and it breaks a detection pattern, you find out before your users do.
 
-**Compliance & Audit Trail** — Append-only, hash-chained audit records for every agent action. EU AI Act Article 12 compliant (enforceable August 2, 2026). Every action timestamped, attributed, and tamper-proof.
+**Compliance & Audit Trail** — Append-only, hash-chained audit records for every agent action, designed to support EU AI Act Article 12 record-keeping requirements (enforceable August 2, 2026). Every action timestamped, attributed, and tamper-evident. No formal compliance assessment has been performed; supporting record-keeping is not the same as conferring compliance.
 
 **Agent-to-Agent Trust** — Delegation tokens that narrow scope when a parent agent delegates to a sub-agent. Tokens expire, can be revoked, and never widen permissions. If a sub-agent gets compromised, the damage is contained to its delegation scope.
 

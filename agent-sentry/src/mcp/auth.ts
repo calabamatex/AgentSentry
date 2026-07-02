@@ -3,7 +3,8 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'http';
-import { timingSafeEqual } from 'crypto';
+import { createHash } from 'crypto';
+import { timingSafeStringEqual } from '../utils/timing-safe';
 
 /**
  * Validates an access key against the AGENT_SENTRY_ACCESS_KEY environment variable.
@@ -52,15 +53,8 @@ export function validateAccessKey(key: string): boolean {
     return false;
   }
 
-  // Constant-time comparison to prevent timing attacks
-  const keyBuf = Buffer.from(key);
-  const expectedBuf = Buffer.from(expected);
-  if (keyBuf.length !== expectedBuf.length) {
-    // Dummy comparison to avoid leaking key length via timing
-    timingSafeEqual(expectedBuf, expectedBuf);
-    return false;
-  }
-  return timingSafeEqual(keyBuf, expectedBuf);
+  // Constant-time comparison to prevent timing attacks (shared util, WI-003)
+  return timingSafeStringEqual(key, expected);
 }
 
 /**
@@ -146,8 +140,7 @@ export function createRateLimiter(
   }
 
   function middleware(req: IncomingMessage, res: ServerResponse, next: () => void): void {
-    const ip = req.socket?.remoteAddress ?? 'unknown';
-    if (!check(ip)) {
+    if (!check(deriveRateLimitKey(req))) {
       res.writeHead(429, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Too Many Requests', retryAfterMs: windowMs }));
       return;
@@ -156,4 +149,36 @@ export function createRateLimiter(
   }
 
   return { check, middleware };
+}
+
+/**
+ * Derives the rate-limit bucket key for a request (WI-010).
+ *
+ * Precedence:
+ *  1. Authenticated caller (`x-agent-sentry-key` present) → per-key bucket
+ *     (`key:<sha256>`), so two keys sharing one NAT/proxy IP get independent
+ *     buckets and one caller can't exhaust another's budget.
+ *  2. `AGENT_SENTRY_TRUST_PROXY=1|true` → the first `X-Forwarded-For` hop
+ *     (`ip:<hop>`). The header is honored ONLY when this is set; otherwise it
+ *     is ignored (untrusted by default — clients cannot forge their bucket).
+ *  3. Otherwise → the socket peer address (`ip:<remoteAddress>`).
+ */
+export function deriveRateLimitKey(req: IncomingMessage): string {
+  const headers = req.headers ?? {};
+  const accessKey = headers['x-agent-sentry-key'];
+  if (typeof accessKey === 'string' && accessKey.length > 0) {
+    return `key:${createHash('sha256').update(accessKey).digest('hex')}`;
+  }
+
+  const trustProxy = process.env.AGENT_SENTRY_TRUST_PROXY;
+  if (trustProxy === '1' || trustProxy === 'true') {
+    const xff = headers['x-forwarded-for'];
+    const raw = Array.isArray(xff) ? xff[0] : xff;
+    const firstHop = raw?.split(',')[0]?.trim();
+    if (firstHop) {
+      return `ip:${firstHop}`;
+    }
+  }
+
+  return `ip:${req.socket?.remoteAddress ?? 'unknown'}`;
 }

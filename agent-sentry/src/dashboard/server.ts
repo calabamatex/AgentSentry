@@ -19,6 +19,7 @@ import * as crypto from 'crypto';
 import { EventStream, StreamClient, StreamEvent, StreamFilter } from '../streaming/event-stream';
 import { Logger } from '../observability/logger';
 import { errorMessage } from '../utils/error-message';
+import { timingSafeStringEqual } from '../utils/timing-safe';
 
 const logger = new Logger({ module: 'dashboard-server' });
 import { HealthChecker, memoryUsageCheck, eventLoopCheck } from '../observability/health';
@@ -43,8 +44,14 @@ export interface DashboardServerOptions {
   host?: string;
   /** CORS origin (default 'http://127.0.0.1:9200'). */
   corsOrigin?: string;
-  /** Authentication token. If set, all requests must include Authorization: Bearer <token>. */
+  /** Authentication token. All requests must include Authorization: Bearer <token>. */
   token?: string;
+  /**
+   * Dev mode: auto-generate a random token when none is configured instead of
+   * refusing to start. The generated token is retrievable via getToken() so the
+   * caller (CLI --dev) can display it. Never use in production.
+   */
+  devMode?: boolean;
   /** EventStream instance to subscribe to. */
   eventStream?: EventStream;
   /** HealthChecker instance. */
@@ -78,7 +85,7 @@ export class DashboardServer {
   private enablementConfig?: EnablementConfig;
   private coordinator?: AgentCoordinator;
   private token?: string;
-  private options: Required<Omit<DashboardServerOptions, 'eventStream' | 'healthChecker' | 'pluginRegistry' | 'memoryStore' | 'enablementConfig' | 'coordinator' | 'token'>>;
+  private options: Required<Omit<DashboardServerOptions, 'eventStream' | 'healthChecker' | 'pluginRegistry' | 'memoryStore' | 'enablementConfig' | 'coordinator' | 'token' | 'devMode'>>;
   private startTime = 0;
 
   constructor(options?: DashboardServerOptions) {
@@ -88,13 +95,25 @@ export class DashboardServer {
       corsOrigin: options?.corsOrigin ?? 'http://127.0.0.1:9200',
     };
 
-    // Token: env var > options > random
+    // Token: env var > options. Fail closed when absent (WI-003, MCP parity):
+    // auto-generation only under explicit devMode; AGENT_SENTRY_NO_AUTH=1|true
+    // disables auth entirely (unsafe, warned at startup).
+    const noAuth = process.env.AGENT_SENTRY_NO_AUTH;
+    const authDisabled = noAuth === 'true' || noAuth === '1';
     if (process.env.AGENT_SENTRY_DASHBOARD_TOKEN) {
       this.token = process.env.AGENT_SENTRY_DASHBOARD_TOKEN;
     } else if (options?.token) {
       this.token = options.token;
-    } else {
+    } else if (authDisabled) {
+      this.token = undefined;
+    } else if (options?.devMode) {
       this.token = crypto.randomBytes(24).toString('hex');
+    } else {
+      throw new Error(
+        'DashboardServer requires an auth token. Set AGENT_SENTRY_DASHBOARD_TOKEN, ' +
+        'pass { token }, use --dev to auto-generate one, or set ' +
+        'AGENT_SENTRY_NO_AUTH=1 to disable authentication (unsafe).',
+      );
     }
 
     this.eventStream = options?.eventStream ?? new EventStream();
@@ -128,7 +147,11 @@ export class DashboardServer {
         const addr = srv.address();
         const port = (addr && typeof addr === 'object') ? addr.port : this.options.port;
         const host = this.options.host;
-        logger.info('Dashboard started', { token: this.token, port, host });
+        // Never log the token itself (WI-003) — it must not reach log sinks.
+        if (!this.token) {
+          logger.warn('Dashboard auth DISABLED (AGENT_SENTRY_NO_AUTH) — all requests accepted', { port, host });
+        }
+        logger.info('Dashboard started', { auth: this.token ? 'token' : 'disabled', port, host });
         resolve({ port, host, url: `http://${host}:${port}` });
       });
     });
@@ -418,15 +441,26 @@ export class DashboardServer {
     }
   }
 
+  /**
+   * The active auth token, or undefined when auth is disabled
+   * (AGENT_SENTRY_NO_AUTH). Lets the CLI --dev path display an
+   * auto-generated token without it ever entering log output.
+   */
+  getToken(): string | undefined {
+    return this.token;
+  }
+
   private authenticateRequest(req: http.IncomingMessage, res: http.ServerResponse, url: URL): boolean {
+    // Only reachable tokenless under AGENT_SENTRY_NO_AUTH (constructor fails closed otherwise)
     if (!this.token) return true;
 
-    // Allow token in query param for SSE (EventSource can't set headers)
+    // Allow token in query param for SSE (EventSource can't set headers).
+    // URL exposure trade-off is documented in docs/dashboard-guide.md.
     const queryToken = url.searchParams.get('token');
-    if (queryToken === this.token) return true;
+    if (queryToken !== null && timingSafeStringEqual(queryToken, this.token)) return true;
 
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== this.token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ') || !timingSafeStringEqual(authHeader.slice(7), this.token)) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Unauthorized' }));
       return false;

@@ -24,7 +24,10 @@ AGENT_SENTRY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCRIPTS_DIR="$AGENT_SENTRY_ROOT/scripts"
 CONFIG_FILE="$AGENT_SENTRY_ROOT/agent-sentry.config.json"
 PREFIX="[AgentSentry]"
-VERSION="4.0.0"
+# Version is resolved at runtime from the co-located package.json (single source
+# of truth). Never hardcode a semver here — sync-release-metadata.ts --check and
+# tests/contracts/ enforce this.
+VERSION="$(node -p "require('$AGENT_SENTRY_ROOT/package.json').version" 2>/dev/null || echo "unknown")"
 
 # Find repo root
 if git rev-parse --is-inside-work-tree &>/dev/null; then

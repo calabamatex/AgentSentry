@@ -108,6 +108,8 @@ Each provider declares `mode: 'local' | 'remote'` to indicate its deployment mod
 
 **SqliteProvider** (`mode: 'local'`): Default. Uses a local SQLite database at a configurable path (default: `agent-sentry/data/ops.db`). The database path is resolved relative to the config file location via `resolveDatabasePath()`.
 
+The provider opens the database in WAL journal mode with `synchronous = NORMAL` by default — the standard, safe pairing for WAL. **Durability trade-off:** with `NORMAL`, an OS crash or power loss can lose the last committed transaction(s) that had not yet been checkpointed (the process crashing is *not* enough — WAL survives that). This window is acceptable for an operational event log, and the hash chain will *detect* a torn tail during verification (the last records simply fail the chain check rather than being silently trusted). Set `AGENT_SENTRY_SQLITE_SYNCHRONOUS=FULL` to fsync on every commit — this *prevents* the torn tail at the cost of write throughput. Any value other than `FULL` is treated as `NORMAL`.
+
 **SupabaseProvider** (`mode: 'remote'`): For team/shared environments. Configured via `supabase_url` and `supabase_service_role_key` in the config file, or via `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` environment variables.
 
 ### Provider Selection

@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import { generateConfigForLevel, validateLevelMatchesSkills } from '../../src/enablement/engine';
+import { generateConfigForLevel, validateLevelMatchesSkills, DEFAULT_ENABLEMENT_LEVEL } from '../../src/enablement/engine';
 
 const agentSentryRoot = resolve(__dirname, '../..');
 const readFile = (rel: string) => readFileSync(resolve(agentSentryRoot, rel), 'utf8');
@@ -48,6 +48,13 @@ describe('Version consistency', () => {
     const h1 = readme.match(/^#\s+AgentSentry\s+v([^\s]+)/m);
     expect(h1).not.toBeNull();
     expect(h1![1]).toBe(pkg.version);
+  });
+
+  it('bash CLI resolves version from package.json, never a hardcoded literal (WI-001)', () => {
+    // bin/agent-sentry.sh shipped VERSION="4.0.0" against a 0.6.0-beta package.
+    const shell = readFile('bin/agent-sentry.sh');
+    expect(shell).not.toMatch(/^\s*VERSION="[0-9]/m);
+    expect(shell).toContain("require('$AGENT_SENTRY_ROOT/package.json').version");
   });
 });
 
@@ -115,6 +122,28 @@ describe('Enablement config consistency', () => {
     expect(l2.skills.directive_compliance.enabled).toBe(false);
     expect(l2.skills.small_bets.enabled).toBe(false);
     expect(l2.skills.proactive_safety.enabled).toBe(false);
+  });
+
+  it('default level agrees everywhere: constant, shipped config, architecture doc, fallbacks (WI-018)', () => {
+    // Single source of truth: DEFAULT_ENABLEMENT_LEVEL in enablement/engine.ts.
+    // Shipped config must match it.
+    const config = JSON.parse(readFile('agent-sentry.config.json'));
+    expect(config.enablement?.level).toBe(DEFAULT_ENABLEMENT_LEVEL);
+
+    // enablement-model.md must document the same default.
+    const doc = readFile('docs/architecture/enablement-model.md');
+    const docDefault = doc.match(/The default level is \*\*(\d)/);
+    expect(docDefault).not.toBeNull();
+    expect(parseInt(docDefault![1], 10)).toBe(DEFAULT_ENABLEMENT_LEVEL);
+
+    // Fallback code paths must use the constant, not a bare literal
+    // (health.ts shipped `= 3` while everything else said 2).
+    const healthSrc = readFile('src/mcp/tools/health.ts');
+    expect(healthSrc).toContain('DEFAULT_ENABLEMENT_LEVEL');
+    expect(healthSrc).not.toMatch(/enablementLevel = \d/);
+    const riskSrc = readFile('src/mcp/tools/risk-score.ts');
+    expect(riskSrc).toContain('DEFAULT_ENABLEMENT_LEVEL');
+    expect(riskSrc).not.toMatch(/let level = \d/);
   });
 });
 

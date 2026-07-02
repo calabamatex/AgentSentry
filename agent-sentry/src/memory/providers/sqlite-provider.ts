@@ -67,7 +67,15 @@ export class SqliteProvider implements StorageProvider {
     this.db.pragma('busy_timeout = 5000');
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
-    this.db.pragma('synchronous = NORMAL');
+    // Durability trade-off (WI-011), configurable via AGENT_SENTRY_SQLITE_SYNCHRONOUS:
+    //   NORMAL (default) — safe with WAL; a small window at OS crash / power loss
+    //     can lose the last committed transaction(s). The hash chain DETECTS such
+    //     a torn tail on verify.
+    //   FULL — fsync on every commit; prevents the torn tail at a write-throughput cost.
+    // Any other value falls back to NORMAL.
+    const requested = (process.env.AGENT_SENTRY_SQLITE_SYNCHRONOUS ?? 'NORMAL').toUpperCase();
+    const synchronous = requested === 'FULL' ? 'FULL' : 'NORMAL';
+    this.db.pragma(`synchronous = ${synchronous}`);
     runMigrations(this.db);
 
     // Apply composite indexes and connection optimizations

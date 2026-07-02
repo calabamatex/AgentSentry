@@ -27,7 +27,7 @@ jobs:
           cache-dependency-path: agent-sentry/package-lock.json
       - run: cd agent-sentry && npm ci
       - run: cd agent-sentry && npm run build
-      - run: cd agent-sentry && npx vitest run --coverage --coverage.thresholds.lines=80
+      - run: cd agent-sentry && npx vitest run --coverage --coverage.thresholds.lines=84
 
   lint:
     runs-on: ubuntu-latest
@@ -88,6 +88,21 @@ jobs:
         run: |
           cd /tmp/test-install
           node -e "const { resolveConfigPath } = require('@calabamatex/agentsentry'); console.log('Config path:', resolveConfigPath() || 'defaults')"
+      - name: Real CLI round-trip — init + health (WI-013)
+        run: |
+          cd /tmp/test-install
+          npx agentsentry init --json
+          npx agentsentry health --json > health.json
+          cat health.json
+          node -e "
+            const h = JSON.parse(require('fs').readFileSync('health.json', 'utf8'));
+            if (!h.status) throw new Error('health output missing status key');
+            console.log('CLI smoke OK: status=' + h.status);
+          "
+      - name: Real MCP round-trip over stdio (WI-013)
+        run: |
+          cd /tmp/test-install
+          node "$GITHUB_WORKSPACE/agent-sentry/scripts/mcp-smoke.cjs"
 
   doc-validation:
     runs-on: ubuntu-latest
@@ -123,6 +138,33 @@ jobs:
       - run: cd agent-sentry && npm ci && npm run build
       - name: Run documentation contract tests
         run: cd agent-sentry && npx vitest run tests/contracts/doc-contracts.test.ts --reporter=verbose
+
+  supabase-integration:
+    # Optional (WI-012): runs the credential-gated Supabase integration + smoke
+    # tests only when SUPABASE_TEST_URL is configured. Forks and repos without
+    # the secret skip cleanly (exit 0) rather than failing.
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent-sentry/package-lock.json
+      - run: cd agent-sentry && npm ci && npm run build
+      - name: Run Supabase integration + smoke tests (skipped without secret)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "SUPABASE_TEST_URL not configured — skipping Supabase integration job (expected on forks)."
+            exit 0
+          fi
+          cd agent-sentry && npx vitest run \
+            tests/memory/providers/supabase-integration.test.ts \
+            tests/e2e/supabase-smoke.test.ts --reporter=verbose
 
   benchmark:
     runs-on: ubuntu-latest

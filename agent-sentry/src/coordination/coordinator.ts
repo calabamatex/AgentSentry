@@ -1,16 +1,26 @@
 /**
  * coordinator.ts — Multi-agent coordination primitives for AgentSentry.
  *
- * [experimental] Single-machine, event-sourced coordination.
- * Not a distributed system. No consensus protocol. Best-effort only.
+ * [experimental] Single-machine coordination. Not a distributed system,
+ * no cross-machine consensus protocol.
  *
- * Guarantees:
+ * Locking has two tiers, selected by the injected StorageProvider:
+ *  - ATOMIC (default with the SQLite provider): acquireLock/releaseLock use
+ *    the provider's compare-and-swap (`INSERT OR IGNORE` into
+ *    coordination_locks + fencing token). Concurrent acquisitions of the same
+ *    resource resolve to exactly one winner — see tests/coordination/
+ *    atomic-locks.test.ts ("only one agent acquires when two race").
+ *  - BEST-EFFORT FALLBACK (no provider, or a provider without
+ *    atomicLockAcquire): event-sourced check-then-act, which is NOT atomic —
+ *    two racing acquirers can both observe the resource free. Each such path
+ *    logs "(event-sourced, non-atomic)". Only occurs when no atomic-capable
+ *    provider is wired.
+ *
+ * Guarantees (both tiers):
  *  - Append-only event log (events are never deleted)
- *  - Locks have TTL-based expiry (checked at read time)
- *  - No CAS/compare-and-swap — race conditions possible under concurrency
- *  - No cross-machine coordination
+ *  - Locks have TTL-based expiry (expired locks are reclaimed on acquire)
  *
- * See also: lease.ts for formal lease model with fencing tokens.
+ * See also: lease.ts for the formal lease model with fencing tokens.
  */
 
 import { v4 as uuidv4 } from 'uuid';

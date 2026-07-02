@@ -105,4 +105,53 @@ describe('DashboardServer authentication', () => {
     const res = await httpRequest(`http://127.0.0.1:${info.port}/api/stats?token=${TOKEN}`);
     expect(res.status).toBe(200);
   });
+
+  it('returns 401 for a wrong token of equal length (timing-safe path)', async () => {
+    server = new DashboardServer({ port: 0, token: TOKEN });
+    const info = await server.start();
+
+    const equalLengthWrong = 'x'.repeat(TOKEN.length);
+    const res = await httpRequest(`http://127.0.0.1:${info.port}/api/stats`, {
+      headers: { Authorization: `Bearer ${equalLengthWrong}` },
+    });
+    expect(res.status).toBe(401);
+
+    const res2 = await httpRequest(`http://127.0.0.1:${info.port}/api/stats?token=${equalLengthWrong}`);
+    expect(res2.status).toBe(401);
+  });
+
+  it('fails closed: constructor throws when no token is configured (WI-003)', () => {
+    expect(() => new DashboardServer({ port: 0 })).toThrow(/requires an auth token/);
+  });
+
+  it('AGENT_SENTRY_NO_AUTH=1 disables auth (MCP parity escape hatch)', async () => {
+    vi.stubEnv('AGENT_SENTRY_NO_AUTH', '1');
+    try {
+      server = new DashboardServer({ port: 0 });
+      const info = await server.start();
+      expect(server.getToken()).toBeUndefined();
+
+      const res = await httpRequest(`http://127.0.0.1:${info.port}/api/stats`);
+      expect(res.status).toBe(200);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('devMode auto-generates a token retrievable via getToken()', async () => {
+    server = new DashboardServer({ port: 0, devMode: true });
+    const info = await server.start();
+
+    const token = server.getToken();
+    expect(token).toBeTruthy();
+    expect(token!.length).toBeGreaterThanOrEqual(32);
+
+    const unauth = await httpRequest(`http://127.0.0.1:${info.port}/api/stats`);
+    expect(unauth.status).toBe(401);
+
+    const authed = await httpRequest(`http://127.0.0.1:${info.port}/api/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(authed.status).toBe(200);
+  });
 });

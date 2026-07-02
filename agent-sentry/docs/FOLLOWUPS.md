@@ -58,43 +58,35 @@ Remaining work:
 
 ## P2 — Quality & Coverage
 
-### 3. ESLint warnings (16 remaining)
-`npm run lint` passes with 0 errors but 16 pre-existing warnings. These are
-all shallow fixes:
+### 3. ESLint warnings — RESOLVED (WI-021, 0.6.0-beta.2)
+All 18 warnings cleared (the count here previously said 16 — a dynamic
+verification run measured 18; both stale). `lint` now runs with
+`--max-warnings 0`, so any new warning is CI-blocking.
 
-| File | Warnings |
-|------|----------|
-| `src/cli/commands/config.ts` | 2× unused imports (`fs`, `ensureDirectorySafe`) |
-| `src/cli/commands/enable.ts` | unused `fs`; 1× `any` |
-| `src/cli/commands/handoff-templates.ts` | unused `TodoItem` |
-| `src/cli/commands/handoff.ts` | unused `readMemoryFiles` |
-| `src/cli/commands/init.ts` | 1× `any`; 1× `require()` import |
-| `src/enforcement/engine.ts` | unused `EnforcementAction` |
-| `src/mcp/server.ts` | 2× `no-misused-promises` in SIGINT/SIGTERM handlers |
-| `src/mcp/tools/health.ts` | 2× `require()` imports; 2× `any` |
-| `src/mcp/transport.ts` | unused `actualPort` |
+### 4. Coverage floor ratchet — IN PROGRESS (WI-022)
+Current line coverage: **85.7%**. CI floor raised **80 → 84** (lines + statements)
+in 0.6.0-beta.2; functions (85) and branches (75) remain gated via
+`vitest.config.ts`. The CI flag (`--coverage.thresholds.lines=84`) mirrors the
+config.
 
-Fix: one pass to delete dead imports, type the `any`s, convert dynamic
-`require()` to `await import()`, and wrap signal handlers in a `void` IIFE.
+Remaining:
+- After two stable releases, raise the lines/statements floor to 85.
+- Raise the branches floor toward the measured ~83% once verified in a full CI
+  coverage run (not raised now — kept at 75 to avoid a floor we can't measure
+  locally due to the full-suite OOM).
+- Never lower a floor without a CHANGELOG entry.
 
-### 4. Coverage floor ratchet
-Current line coverage: **85.7%**. CI floor: 80%. The floor was deliberately set
-5 points below baseline to avoid false-positive failures, but the goal is to
-tighten it over time.
+### 5. Supabase integration tests — CI job added (WI-012)
+An optional `supabase-integration` CI job now runs the integration + smoke
+tests when the `SUPABASE_TEST_URL` / `SUPABASE_TEST_KEY` repository secrets are
+present, and exits 0 (clean skip) when they are not, so forks stay green. Setup
+is documented in `docs/supabase-setup.md`.
 
-Plan:
-- After 2–3 stable beta releases, raise floor to 85%.
-- Branch + function coverage are *not* currently gated — add them at the same
-  ratchet step.
-
-### 5. Supabase integration tests
-`tests/memory/providers/supabase-integration.test.ts` uses `describe.skipIf(!HAS_SUPABASE)`
-and is skipped in CI (no test project provisioned). The Supabase provider is
-marked experimental but is still shipped in `src/`. Options:
-- Provision a disposable Supabase project for CI and wire its URL/key into
-  GitHub secrets.
-- Or explicitly gate the Supabase provider behind an experimental flag and
-  document that the integration tests only run locally.
+Remaining refinement: the tests currently isolate by timestamped `session_id`
+and prune on teardown against a shared test project. Stronger isolation — a
+per-run, UUID-suffixed schema created and dropped around each run — is still
+open. Provision a dedicated test project and add the two secrets to activate
+the job.
 
 ---
 

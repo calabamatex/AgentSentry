@@ -5,7 +5,7 @@
  * to keep handoff.ts under 500 lines.
  */
 
-import type { HandoffResult, TodoItem } from './handoff';
+import type { HandoffResult } from './handoff';
 
 /** Format a HandoffResult into a full markdown handoff document. */
 export function formatHandoff(result: HandoffResult): string {

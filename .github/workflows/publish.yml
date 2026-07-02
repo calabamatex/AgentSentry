@@ -9,8 +9,14 @@ permissions: read-all
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Gate publishes behind the npm-publish environment (WI-005). Add required
+    # reviewers to this environment in repo Settings → Environments to require
+    # manual approval before any publish runs.
+    environment: npm-publish
     permissions:
       contents: read
+      # Required for npm --provenance attestation (Sigstore via GitHub OIDC).
+      id-token: write
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
@@ -22,6 +28,11 @@ jobs:
       - run: cd agent-sentry && npm ci
       - run: cd agent-sentry && npm run build
       - run: cd agent-sentry && npm test
-      - run: cd agent-sentry && npm publish
+      # --provenance publishes a Sigstore attestation linking the package to
+      # this workflow run (visible on npmjs.com). NODE_AUTH_TOKEN can be
+      # dropped once npm Trusted Publishing (OIDC) is configured for the
+      # package on npmjs.com — owner action; see WI-005 in
+      # agent-sentry/docs/remediation-plan.md.
+      - run: cd agent-sentry && npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

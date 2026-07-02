@@ -41,7 +41,7 @@
     "sync-metadata": "tsx scripts/sync-release-metadata.ts",
     "sync-metadata:patch": "tsx scripts/sync-release-metadata.ts --patch",
     "sync-metadata:check": "tsx scripts/sync-release-metadata.ts --check",
-    "lint": "eslint src/"
+    "lint": "eslint src/ --max-warnings 0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
@@ -58,6 +58,7 @@
     "@types/uuid": "^10.0.0",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.0.0",
+    "recheck": "^4.5.0",
     "tsx": "^4.21.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.0.0",

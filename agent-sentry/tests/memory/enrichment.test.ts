@@ -461,6 +461,42 @@ describe('EventEnricher', () => {
     expect(result.severity_context).toBe('context from A');
   });
 
+  it('a failing provider does not discard other providers results (WI-009)', async () => {
+    const good: EnrichmentProvider = {
+      enrich: vi.fn().mockResolvedValue({
+        cross_tags: ['ok'],
+        root_cause_hint: 'from good',
+        related_events: ['evt-ok'],
+        severity_context: 'ctx',
+      } satisfies EnrichmentResult),
+    };
+    const bad: EnrichmentProvider = {
+      enrich: vi.fn().mockRejectedValue(new Error('provider boom')),
+    };
+
+    // Order the failing provider first to prove it doesn't short-circuit.
+    const enricher = new EventEnricher(
+      mockStore as unknown as MemoryStore,
+      [bad, good],
+    );
+
+    const result = await enricher.enrichEvent(makeOpsEvent());
+    // The whole call resolves (no throw) and the good result survives.
+    expect(result.cross_tags).toContain('ok');
+    expect(result.root_cause_hint).toBe('from good');
+    expect(result.related_events).toContain('evt-ok');
+  });
+
+  it('all providers failing yields an empty-but-resolved enrichment (WI-009)', async () => {
+    const bad1: EnrichmentProvider = { enrich: vi.fn().mockRejectedValue(new Error('boom1')) };
+    const bad2: EnrichmentProvider = { enrich: vi.fn().mockRejectedValue(new Error('boom2')) };
+    const enricher = new EventEnricher(mockStore as unknown as MemoryStore, [bad1, bad2]);
+
+    const result = await enricher.enrichEvent(makeOpsEvent());
+    expect(result.cross_tags).toEqual([]);
+    expect(result.related_events).toEqual([]);
+  });
+
   it('fetches recent events from last 7 days', async () => {
     const enricher = new EventEnricher(mockStore as unknown as MemoryStore);
     const event = makeOpsEvent();

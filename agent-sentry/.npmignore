@@ -1,8 +1,5 @@
 tests/
 src/
-core/
-audit/
-tracing/
 dashboard/data/
 evals/
 models/
