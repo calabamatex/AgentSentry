@@ -63,6 +63,16 @@ agent-sentry/
 - Add tests for new features and bug fixes
 - Performance benchmarks in `tests/performance/`
 
+## Branch Protection (`main`)
+
+Configured via API (WI-006, 2026-07-02) — auditable here so drift is visible:
+
+- **Required status checks (strict):** `build-and-test (18|20|22)`, `lint`, `security`, `smoke-test-install`, `doc-validation` — update this list when the CI Node matrix changes
+- **Linear history required** (squash or rebase merges only), force-pushes and deletions blocked
+- **PR review requirement: deliberately off** while the project has a single maintainer — CI gates every merge; re-enable (≥1 review) when a second maintainer joins
+- `enforce_admins` off — the owner can act in emergencies; every routine merge still goes through checks
+- Merged head branches are auto-deleted (repo setting)
+
 ## Pull Requests
 
 1. Create a feature branch from `main`
