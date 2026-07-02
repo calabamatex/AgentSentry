@@ -366,13 +366,13 @@ bash agent-sentry/scripts/security-audit.sh
 
 ## 10. View the Dashboard
 
-Open the AgentSentry dashboard in your browser:
+Start the AgentSentry dashboard server and open it in your browser:
 
 ```bash
-open agent-sentry/dashboard/agent-sentry-dashboard.html
+npx agentsentry dashboard --dev   # auto-generates an auth token and prints it
 ```
 
-The dashboard displays session metrics, commit history, risk scores, and audit findings. It reads data from `agent-sentry/dashboard/data/` which is populated automatically by the post-commit hook and other scripts.
+The dashboard displays live session metrics, events, health, and (at Level 6) risk scores over SSE. See the [Dashboard Guide](../agent-sentry/docs/dashboard-guide.md) for authentication options and endpoints.
 
 ---
 

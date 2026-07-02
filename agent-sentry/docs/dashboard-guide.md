@@ -141,8 +141,4 @@ This streams events to stdout in real-time.
 
 ## Static Dashboard
 
-A standalone HTML file is also available at `agent-sentry/dashboard/agent-sentry-dashboard.html`. Open it directly in a browser — no server required (data will be static).
-
-```bash
-open agent-sentry/dashboard/agent-sentry-dashboard.html
-```
+Removed in 0.6.0-beta.2 — the unreferenced static HTML snapshot drifted from the live dashboard (`src/dashboard/html.ts` is authoritative). Use `agentsentry dashboard` instead.

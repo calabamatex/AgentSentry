@@ -242,12 +242,12 @@ Token estimation uses message count multiplied by `tokens_per_message` (default 
 
 ## Dashboard
 
-Single-file HTML dashboard with no external dependencies. Adapts to your enablement level.
+Live web dashboard served over HTTP with no external dependencies. Adapts to your enablement level. Authentication is required — see the [Dashboard Guide](agent-sentry/docs/dashboard-guide.md#authentication).
 
 ```bash
-open agent-sentry/dashboard/agent-sentry-dashboard.html
-# Or serve it:
-npx serve agent-sentry/dashboard/
+AGENT_SENTRY_DASHBOARD_TOKEN=<token> npx agentsentry dashboard
+# Or for local development (auto-generates a token):
+npx agentsentry dashboard --dev
 ```
 
 ---

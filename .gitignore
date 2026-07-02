@@ -54,3 +54,10 @@ agent-sentry/dashboard/data/*.json
 
 # Claude-flow in subpackages
 agent-sentry/.claude-flow/
+
+# Local AI-tooling scaffolding (WI-015): regenerate via `claude-flow init` /
+# `aqe init`; never tracked on main. See CONTRIBUTING.md.
+.claude/
+.mcp.json
+website/
+**/.claude-flow/

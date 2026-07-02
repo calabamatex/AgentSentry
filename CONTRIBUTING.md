@@ -14,6 +14,11 @@ npm test
 
 **Requirements:** Node.js >= 18
 
+**Local AI-tooling scaffolding:** `.claude/`, `.mcp.json`, and `.claude-flow/` are
+gitignored (WI-015) — they are machine-generated developer tooling, not project
+source. If you use claude-flow or Agentic QE locally, regenerate them with
+`claude-flow init` / `aqe init`; do not commit them.
+
 ## Project Layout
 
 ```

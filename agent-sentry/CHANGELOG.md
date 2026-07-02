@@ -42,6 +42,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Repository purge (WI-015): removed non-project artifacts from version control — `website/` (only daemon logs), the stub root `package-lock.json`, 268 files of generic `.claude/` scaffolding + `.mcp.json` (now gitignored; regenerate locally, see CONTRIBUTING.md), the unreferenced static `agent-sentry-dashboard.html` snapshot (`src/dashboard/html.ts` is authoritative), and the git-LFS pointer for `models/all-MiniLM-L6-v2.onnx` (the runtime downloads and SHA-256-verifies the model on first use; `tokenizer.json` remains shipped). Docs that referenced the static dashboard now point at `agentsentry dashboard`.
 - Removed dead AgentOps-era duplicate modules `core/`, `audit/`, `tracing/` (outside `src/`, imported by nothing, yet compiled into `dist/`); `tsconfig.json` now includes only `src/**`. The divergent stray `core/event-bus.ts` contained no behavior missing from `src/core/event-bus.ts`.
 - CI tarball smoke test now performs **real end-to-end calls**: `agentsentry init` + `health --json` (asserting exit 0 and a `status` key) and a live MCP stdio round-trip (`initialize` → `tools/list` → `agent_sentry_check_context`) via `scripts/mcp-smoke.cjs` — a packed artifact with a broken CLI or MCP surface now fails CI.
 - All 18 ESLint warnings cleared (unused imports, `any` types, `require()` imports, misused-promise signal handlers, dead `readMemoryFiles`); `lint` now runs `--max-warnings 0` so warnings are CI-blocking.
