@@ -4,6 +4,13 @@ set -euo pipefail
 # Pipes stdin to the compiled TS hook and passes through exit code.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Global kill switch
+_AS_CFG="$SCRIPT_DIR/../agent-sentry.config.json"
+if [[ -f "$_AS_CFG" ]] && command -v jq &>/dev/null && [[ "$(jq -r '.enabled' "$_AS_CFG" 2>/dev/null)" == "false" ]]; then
+    exit 0
+fi
+
 HOOK_JS="$SCRIPT_DIR/../dist/src/cli/hooks/session-start.js"
 
 if [[ -f "$HOOK_JS" ]]; then
