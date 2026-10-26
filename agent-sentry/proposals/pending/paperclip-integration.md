@@ -1,7 +1,7 @@
 # Spec: AgentSentry × Paperclip Integration
 
-- **Status:** Proposed — Phase 0 (interface confirmation) complete; R-2 resolved
-- **Date:** 2026-10-26 (updated 2026-10-26 after Phase 0)
+- **Status:** Proposed — Phase 0 complete; R-2 resolved; third-party gap review added (§9). G-1 verified; G-2/G-3 open before Phase 1.
+- **Date:** 2026-10-26 (updated 2026-10-26 after Phase 0 + gap review)
 - **Owner:** _unassigned_
 - **Target repo (external):** [`paperclipai/paperclip`](https://github.com/paperclipai/paperclip) (MIT, TypeScript)
 - **This repo:** AgentSentry v0.6.0-beta.1
@@ -93,6 +93,7 @@ AgentSentry runs as a long-lived HTTP service. Tool verdicts are written back vi
 - **Plugin (`paperclipai plugin init`), capability-gated:**
   - Register AgentSentry tools via `agent.tools.register` so agents can/should call `scan_security` + `size_task` before risky work (advisory layer).
   - Subscribe (`events.on`) to `approval.created`/`approval.decided`/`cost_event.created`/`issue.*`; mirror verdicts to AgentSentry via `capture_event`.
+  - **Two-step scan (see G-1):** plugin events carry only IDs + light metadata, not artifact content. To scan, the plugin must fetch the persisted artifact after the event (task document/comment via `ctx.issues`, or committed workspace files) and *then* run `scan_security`. This is strictly post-hoc and limited to Paperclip-persisted content.
   - On a secret-found or HIGH/CRITICAL signal, **react**: create a blocker issue / hold the task (`ctx.issues.relations.setBlockedBy`, `ctx.issues.requestWakeup`), and optionally escalate the offending tool to `require_approval` (`authorization.policies.write`).
 - Thresholds mirror AgentSentry enablement levels 3→5.
 - **Exit / acceptance:** a write catalog entry with `require_approval` routes to human approval (native); a task where AgentSentry flags a secret is held by a blocker issue with the verdict attached; a LOW-risk clean change proceeds. *Note the residual gap: a non-compliant agent that skips the advisory check and calls only read-classified tools is not hard-blocked — document this limitation.*
@@ -123,6 +124,23 @@ AgentSentry runs as a long-lived HTTP service. Tool verdicts are written back vi
 1. ~~After Phase 0: does a hard-gate hook exist?~~ **Resolved: no.** Hard gating is native-policy-only; Phase 3 is observe+react, not a per-call veto. **Decided (2026-10-26):** launch with the advisory layer + async blocker-issue hold **and** apply native `require_approval`/`block` policy to the highest-risk (write/destructive) catalog entries; file a core change request to Paperclip for a content-gate hook in parallel. The residual gap (a non-compliant agent that skips the advisory check and uses only non-gated tools) is accepted for launch and documented.
 2. After **Phase 1**: is single-tenant connection useful enough to ship for self-hosted users before Phase 2?
 3. Before **Phase 4**: is store qualification worth the eval cost given adoption signal?
+
+## 9. Open questions & gaps (third-party review, 2026-10-26)
+
+Severity: **H** = resolve before Phase 1 · **M** = resolve during the relevant phase · **L** = process/hygiene.
+
+- **G-1 (H) — Event payloads carry no content. [V, verified]** Confirmed in `server/src/services/plugin-event-bus.ts`: a `PluginEvent` is `{ id, companyId, entityId, entityType, payload }` and `payload` is light metadata (the file's own `issue.created` example is `{ title, projectId }`). **Impact:** Phase 3's reactive scan cannot read content from the event; it must do event → fetch persisted artifact (`ctx.issues` docs/comments, or workspace files) → `scan_security`, strictly post-hoc, only on Paperclip-persisted content. Pre-execution content scanning remains impossible (reinforces R-2). *Phase 3 updated accordingly.*
+- **G-2 (H) — Cross-tenant auth, not just a data column. [open]** R-1 adds `companyId`/`agentId` as data fields, but a single shared Bearer token lets any caller assert any `companyId` and read another tenant's `recall_context`/`search_history`. Needs an identity model: per-company tokens, or Paperclip passing a signed caller identity AgentSentry validates. **Decide before Phase 2; affects Phase 1 token design.**
+- **G-3 (H) — Fail-open vs. fail-closed. [open]** Undefined behavior when the AgentSentry service is down/slow: do read tools fail open (agent proceeds unscanned) or closed (agent blocked)? Core safety-product decision; must be explicit.
+- **G-4 (M) — Endpoint threat model.** TLS not mandated (default `AGENT_SENTRY_CORS_ORIGIN` is `http://localhost`); no token rotation, network isolation (Paperclip-egress only), or rate-limiting/DoS posture for a security service exposed over HTTP.
+- **G-5 (M) — Synchronous latency / scale.** Gateway tool calls are inline in the agent loop; no timeouts/size caps on `scan_security`/`size_task`. AgentSentry's O(n) linear vector search (~10k-event ceiling) is unaddressed for fleet-scale `recall_context`.
+- **G-6 (M) — Residual-gap honesty.** The advisory layer relies on agent compliance — it is *not* enforcement against a buggy/adversarial agent. Needs an explicit "protects against / does NOT protect against" statement and an estimate of risk coverage from native-policy + async-hold.
+- **G-7 (M) — Memory duplication.** R3/R5 (recall, handoff) may duplicate or conflict with Paperclip's own task/heartbeat/context model. Non-goal #2 covers audit duplication but not memory. Needs an overlap analysis.
+- **G-8 (M) — Tool-contract churn.** Paperclip quarantines tools on catalog refresh; AgentSentry is fast-moving v0.6-beta (a 10-vs-11-tool drift already surfaced in review). Needs a version/compatibility contract to avoid constant re-review/re-binding.
+- **G-9 (L) — Phase 0 not fully done.** The bundled-smoke step is deferred into Phase 1; status should read "mostly done."
+- **G-10 (L) — Dangling external dependency.** The "core change request to Paperclip" (checkpoint 1) has no owner/tracking and may never land; don't plan around it.
+- **G-11 (L) — No top-level success metrics / owner / effort / rollback.** Add initiative-level metrics (secrets caught, false-positive rate, adoption), an owner, rough effort, and a rollback story.
+- **G-12 (L) — Moving target.** Paperclip's public-MCP/store path is itself "first-release in review"; this spec treats `master` as stable. Re-verify key interfaces at each phase start.
 
 ---
 
