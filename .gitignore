@@ -54,3 +54,16 @@ agent-sentry/dashboard/data/*.json
 
 # Claude-flow in subpackages
 agent-sentry/.claude-flow/
+
+# Editor swap and backup files
+*.swp
+*.swo
+*.backup
+*_old
+
+# AQE runtime data (generated, not source)
+.agentic-qe/
+agent-sentry/.agentic-qe/
+
+# Unrelated local docs (not part of this repo)
+/florespatent/

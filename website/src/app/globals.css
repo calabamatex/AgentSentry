@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: theme('colors.ink.800');
+  color: theme('colors.ink.100');
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: theme('colors.ink.100');
+  color: theme('colors.ink.800');
+}
+
+/* Hide default <details> triangle in browsers that still emit it */
+summary::-webkit-details-marker {
+  display: none;
+}
+summary::marker {
+  content: '';
+}

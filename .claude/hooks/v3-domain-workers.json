@@ -1,0 +1,25 @@
+{
+  "version": "3.0",
+  "workers": [
+    {
+      "name": "pattern-consolidator",
+      "interval": "5m",
+      "enabled": true
+    },
+    {
+      "name": "routing-accuracy-monitor",
+      "interval": "10m",
+      "enabled": true
+    },
+    {
+      "name": "coverage-gap-scanner",
+      "interval": "15m",
+      "enabled": true
+    },
+    {
+      "name": "flaky-test-detector",
+      "interval": "30m",
+      "enabled": true
+    }
+  ]
+}
