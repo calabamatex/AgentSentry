@@ -222,9 +222,12 @@ Names at the MCP boundary are prefixed `agent_sentry_` **[V]**. Input schemas ar
 - Returns **[V]**: `risk_level ∈ LOW|MEDIUM|HIGH|CRITICAL` (score ≤2 LOW, ≤5 MEDIUM, ≤8 HIGH, else CRITICAL), contributing factors, recommendation text.
 - `timeoutMs`: 5 000. Idempotent.
 
-### 6.4 `agent_sentry_check_rules` — read (advisory)
+### 6.4 `agent_sentry_check_rules` — read (advisory, **instance-scoped**)
 - Input **[V]**: `{ file_path: string (required), change_description: string (required) }`.
-- Returns: rule violations against `CLAUDE.md`/`AGENTS.md`. `timeoutMs`: 5 000.
+- Returns **[V]**: `{ violations[], compliant: boolean, rules_checked: number }` (`src/mcp/tools/check-rules.ts`).
+- **Scope [V]:** `validateRules()` resolves the rules root from the *server process's* `process.cwd()` (`src/primitives/rules-validation.ts:223`, `findProjectRoot`) and loads `CLAUDE.md`/`AGENTS.md` from there (`DEFAULT_RULES_FILES`, `:48`). It never sees the calling agent's workspace. With no rules files present it returns `compliant:true, rules_checked:0` (`:227-232`) — a vacuous pass.
+- **Phase 1 contract (WI-2):** the container mounts a per-company rules directory and starts the server with `cwd` = that directory (`AGENT_SENTRY_RULES_DIR`, §10.2). The rules evaluated are the **company's** standing rules, not the agent's repo. `agentInstructions` (§8.2) and the tool `description` MUST state this, and callers MUST treat `rules_checked:0` as "no verdict", never as compliance. Per-repo rules (agent workspace) are a Phase 5 item alongside D-5.
+- `timeoutMs`: 5 000. Idempotent.
 
 ### 6.5 `agent_sentry_check_context` — read
 - Input: per tool file (context-window estimate inputs). Returns: usage estimate. `timeoutMs`: 5 000.
@@ -238,7 +241,9 @@ Names at the MCP boundary are prefixed `agent_sentry_` **[V]**. Input schemas ar
 - `timeoutMs`: 10 000. Perf note: linear cosine scan, ~10k-event ceiling **[V]** (§14).
 
 ### 6.8 `agent_sentry_search_history` — read (memory)
-- Input **[V]**: `{ query: string (required), limit?: number, event_type?: enum, severity?: enum, since?: string }`.
+- Input **[V]** (today): `{ query: string (required), limit?: number, event_type?: enum, severity?: enum, since?: string }`.
+- Input **(after WI-3)**: adds `tag?: string` — exact-match against the event's `tags` array.
+- **Why [V]:** with the Phase 1 default (`noop` embeddings) `MemoryStore.search()` falls through to `provider.textSearch()` (`src/memory/store.ts:175`), whose SQLite implementation matches `query` against **`title` and `detail` only** (`src/memory/providers/sqlite-provider.ts:342`). The provider already supports `QueryOptions.tag` via `json_each(tags)` (`sqlite-provider.ts:353`, `src/memory/schema.ts:47`), but neither `MemoryStore.search()` nor the tool forwards it. A query for `pc:run=<id>` therefore returns nothing unless the id also appears in `title`/`detail`. WI-3 wires `tag` through tool → store → `textSearch`/`query` (and `vectorSearch`, which must be checked for `tag` support when embeddings are enabled).
 - Returns: matching audit events. `timeoutMs`: 10 000.
 
 ### 6.9 `agent_sentry_capture_event` — **write** (memory)
@@ -422,6 +427,7 @@ Rollback (§16): step 10 with `{"enabled":false,"status":"disabled"}` — preser
 | `AGENT_SENTRY_EXPOSE_EXPERIMENTAL` | – | unset (hides `risk_score`) | WI-1 |
 | `AGENT_SENTRY_MAX_SCAN_BYTES` | – | `1048576` | WI-3 |
 | `AGENT_SENTRY_TOOL_TIMEOUT_MS` | – | `15000` | WI-3 |
+| `AGENT_SENTRY_RULES_DIR` | – | `/rules` (mounted; holds the company's `CLAUDE.md`/`AGENTS.md`; server `cwd` set here) | WI-2, §6.4 |
 | `agent-sentry.config.json` → `memory.max_events`, `max_age_days` | – | e.g. 50 000 / 90 | auto-prune **[V]** |
 
 ### 10.3 TLS & ingress
@@ -454,7 +460,9 @@ Rollback (§16): step 10 with `{"enabled":false,"status":"disabled"}` — preser
 ## 12. Data contracts
 
 ### 12.1 Correlation convention (Phase 1)
-`capture_event.tags` MUST include `pc:company=<companyId>`, `pc:agent=<agentId>`, and SHOULD include `pc:run=<runId>`, `pc:issue=<issueId>` when known. `search_history` can then filter by tag text. (Phase 5 promotes these to schema fields per `docs/memory-schema.md`.)
+`capture_event.tags` MUST include `pc:company=<companyId>`, `pc:agent=<agentId>`, and SHOULD include `pc:run=<runId>`, `pc:issue=<issueId>` when known.
+
+**Retrieval:** correlation is by the `tag` filter on `search_history` (§6.8, shipped in WI-3), e.g. `{"query":"","tag":"pc:run=<runId>"}` — exact match on a tag value. Free-text `query` does **not** search tags **[V]** (`sqlite-provider.ts:342`), so until WI-3 lands there is no supported way to retrieve by correlation id; do not rely on it before U-5 passes. (Phase 5 promotes these to schema fields per `docs/memory-schema.md`.)
 
 ### 12.2 Storage
 - Hash-chained event rows, incremental chain verification, auto-prune by `max_events`/`max_age_days` **[V]**. Retention default: 90 days or 50k events (configurable).
@@ -502,6 +510,8 @@ Proxy/ingress timeout ≥ 20 s. Gateway `timeoutMs` wins when smaller.
 - U-2 auth: no header → reject; wrong key → reject; right key → accept; `NO_AUTH=true` → accept + warning (existing tests extended).
 - U-3 limits: `content` > `MAX_SCAN_BYTES` → structured error; tool exceeding server cap → timeout error.
 - U-4 `capture_event` idempotency hint (`idem:<key>` within 24 h) → single row.
+- U-5 `search_history` with `tag:"pc:run=r1"` returns only events tagged `pc:run=r1` (noop embeddings path); same query without `tag` and with the id only in `tags` returns nothing (documents §6.8).
+- U-6 `check_rules` with an empty rules dir → `rules_checked:0`; with `AGENT_SENTRY_RULES_DIR` containing a `CLAUDE.md` rule → that rule is evaluated, not the repo's.
 
 ### 15.2 Contract
 - C-1 `tests/contracts/doc-contracts.test.ts` tool count = 10 (unchanged).
@@ -514,6 +524,7 @@ Proxy/ingress timeout ≥ 20 s. Gateway `timeoutMs` wins when smaller.
 
 ### 15.4 Acceptance (map to §1.1 goals)
 - **A-1** (Goal 1) Agent calls each read tool via `tools/call` → text result; audit outcome `success`. **A-1c:** `scan_security` with fixture `AKIAIOSFODNN7EXAMPLE` returns a `critical` finding; nothing containing the literal is persisted.
+- **A-1d** `capture_event` tagged `pc:run=<runId>` → `search_history {tag:"pc:run=<runId>"}` returns it through the gateway.
 - **A-2** (Goal 2) `capture_event` → `approval_required` + `actionRequestId`; approve with `{companyId}`; retry with `approvedActionRequestId` + same `idempotencyKey` → `executed`; **A-2b** retry twice → exactly one event row; **A-2c** agent outside the bound scope → `deny` + audited.
 - **A-3** (Goal 3) For every call in A-1/A-2 a Call Event exists in `GET /tool-gateway/audit` with the expected decision/outcome.
 - **A-4** (Goal 4) Catalog classification 8/2/0. **A-4b** deploy a test build adding a dummy write tool → `catalog/refresh` quarantines it (`status:"quarantined"`).
@@ -539,8 +550,8 @@ Proxy/ingress timeout ≥ 20 s. Gateway `timeoutMs` wins when smaller.
 | WI | Description | Area | Depends on | Blocking P1? | Est. |
 | --- | --- | --- | --- | --- | --- |
 | WI-1 | Emit MCP annotations; hide `risk_score` by default; U-1, C-2 | `src/mcp/server.ts`, `src/mcp/tools/*` | – | **yes** | S |
-| WI-2 | HTTP entrypoint flags, readiness probe, Dockerfile, non-root image | `src/cli`, `deploy/` | – | yes | S |
-| WI-3 | Server-side per-tool timeout, `MAX_SCAN_BYTES`, `capture_event` idempotency hint, per-tool metrics; U-3, U-4 | `src/mcp/tools/*`, `src/observability/` | – | yes | M |
+| WI-2 | HTTP entrypoint flags, readiness probe, Dockerfile, non-root image, `AGENT_SENTRY_RULES_DIR` mount + `cwd` (§6.4); U-6 | `src/cli`, `deploy/` | – | yes | S |
+| WI-3 | Server-side per-tool timeout, `MAX_SCAN_BYTES`, `capture_event` idempotency hint, **`search_history.tag` plumbing (tool → `MemoryStore.search` → provider)**, per-tool metrics; U-3, U-4, U-5 | `src/mcp/tools/*`, `src/memory/store.ts`, `src/observability/` | – | yes | M |
 | WI-4 | Idempotent registration script implementing §9 (+ teardown) | `scripts/paperclip/` | WI-1 | yes | S |
 | WI-5 | Integration + acceptance suite §15.3–15.5 against a Paperclip dev instance (docker) | `tests/e2e/paperclip/` | WI-1..4 | yes | M |
 | WI-7 | CI gate: fail if `NO_AUTH` set / key absent in non-local profiles; secret-in-logs grep | `.github/workflows/ci.yml` | – | should | XS |
@@ -558,7 +569,7 @@ Suggested order: WI-1 → WI-2 → WI-3 → WI-4 → WI-7 → WI-5.
 | D-2 | Per-company host/path convention | `sentry-<slug>.<internal>/mcp` (§10.7) | ops sign-off |
 | D-3 | Ship `require_approval` on writes in Phase 1 | **Yes** — expressible cleanly via `conditions.risk.isWrite` + `selectors.connectionId`; it *is* the hard gate | accepted here |
 | D-4 | Catalog risk inference mapping | Assumed `readOnlyHint→read`, `readOnlyHint:false/writeHint→write`, `destructiveHint→destructive` **[V-doc]**; the inference code was not located in source | I-1 / A-4 pass |
-| D-5 | Include `check_git` / `check_context` (instance-local semantics) | Include, document as instance-scoped; revisit in Phase 5 | product call |
+| D-5 | Include `check_git` / `check_context` / `check_rules` (instance-local semantics) | Include; `check_rules` evaluates the mounted company rules dir (§6.4), `check_git` the instance; all documented as instance-scoped; per-workspace semantics in Phase 5 | product call |
 | D-6 | Policy `priority` ordering direction (lower first?) | assumed lower-first | A-2 / I-3 |
 
 Former D-1 (application route body) is **resolved** by X-2.
