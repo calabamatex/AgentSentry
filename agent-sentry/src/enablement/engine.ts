@@ -24,6 +24,7 @@ export interface EnablementConfig {
     directive_compliance: SkillConfig;
     small_bets: SkillConfig;
     proactive_safety: SkillConfig;
+    risk_scoring: SkillConfig;
   };
 }
 
@@ -37,6 +38,7 @@ export const LEVEL_NAMES: Record<number, string> = {
   3: 'House Rules',
   4: 'Right Size',
   5: 'Full Guard',
+  6: 'Risk Watch',
 };
 
 export const ALL_SKILLS = [
@@ -46,6 +48,7 @@ export const ALL_SKILLS = [
   'directive_compliance',
   'small_bets',
   'proactive_safety',
+  'risk_scoring',
 ] as const;
 
 export type SkillName = (typeof ALL_SKILLS)[number];
@@ -76,10 +79,11 @@ function full(): SkillConfig {
  * Level 3: + standing_orders (basic)
  * Level 4: + small_bets (basic), standing_orders upgrades to full
  * Level 5: + proactive_safety (full), small_bets upgrades to full
+ * Level 6: + risk_scoring (full) — context-aware risk scoring [experimental]
  */
 export function generateConfigForLevel(level: number): EnablementConfig {
-  if (!Number.isInteger(level) || level < 1 || level > 5) {
-    throw new RangeError(`Enablement level must be an integer between 1 and 5, got ${level}`);
+  if (!Number.isInteger(level) || level < 1 || level > 6) {
+    throw new RangeError(`Enablement level must be an integer between 1 and 6, got ${level}`);
   }
 
   const config: EnablementConfig = {
@@ -91,6 +95,7 @@ export function generateConfigForLevel(level: number): EnablementConfig {
       directive_compliance: off(),
       small_bets: off(),
       proactive_safety: off(),
+      risk_scoring: off(),
     },
   };
 
@@ -122,6 +127,11 @@ export function generateConfigForLevel(level: number): EnablementConfig {
   if (level >= 5) {
     config.skills.small_bets = full();
     config.skills.proactive_safety = full();
+  }
+
+  // Level 6: context-aware risk scoring (opt-in, [experimental])
+  if (level >= 6) {
+    config.skills.risk_scoring = full();
   }
 
   return config;
@@ -213,8 +223,8 @@ export function validateEnablementConfig(config: unknown): { valid: boolean; err
     errors.push('Missing required property: level');
   } else if (typeof obj.level !== 'number' || !Number.isInteger(obj.level)) {
     errors.push('level must be an integer');
-  } else if (obj.level < 1 || obj.level > 5) {
-    errors.push('level must be between 1 and 5');
+  } else if (obj.level < 1 || obj.level > 6) {
+    errors.push('level must be between 1 and 6');
   }
 
   // --- skills ---

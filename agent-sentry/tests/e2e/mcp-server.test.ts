@@ -1,5 +1,5 @@
 /**
- * mcp-server.test.ts — E2E: Create MCP server, verify all 10 tools are registered,
+ * mcp-server.test.ts — E2E: Create MCP server, verify all 11 tools are registered,
  * and call each tool to verify response format.
  */
 
@@ -7,8 +7,8 @@ import { describe, it, expect } from 'vitest';
 import { createMcpServer, tools } from '../../src/mcp/server';
 
 describe('MCP Server (e2e)', () => {
-  it('exports exactly 10 tools', () => {
-    expect(tools).toHaveLength(10);
+  it('exports exactly 11 tools', () => {
+    expect(tools).toHaveLength(11);
   });
 
   it('every tool has name, description, inputSchema, and handler', () => {

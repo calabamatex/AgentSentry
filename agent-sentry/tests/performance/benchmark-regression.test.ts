@@ -12,25 +12,37 @@ import { MemoryStore } from '../../src/memory/store';
 import { SqliteProvider } from '../../src/memory/providers/sqlite-provider';
 import { BenchmarkSuite, BenchmarkReport } from '../../src/memory/benchmark';
 
-// Regression thresholds — set at ~10% of baseline to catch catastrophic regressions
-// while tolerating CI variability (concurrent test suites contend for disk I/O).
-// Baseline measured in isolation: insert ~22 ops/s, search ~59, batch ~77, concurrent ~90.
+// Regression thresholds. Two kinds of guard, deliberately separated:
+//
+//   * minOpsPerSecond — the real throughput smoke floor, set at ~5-10% of the
+//     isolated baseline (insert ~22, search ~59, batch ~77, concurrent ~90
+//     ops/s). A genuine algorithmic regression collapses throughput and trips
+//     these.
+//   * maxAvgMs / maxP95Ms — absolute wall-clock CEILINGS, set to
+//     *catastrophe-only* levels (seconds per op). These are NOT precise
+//     regression detectors: wall-clock latency — especially P95 tail latency —
+//     balloons under CPU/disk contention on loaded dev boxes and shared CI
+//     runners, independent of the code under test. A previous 5000ms P95 ceiling
+//     flaked at ~5.8s on a loaded box (44x baseline) while throughput was fine.
+//     They now fail only on an unambiguous blowup that sustains seconds per
+//     operation — a true O(n^2)/lock-contention regression — not on a slow host.
+//     (Same philosophy as the 30s hard ceiling in enforcement-evasion.test.ts.)
 const THRESHOLDS = {
   insert: {
     minOpsPerSecond: 1,      // single inserts: at least 1 ops/sec (baseline ~22)
-    maxAvgMs: 1000,          // avg insert under 1s (baseline ~46ms)
+    maxAvgMs: 3000,          // catastrophe-only: avg insert under 3s (baseline ~46ms)
   },
   search: {
     minOpsPerSecond: 1,      // keyword search: at least 1 ops/sec (baseline ~59)
-    maxAvgMs: 1000,          // avg search under 1s (baseline ~17ms)
+    maxAvgMs: 3000,          // catastrophe-only: avg search under 3s (baseline ~17ms)
   },
   batch: {
     minOpsPerSecond: 2,      // batch inserts: at least 2 ops/sec (baseline ~77)
-    maxAvgMs: 500,           // avg per-event under 500ms (baseline ~13ms)
+    maxAvgMs: 2000,          // catastrophe-only: avg per-event under 2s (baseline ~13ms)
   },
   concurrent: {
     minOpsPerSecond: 2,      // concurrent r/w: at least 2 ops/sec (baseline ~90)
-    maxP95Ms: 5000,          // P95 under 5s (baseline ~132ms)
+    maxP95Ms: 30000,         // catastrophe-only: P95 under 30s (baseline ~132ms)
   },
 };
 

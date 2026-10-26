@@ -7,6 +7,7 @@
 
 import * as https from 'https';
 import * as http from 'http';
+import { performance } from 'perf_hooks';
 import { SupabaseBaseProvider, SupabaseRequestOptions } from './supabase-base';
 import { ConnectionPool, ConnectionPoolOptions } from './connection-pool';
 import { Logger } from '../../observability/logger';
@@ -111,7 +112,10 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
 
     const reqPath = `${parsed.pathname === '/' ? '' : parsed.pathname}${path}`;
     const agent = this.pool.getAgent(isHttps);
-    const startTime = Date.now();
+    // High-resolution timer: localhost/mocked requests can complete in <1ms, and
+    // Date.now()'s millisecond resolution would record a duration of 0, skewing
+    // pool stats (avgResponseTime) and making timing-based assertions flaky.
+    const startTime = performance.now();
 
     return new Promise((resolve, reject) => {
       const req = client.request(
@@ -129,7 +133,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
             body += chunk.toString();
           });
           res.on('end', () => {
-            const duration = Date.now() - startTime;
+            const duration = performance.now() - startTime;
             const failed = !!(res.statusCode && res.statusCode >= 400);
             this.pool.recordRequest(duration, failed);
 
@@ -162,7 +166,7 @@ export class PooledSupabaseProvider extends SupabaseBaseProvider {
       );
 
       req.on('error', (err) => {
-        const duration = Date.now() - startTime;
+        const duration = performance.now() - startTime;
         this.pool.recordRequest(duration, true);
         reject(err);
       });

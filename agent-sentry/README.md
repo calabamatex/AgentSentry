@@ -29,9 +29,9 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Layer | What it does |
 |-------|-------------|
 | **Memory Store** | Hash-chained event storage with auto-pruning, incremental chain verification, and chunked vector search |
-| **MCP Server** | 10 tools exposed via Model Context Protocol (stdio + HTTP) |
+| **MCP Server** | 11 tools exposed via Model Context Protocol (stdio + HTTP) |
 | **Primitives** | 7 composable modules — risk scoring, rules validation, secret scanning, context health, git checks, task sizing, file analysis |
-| **Enablement Engine** | 5 progressive levels from Safe Ground to Full Guard |
+| **Enablement Engine** | 6 progressive levels from Safe Ground to Risk Watch |
 | **Enrichment** | Auto-classification by domain (auth, db, api, testing, config, infra) with root-cause detection |
 | **Intelligence** | Cross-session summaries, pattern detection, and context recall |
 | **Audit Index** | Full-text search over events, file audit trails, session timelines |
@@ -42,9 +42,9 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Feature | Status | Notes |
 |---------|--------|-------|
 | SQLite memory store | **Stable** | Default provider, hash-chained, auto-pruning |
-| MCP server (10 tools) | **Stable** | stdio + HTTP transport |
+| MCP server (11 tools) | **Stable** | stdio + HTTP transport (risk_score is [experimental], Level 6) |
 | Claude Code hooks | **Stable** | TypeScript implementations with shell wrappers |
-| Progressive enablement | **Stable** | 5 levels |
+| Progressive enablement | **Stable** | 6 levels (Level 6 risk_scoring is [experimental]) |
 | CLI (13 commands) | **Stable** | init, config, enable, health, memory, metrics, dashboard, stream, plugin, handoff, prune, export, import |
 | Enrichment & observability | **Stable** | Auto-classification, circuit breaker, structured logging |
 | Supabase provider | **Experimental** | Requires external Supabase instance; not recommended for production |
@@ -52,6 +52,7 @@ That's it. SQLite storage and noop embeddings work out of the box — no API key
 | Cross-session intelligence | **Beta** | Session summaries, pattern detection, context recall |
 | Plugin registry | Experimental | Local directory scanning only |
 | Multi-agent coordination | Experimental | Event-sourced, single-machine only |
+| Authority enforcement | Experimental | Policy engine defined and tested, but not yet wired into the CLI/MCP decision path |
 
 ## MCP Tools
 
@@ -59,16 +60,17 @@ Once wired, these tools are available in any Claude Code session:
 
 | Tool | Purpose |
 |------|---------|
-| `agent_sentry_health` | Store stats, chain integrity, embedding state, enablement level |
+| `agent_sentry_health` | Store stats, chain integrity, embedding state, enablement level (+ risk summary at Level 6) |
 | `agent_sentry_capture_event` | Log a hash-chained event (decision, error, tool_use, etc.) |
 | `agent_sentry_check_rules` | Validate a file change against CLAUDE.md/AGENTS.md rules |
 | `agent_sentry_check_context` | Estimate context window usage |
 | `agent_sentry_size_task` | Score risk of a proposed change (LOW/MEDIUM/HIGH/CRITICAL) |
 | `agent_sentry_search_history` | Search the event audit trail |
-| `agent_sentry_scan_security` | Detect secrets in file content |
+| `agent_sentry_scan_security` | Detect secrets in file content (optional `probabilistic` mode for context-adjusted severity) |
 | `agent_sentry_check_git` | Git status and hygiene checks |
 | `agent_sentry_recall_context` | Cross-session context recall for current task |
 | `agent_sentry_generate_handoff` | Generate structured handoff message for session continuity |
+| `agent_sentry_risk_score` | Context-aware, confidence-labeled session risk scoring ([experimental], Level 6) |
 
 ## Progressive Enablement
 
@@ -83,6 +85,7 @@ If you want to customize, adjust `enablement.level` in `agent-sentry.config.json
 | 3 | House Rules | + standing_orders (basic), + directive_compliance (full) |
 | 4 | Right Size | standing_orders→full, + small_bets (basic) |
 | 5 | Full Guard | small_bets→full, + proactive_safety (full) |
+| 6 | Risk Watch | + risk_scoring (full) — context-aware risk scoring [experimental] |
 
 ## Storage
 
@@ -144,8 +147,9 @@ docs/           # Getting started, API reference, schema, roadmap
 ### Architecture
 
 - [Memory Model](docs/architecture/memory-model.md) — Hash-chained storage, search, and providers
-- [Enablement Model](docs/architecture/enablement-model.md) — The 5-level progressive system
+- [Enablement Model](docs/architecture/enablement-model.md) — The 6-level progressive system
 - [MCP Integration](docs/architecture/mcp-integration.md) — Tools, transports, and auth
+- [Risk Scoring](docs/architecture/risk-scoring.md) — Context-aware risk scoring (Level 6, experimental)
 
 ## Known Limitations
 

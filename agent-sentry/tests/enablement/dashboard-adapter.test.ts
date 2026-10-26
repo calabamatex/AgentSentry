@@ -26,13 +26,20 @@ describe('getDashboardPanels', () => {
     expect(ch.upgradeMessage).toBe('Enable Level 2 to unlock');
   });
 
-  it('level 5: all panels enabled, no upgrade messages', () => {
-    const panels = getDashboardPanels(generateConfigForLevel(5));
+  it('level 6: all panels enabled, no upgrade messages', () => {
+    const panels = getDashboardPanels(generateConfigForLevel(6));
     for (const panel of panels) {
       expect(panel.enabled).toBe(true);
       expect(panel.mode).toBe('full');
       expect(panel.upgradeMessage).toBeUndefined();
     }
+  });
+
+  it('level 5: risk_scoring panel locked behind Level 6', () => {
+    const panels = getDashboardPanels(generateConfigForLevel(5));
+    const rs = panels.find((p) => p.skill === 'risk_scoring')!;
+    expect(rs.enabled).toBe(false);
+    expect(rs.upgradeMessage).toBe('Enable Level 6 to unlock');
   });
 
   it('upgrade messages reference correct levels', () => {
@@ -87,7 +94,7 @@ describe('getDashboardHeader', () => {
     expect(header.level).toBe(1);
     expect(header.name).toBe('Safe Ground');
     expect(header.activeCount).toBe(1);
-    expect(header.totalCount).toBe(6);
+    expect(header.totalCount).toBe(7);
   });
 
   it('level 3: four active', () => {
@@ -97,17 +104,25 @@ describe('getDashboardHeader', () => {
     expect(header.activeCount).toBe(4);
   });
 
-  it('level 5: all active', () => {
+  it('level 5: six active of seven', () => {
     const header = getDashboardHeader(generateConfigForLevel(5));
     expect(header.level).toBe(5);
     expect(header.name).toBe('Full Guard');
     expect(header.activeCount).toBe(6);
-    expect(header.totalCount).toBe(6);
+    expect(header.totalCount).toBe(7);
   });
 
-  it('totalCount is always 6', () => {
-    for (let i = 1; i <= 5; i++) {
-      expect(getDashboardHeader(generateConfigForLevel(i)).totalCount).toBe(6);
+  it('level 6: all seven active', () => {
+    const header = getDashboardHeader(generateConfigForLevel(6));
+    expect(header.level).toBe(6);
+    expect(header.name).toBe('Risk Watch');
+    expect(header.activeCount).toBe(7);
+    expect(header.totalCount).toBe(7);
+  });
+
+  it('totalCount is always 7', () => {
+    for (let i = 1; i <= 6; i++) {
+      expect(getDashboardHeader(generateConfigForLevel(i)).totalCount).toBe(7);
     }
   });
 

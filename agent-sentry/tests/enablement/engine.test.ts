@@ -54,9 +54,21 @@ describe('generateConfigForLevel', () => {
     expect(cfg.skills.proactive_safety).toEqual({ enabled: false, mode: 'off' });
   });
 
-  it('level 5: all skills full', () => {
+  it('level 5: all skills full except risk_scoring (Level 6)', () => {
     const cfg = generateConfigForLevel(5);
     expect(cfg.level).toBe(5);
+    for (const skill of ALL_SKILLS) {
+      if (skill === 'risk_scoring') {
+        expect(cfg.skills[skill]).toEqual({ enabled: false, mode: 'off' });
+      } else {
+        expect(cfg.skills[skill]).toEqual({ enabled: true, mode: 'full' });
+      }
+    }
+  });
+
+  it('level 6: all skills full including risk_scoring', () => {
+    const cfg = generateConfigForLevel(6);
+    expect(cfg.level).toBe(6);
     for (const skill of ALL_SKILLS) {
       expect(cfg.skills[skill]).toEqual({ enabled: true, mode: 'full' });
     }
@@ -64,7 +76,7 @@ describe('generateConfigForLevel', () => {
 
   it('throws on invalid level', () => {
     expect(() => generateConfigForLevel(0)).toThrow(RangeError);
-    expect(() => generateConfigForLevel(6)).toThrow(RangeError);
+    expect(() => generateConfigForLevel(7)).toThrow(RangeError);
     expect(() => generateConfigForLevel(2.5)).toThrow(RangeError);
   });
 });

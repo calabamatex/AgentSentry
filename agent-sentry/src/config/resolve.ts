@@ -48,6 +48,26 @@ export function resolveConfigPath(explicit?: string): string | undefined {
 }
 
 /**
+ * Check whether AgentSentry is globally enabled.
+ *
+ * Reads the top-level `"enabled"` field from the config file.
+ * Returns `false` only when the field is explicitly set to `false`.
+ * Missing field or unreadable config → enabled (safe default).
+ */
+export function isGloballyEnabled(): boolean {
+  const cfgPath = resolveConfigPath();
+  if (!cfgPath) return true;
+
+  try {
+    const raw = fs.readFileSync(cfgPath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    return parsed.enabled !== false;
+  } catch {
+    return true;
+  }
+}
+
+/**
  * Resolve a database path. If relative, resolve relative to the config file's
  * directory. If no config file, use ~/.agent-sentry/data/ as home-dir fallback.
  */

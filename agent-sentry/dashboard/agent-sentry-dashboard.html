@@ -62,7 +62,7 @@ const $=id=>document.getElementById(id),app=$('app');
 let D={session:[],audit:[],history:[],commits:[],range:'24h'};
 const skills=['Save Points','Context Health','Standing Orders','Small Bets','Safety'];
 const skillKeys=['savepoints','context','orders','smallbets','safety'];
-const levelNames=['Safe Ground','Clear Head','House Rules','Right Size','Full Guard'];
+const levelNames=['Safe Ground','Clear Head','House Rules','Right Size','Full Guard','Risk Watch'];
 const levelSkills=['save_points','context_health','standing_orders','small_bets','proactive_safety'];
 
 async function load(f){try{const r=await fetch('data/'+f);if(!r.ok)return[];const t=await r.text();return t.trim().split('\n').filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean)}catch{return[]}}
@@ -108,7 +108,7 @@ function pgOverview(){
 <div class="toggle">${['24h','7d','30d'].map(r=>`<button class="${D.range===r?'active':''}" onclick="D.range='${r}';render()">${r}</button>`).join('')}</div>
 <div style="display:flex;gap:var(--gap);align-items:start;flex-wrap:wrap">
 <div class="card" style="text-align:center"><h4>Health Score</h4>${ring(health)}</div>
-<div class="card" style="min-width:200px"><h4>Enablement Level</h4><div class="val" style="color:${levelColor}">${level}/5</div><div style="font-size:14px;color:var(--accent);margin:4px 0">${levelNames[Math.max(level-1,0)]}</div><div class="level-bar">${[1,2,3,4,5].map(i=>`<div class="level-step ${i<=level?'active':'locked'}"></div>`).join('')}</div><div style="margin-top:10px">${levelSkills.map((s,i)=>`<div class="skill-lock"><span class="dot ${has[s]?'on':'off'}"></span><span style="color:${has[s]?'var(--text)':'var(--muted)'}">${skills[i]}</span></div>`).join('')}</div></div>
+<div class="card" style="min-width:200px"><h4>Enablement Level</h4><div class="val" style="color:${levelColor}">${level}/6</div><div style="font-size:14px;color:var(--accent);margin:4px 0">${levelNames[Math.max(level-1,0)]}</div><div class="level-bar">${[1,2,3,4,5,6].map(i=>`<div class="level-step ${i<=level?'active':'locked'}"></div>`).join('')}</div><div style="margin-top:10px">${levelSkills.map((s,i)=>`<div class="skill-lock"><span class="dot ${has[s]?'on':'off'}"></span><span style="color:${has[s]?'var(--text)':'var(--muted)'}">${skills[i]}</span></div>`).join('')}</div></div>
 <div class="cards" style="flex:1">${[['Commits Today',commits],['Context Usage',ctx+'%'],['Blast Radius',blast+' files'],['Violations',violations],['Last Scan',lastScan]].map(([l,v])=>`<div class="card"><h4>${l}</h4><div class="val">${v}</div></div>`).join('')}</div></div>
 <div class="row">
 <div class="panel"><h3>Skills Health</h3>${skills.map((s,i)=>scoreBar(s,sk[i])).join('')}</div>

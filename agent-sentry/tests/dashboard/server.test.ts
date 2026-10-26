@@ -191,4 +191,46 @@ describe('DashboardServer', () => {
     expect(typeof data.uptime).toBe('number');
     expect(data.memory).toBeUndefined();
   });
+
+  it('/api/risk reports unavailable when risk scoring is not enabled', async () => {
+    server = new DashboardServer({ port: 0, token: TEST_TOKEN });
+    const info = await server.start();
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/risk`, authHeaders());
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body).available).toBe(false);
+  });
+
+  it('/api/risk returns a confidence-labeled score at Level 6', async () => {
+    const { generateConfigForLevel } = await import('../../src/enablement/engine');
+    const events = [
+      {
+        id: 'e1', timestamp: new Date().toISOString(), session_id: 'sess-1', agent_id: 'a',
+        event_type: 'decision', severity: 'low', skill: 'system', title: 't', detail: 'd',
+        affected_files: ['src/a.ts'], tags: [], metadata: {}, hash: 'h', prev_hash: '0',
+      },
+    ];
+    const mockMemoryStore = {
+      list: async (opts?: { session_id?: string }) =>
+        opts?.session_id ? events : [events[0]],
+      initialize: async () => {},
+      close: async () => {},
+    } as any;
+
+    server = new DashboardServer({
+      port: 0,
+      token: TEST_TOKEN,
+      memoryStore: mockMemoryStore,
+      enablementConfig: generateConfigForLevel(6),
+    });
+    const info = await server.start();
+
+    const res = await httpGet(`http://127.0.0.1:${info.port}/api/risk`, authHeaders());
+    expect(res.status).toBe(200);
+    const data = JSON.parse(res.body);
+    expect(data.available).toBe(true);
+    expect(data.session_id).toBe('sess-1');
+    expect(typeof data.session_risk_level).toBe('number');
+    // No calibration data → honest default_priors label.
+    expect(data.confidence.basis).toBe('default_priors');
+  });
 });

@@ -127,4 +127,23 @@ describe('agent_sentry_generate_handoff MCP tool', () => {
     expect(doc).toContain('## Diff Stat');
     expect(doc).toContain('## Recent Commits');
   });
+
+  it('generates minimal git-state-only handoff without summary or remaining work', async () => {
+    const result = await handler({});
+    const parsed = JSON.parse(result.content[0].text);
+    const doc = parsed.handoff_document;
+
+    // Paste-ready prompt is always present
+    expect(doc).toContain('Paste-Ready Handoff Prompt');
+    expect(doc).toContain('Continue work on this project');
+
+    // Git state sections present
+    expect(doc).toContain('## Current State');
+    expect(parsed.branch).toBe('feature/handoff');
+
+    // Session Summary and Remaining Work sections should NOT be present
+    // when no summary or remaining_work args are provided
+    expect(doc).not.toContain('## Session Summary');
+    expect(doc).not.toContain('## Remaining Work');
+  });
 });

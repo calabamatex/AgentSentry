@@ -13,31 +13,38 @@ let serverPort: number;
 let lastRequest: { method: string; path: string; body: string; headers: Record<string, string | string[] | undefined> };
 
 function startMockServer(handler?: (req: http.IncomingMessage, res: http.ServerResponse) => void): Promise<void> {
-  return new Promise((resolve) => {
-    mockServer = http.createServer((req, res) => {
-      let body = '';
-      req.on('data', (chunk) => { body += chunk; });
-      req.on('end', () => {
-        lastRequest = { method: req.method ?? 'GET', path: req.url ?? '/', body, headers: req.headers };
-        if (handler) {
-          handler(req, res);
-        } else {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end('[]');
-        }
-      });
-    });
-    mockServer.listen(0, '127.0.0.1', () => {
-      const addr = mockServer.address();
-      serverPort = typeof addr === 'object' && addr ? addr.port : 0;
-      resolve();
-    });
-  });
+  // Always tear down any previously-started server first. Several tests install a
+  // custom handler by calling startMockServer() again; without closing the prior
+  // server here it leaks a listening socket every time, accumulating open handles
+  // across the suite — a resource leak that can destabilize CI runners.
+  return stopMockServer().then(
+    () =>
+      new Promise<void>((resolve) => {
+        mockServer = http.createServer((req, res) => {
+          let body = '';
+          req.on('data', (chunk) => { body += chunk; });
+          req.on('end', () => {
+            lastRequest = { method: req.method ?? 'GET', path: req.url ?? '/', body, headers: req.headers };
+            if (handler) {
+              handler(req, res);
+            } else {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end('[]');
+            }
+          });
+        });
+        mockServer.listen(0, '127.0.0.1', () => {
+          const addr = mockServer.address();
+          serverPort = typeof addr === 'object' && addr ? addr.port : 0;
+          resolve();
+        });
+      }),
+  );
 }
 
 function stopMockServer(): Promise<void> {
   return new Promise((resolve) => {
-    if (mockServer) {
+    if (mockServer && mockServer.listening) {
       mockServer.close(() => resolve());
     } else {
       resolve();

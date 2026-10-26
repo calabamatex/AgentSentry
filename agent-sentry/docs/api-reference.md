@@ -209,7 +209,7 @@ interface SecretFinding {
 
 ### `generateConfigForLevel(level: number): EnablementConfig`
 
-Generates the canonical skill enablement config for levels 1-5. Throws `RangeError` for invalid levels.
+Generates the canonical skill enablement config for levels 1-6. Throws `RangeError` for invalid levels.
 
 ### `isSkillEnabled(config: EnablementConfig, skill: string): boolean`
 
@@ -221,7 +221,7 @@ Returns the list of currently active skill names.
 
 ### `getNextLevel(config): { level: number; name: string; unlocks: string[] } | null`
 
-Returns info about the next level, or `null` if already at level 5.
+Returns info about the next level, or `null` if already at level 6.
 
 ### `validateEnablementConfig(config: unknown): { valid: boolean; errors: string[] }`
 
@@ -236,8 +236,46 @@ const LEVEL_NAMES: Record<number, string> = {
   3: 'House Rules',
   4: 'Right Size',
   5: 'Full Guard',
+  6: 'Risk Watch',
 };
 ```
+
+---
+
+## Risk Scoring (Level 6, [experimental])
+
+Context-aware, **confidence-labeled** session risk scoring. Deterministic and explainable — not probabilistic prediction. See [architecture/risk-scoring.md](./architecture/risk-scoring.md). Importable from `src/risk-scoring`.
+
+### `RiskScoringEngine`
+
+```typescript
+const engine = new RiskScoringEngine(config: RiskScoringConfig, sessionId: string, clock?);
+engine.loadFromEvents(events: OpsEvent[]);          // rebuild topology from a session's events
+engine.applySignals({ context_utilization, uncommitted_files, minutes_since_commit });
+const score: RiskScore = engine.evaluate(timestamp: string, calibrationEvidence?);
+```
+
+### `RiskScore`
+
+Every scored output carries a mandatory `confidence`:
+
+```typescript
+interface RiskScore {
+  session_risk_level: number;        // 0..1 composite
+  risk_trend: 'stable' | 'increasing' | 'decreasing' | 'volatile';
+  confidence: { value: number; basis: 'default_priors' | 'calibrated'; sample_size: number };
+  compound_risks: CompoundRisk[];    // explainable "the whole is riskier than the parts" findings
+  active_profiles: ActiveProfile[];  // matched misbehavior profiles + recommended_action
+  explanation: string;               // plain-language reasoning
+  // ...algorithms_run, total_execution_time_ms, evaluation_timestamp
+}
+```
+
+A score is `calibrated` only after it clears the calibration gate against labeled outcomes; otherwise `default_priors` (a heuristic hint, confidence capped at 0.5).
+
+### `buildConfidence(rawTrust, predictions, config): Confidence`
+
+The single choke point for constructing a `Confidence` — applies the calibration gate so no number can pose as a probability without evidence.
 
 ---
 

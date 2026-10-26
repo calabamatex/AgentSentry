@@ -134,4 +134,37 @@ describe('agent_sentry_scan_security', () => {
     expect(parsed).toBeDefined();
     expect(Array.isArray(parsed.findings)).toBe(true);
   });
+
+  describe('probabilistic mode', () => {
+    const secret = `const password = "${'p'.repeat(12)}";\n`;
+
+    it('omits the probabilistic block by default (backward compatible)', async () => {
+      const result = await handler({ content: secret });
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.findings.length).toBeGreaterThan(0);
+      expect(parsed.findings[0].probabilistic).toBeUndefined();
+    });
+
+    it('adds context-adjusted severity + FP estimate when requested', async () => {
+      const result = await handler({ content: secret, file_path: 'src/config.ts', probabilistic: true });
+      const f = JSON.parse(result.content[0].text).findings[0];
+      expect(f.probabilistic).toBeDefined();
+      expect(f.probabilistic.basis).toBe('default_priors');
+      expect(f.probabilistic.adjusted_severity).toBeGreaterThan(0.5);
+      expect(f.probabilistic.context_factors).toEqual([]);
+    });
+
+    it('downgrades a finding in a test/fixture file', async () => {
+      const src = JSON.parse(
+        (await handler({ content: secret, file_path: 'src/config.ts', probabilistic: true })).content[0].text,
+      ).findings[0];
+      const test = JSON.parse(
+        (await handler({ content: secret, file_path: 'tests/fixtures/sample.test.ts', probabilistic: true })).content[0].text,
+      ).findings[0];
+
+      expect(test.probabilistic.context_factors).toContain('test/fixture file');
+      expect(test.probabilistic.adjusted_severity).toBeLessThan(src.probabilistic.adjusted_severity);
+      expect(test.probabilistic.false_positive_estimate).toBeGreaterThan(src.probabilistic.false_positive_estimate);
+    });
+  });
 });

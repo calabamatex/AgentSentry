@@ -2,10 +2,34 @@
  * check-context.test.ts — Tests for agent_sentry_check_context tool.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as fs from 'fs';
+
+// Mock fs.readFileSync so state file reads are controlled
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof fs>('fs');
+  return {
+    ...actual,
+    readFileSync: vi.fn(),
+  };
+});
+
 import { handler } from '../../../src/mcp/tools/check-context';
 
+const mockedReadFileSync = vi.mocked(fs.readFileSync);
+
 describe('agent_sentry_check_context', () => {
+  beforeEach(() => {
+    // Default: state file does not exist (readFileSync throws)
+    mockedReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT: no such file or directory');
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should return continue for low message count', async () => {
     const result = await handler({ message_count: 5 });
     const parsed = JSON.parse(result.content[0].text);
@@ -78,5 +102,49 @@ describe('agent_sentry_check_context', () => {
 
     expect(parsed.percent_used).toBe(80);
     expect(parsed.recommendation).toBe('refresh');
+  });
+
+  // ── State file integration tests ──────────────────────────────────
+
+  it('should read message count from state file when arg omitted and file exists', async () => {
+    mockedReadFileSync.mockReturnValue('message_count=15\nsession_id=123\nstop_hook_count=0\n');
+
+    const result = await handler({});
+    const parsed = JSON.parse(result.content[0].text);
+
+    expect(parsed.messages).toBe(15);
+    expect(parsed.estimated_tokens).toBe(60000);
+    expect(parsed.percent_used).toBe(30);
+    expect(parsed.recommendation).toBe('continue');
+    expect(parsed.message_count_source).toBe('state_file');
+  });
+
+  it('should return 0 messages when arg omitted and state file does not exist', async () => {
+    // Default mock already throws ENOENT
+    const result = await handler({});
+    const parsed = JSON.parse(result.content[0].text);
+
+    expect(parsed.messages).toBe(0);
+    expect(parsed.estimated_tokens).toBe(0);
+    expect(parsed.message_count_source).toBe('state_file');
+  });
+
+  it('should report message_count_source as provided when arg is supplied', async () => {
+    const result = await handler({ message_count: 10 });
+    const parsed = JSON.parse(result.content[0].text);
+
+    expect(parsed.messages).toBe(10);
+    expect(parsed.message_count_source).toBe('provided');
+  });
+
+  it('should prefer explicit arg over state file value', async () => {
+    mockedReadFileSync.mockReturnValue('message_count=15\nsession_id=123\n');
+
+    const result = await handler({ message_count: 10 });
+    const parsed = JSON.parse(result.content[0].text);
+
+    expect(parsed.messages).toBe(10);
+    expect(parsed.estimated_tokens).toBe(40000);
+    expect(parsed.message_count_source).toBe('provided');
   });
 });

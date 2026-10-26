@@ -26,7 +26,7 @@ Controls which skills are active and at what level.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `level` | number (1-5) | 2 | Progressive enablement level |
+| `level` | number (1-6) | 2 | Progressive enablement level |
 | `skills` | object | — | Per-skill configuration |
 | `skills.<name>.enabled` | boolean | varies | Whether the skill is active |
 | `skills.<name>.mode` | string | varies | `"off"`, `"basic"`, or `"full"` |
@@ -37,9 +37,10 @@ Controls which skills are active and at what level.
 |-------|------|---------------|
 | 1 | Safe Ground | save_points (full) |
 | 2 | Clear Head | + context_health (full) |
-| 3 | House Rules | + standing_orders (basic) |
+| 3 | House Rules | + standing_orders (basic), + directive_compliance (full) |
 | 4 | Right Size | standing_orders (full), + small_bets (basic) |
 | 5 | Full Guard | small_bets (full), + proactive_safety (full) |
+| 6 | Risk Watch | + risk_scoring (full) — **[experimental]** |
 
 ### save_points
 
@@ -133,6 +134,21 @@ Persistent storage configuration.
 - `auto`: Uses ONNX if `onnxruntime-node` is installed, falls back to noop
 - `onnx`: Requires `onnxruntime-node` (384-dimension vectors)
 - `noop`: Text-based search only, no vector embeddings
+
+### risk_scoring *(Level 6, [experimental])*
+
+Optional. Tunes the context-aware risk-scoring engine (active only at enablement Level 6). The whole section may be omitted — sensible defaults apply.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | boolean | false | Master switch (auto-on at Level 6) |
+| `correlation.enabled` | boolean | true | Run compound-risk correlation |
+| `correlation.compound_risk_threshold` | number | 0.15 | Min severity boost for a compound risk to surface |
+| `performance.max_evaluation_time_ms` | number | 100 | Per-evaluation compute budget |
+| `calibration.minimum_samples_for_calibration` | number | 20 | Labeled samples required before a score may be `calibrated` |
+| `calibration.max_brier_score` | number | 0.25 | Brier-score ceiling a scorer must beat to be `calibrated` |
+
+Until a project accumulates enough calibrated samples, all scores are reported as `default_priors` (heuristic hints, not validated probabilities). See [architecture/risk-scoring.md](./architecture/risk-scoring.md).
 
 ## Environment Variables
 

@@ -76,11 +76,16 @@ describe('enableCommand', () => {
     await enableCommand.run(makeArgs({ flags: { level: '0' } }));
     expect(process.exitCode).toBe(1);
     const output = stderrSpy.mock.calls.map(c => c[0]).join('');
-    expect(output).toContain('must be an integer between 1 and 5');
+    expect(output).toContain('must be an integer between 1 and 6');
   });
 
-  it('rejects level 6', async () => {
+  it('accepts level 6 (Risk Watch)', async () => {
     await enableCommand.run(makeArgs({ flags: { level: '6' } }));
+    expect(process.exitCode).not.toBe(1);
+  });
+
+  it('rejects level 7 (above range)', async () => {
+    await enableCommand.run(makeArgs({ flags: { level: '7' } }));
     expect(process.exitCode).toBe(1);
   });
 

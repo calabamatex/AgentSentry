@@ -51,6 +51,11 @@ async function main() {
     }
   }
 
+  // Global kill switch: top-level "enabled": false disables all of AgentSentry
+  if (config.enabled === false) {
+    process.exit(0);
+  }
+
   if (config.memory && config.memory.enabled === false) {
     process.exit(0);
   }

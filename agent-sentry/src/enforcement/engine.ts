@@ -1,6 +1,10 @@
 /**
  * Authority enforcement engine.
  *
+ * [experimental] Defined and unit-tested, but NOT yet wired into the CLI or
+ * MCP decision path — no runtime code currently calls evaluateAuthority().
+ * The exported API may change before it is integrated. Treat as preview.
+ *
  * Evaluates actions against an AuthorityPolicy in strict priority order:
  * cannot_execute > must_escalate > can_execute > default.
  *
@@ -25,6 +29,8 @@ const logger = new Logger({ module: 'enforcement' });
  *
  * Returns the enforcement result with the matched rule and tier.
  * Evaluation stops at the first matching tier (highest priority wins).
+ *
+ * @experimental Not yet wired into the CLI or MCP decision path; API may change.
  */
 export function evaluateAuthority(
   context: ActionContext,
@@ -164,6 +170,8 @@ function matchesCondition(
 /**
  * Validate an AuthorityPolicy for correctness.
  * Returns a list of validation errors (empty = valid).
+ *
+ * @experimental Not yet wired into the CLI or MCP decision path; API may change.
  */
 export function validatePolicy(policy: AuthorityPolicy): string[] {
   const errors: string[] = [];

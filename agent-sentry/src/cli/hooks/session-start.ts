@@ -9,7 +9,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { resolveConfigPath } from '../../config/resolve';
+import { resolveConfigPath, isGloballyEnabled } from '../../config/resolve';
 import { Logger } from '../../observability/logger';
 import { safeJsonParse } from '../../utils/safe-json';
 import { safeReadSync } from '../../utils/safe-io';
@@ -146,6 +146,10 @@ function checkScaffoldDocs(repoRoot: string, results: CheckResults): void {
 }
 
 function main(): void {
+  if (!isGloballyEnabled()) {
+    return;
+  }
+
   const config = readConfig();
   const repoRoot = getRepoRoot();
 
@@ -192,5 +196,7 @@ function main(): void {
   });
 }
 
-main();
-process.exit(0);
+if (require.main === module) {
+  main();
+  process.exit(0);
+}

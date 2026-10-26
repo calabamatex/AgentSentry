@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "save_points": {
     "auto_commit_enabled": false,
     "auto_commit_after_minutes": 30,
@@ -6,6 +7,7 @@
     "max_uncommitted_files_warning": 5
   },
   "context_health": {
+    "tokens_per_message": 4000,
     "message_count_warning": 20,
     "message_count_critical": 30,
     "context_percent_warning": 60,
@@ -80,6 +82,10 @@
         "mode": "off"
       },
       "proactive_safety": {
+        "enabled": false,
+        "mode": "off"
+      },
+      "risk_scoring": {
         "enabled": false,
         "mode": "off"
       }

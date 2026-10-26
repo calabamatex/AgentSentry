@@ -8,6 +8,11 @@ set -euo pipefail
 
 PREFIX="[AgentSentry]"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Global kill switch
+if command -v jq &>/dev/null; then
+    _ENABLED=$(jq -r '.enabled // true' "$SCRIPT_DIR/../agent-sentry.config.json" 2>/dev/null || echo "true")
+    if [[ "$_ENABLED" == "false" ]]; then exit 0; fi
+fi
 DASHBOARD_DATA="$SCRIPT_DIR/../dashboard/data"
 COST_LOG="$DASHBOARD_DATA/cost-log.json"
 HEALTH_LOG="$DASHBOARD_DATA/provider-health.json"
