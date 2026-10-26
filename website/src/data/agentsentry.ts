@@ -104,7 +104,7 @@ export const installSnippets: InstallSnippet[] = [
     id: 'mcp',
     label: 'MCP server',
     language: 'bash',
-    code: 'claude mcp add agent-sentry -- node agent-sentry/dist/src/mcp/server.js',
+    code: 'claude mcp add agent-sentry -- node node_modules/@calabamatex/agentsentry/dist/src/mcp/server.js',
   },
   {
     id: 'hooks',
