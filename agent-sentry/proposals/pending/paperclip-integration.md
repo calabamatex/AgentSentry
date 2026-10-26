@@ -1,6 +1,8 @@
-# Spec: AgentSentry × Paperclip Integration
+# Strategy & Recommendations — AgentSentry × Paperclip Integration
 
-- **Status:** Proposed — Phase 0 complete; R-2 resolved; third-party gap review added (§9). G-1 verified; G-2/G-3 open before Phase 1.
+> This is a **strategy / decision document** (thesis, constraints, phasing, risks), not an implementation spec. The build-ready detail for Phase 1 lives in [paperclip-phase1-engineering-spec.md](./paperclip-phase1-engineering-spec.md).
+
+- **Status:** Proposed — Phase 0 complete; R-2 resolved; third-party gap review added (§9). G-1 verified; G-2/G-3 now resolved in the Phase 1 engineering spec.
 - **Date:** 2026-10-26 (updated 2026-10-26 after Phase 0 + gap review)
 - **Owner:** _unassigned_
 - **Target repo (external):** [`paperclipai/paperclip`](https://github.com/paperclipai/paperclip) (MIT, TypeScript)
