@@ -1,0 +1,274 @@
+skill: qe-browser
+version: 1.0.0
+status: active
+description: >
+  Runnable eval suite for the qe-browser fleet skill, executed via
+  `aqe eval run --skill qe-browser`. Uses the CommandEvalRunner
+  (src/validation/command-eval-runner.ts) which evaluates exit codes and
+  JSON envelopes from each primitive's stdout. See ADR-091.
+
+  The runner dispatches to CommandEvalRunner when the first test_case has
+  `input.command` set; the pre-existing LLM-prompt runner remains the
+  default for skills without shell-based primitives.
+
+  Supported assertions:
+    - exit_code                  strict equality vs process exit
+    - json_fields                dotted JSONPath -> expected value (deep)
+    - severity_at_least          ordered: none < low < medium < high < critical
+    - candidate_count_at_least   numeric lower bound
+
+  Setup steps in `input.setup[]` run sequentially before `input.command`.
+  Any non-zero setup exit short-circuits the test as failed.
+
+models_to_test:
+  - claude-3.5-sonnet
+  - claude-3-haiku
+
+mcp_integration:
+  enabled: true
+  namespace: skill-validation
+  query_patterns: true
+  track_outcomes: true
+  store_patterns: true
+  target_agents:
+    - qe-visual-tester
+    - qe-accessibility-auditor
+    - qe-pentest-validator
+
+learning:
+  store_success_patterns: true
+  pattern_ttl_days: 90
+
+result_format:
+  json_output: true
+  include_timing: true
+  include_token_usage: true
+
+setup:
+  required_tools:
+    - vibium
+    - node
+    - jq
+  optional_tools:
+    - pixelmatch
+    - pngjs
+  # NOTE: this yaml deliberately uses ONLY pinned public fixtures
+  # (httpbin.org/*) so it can be run end-to-end by CommandEvalRunner without
+  # any prerequisite services. Tests that need a local poisoned-HTML fixture
+  # (the check-injection severity path) live in scripts/smoke-test.sh, which
+  # starts fixtures/serve-skills.js out of band.
+
+fixtures:
+  public_pinned:
+    # Pinned public endpoints — chosen because they're stable, well-known, and
+    # serve predictable forms / HTML. Per feedback_no_unverified_failure_modes,
+    # these are the canonical "does the tool actually work" fixtures.
+    httpbin_form:
+      url: "https://httpbin.org/forms/post"
+      description: "Classic simple form — custname, custtel, custemail, size, toppings"
+    httpbin_html:
+      url: "https://httpbin.org/html"
+      description: "Static HTML page with known headings"
+    httpbin_status_404:
+      url: "https://httpbin.org/status/404"
+      description: "Known 404 for testing no_failed_requests"
+
+test_cases:
+  # -------- assert.js --------
+  - id: tc001_assert_url_contains_httpbin
+    description: "url_contains assertion on pinned httpbin form page"
+    category: assert
+    priority: critical
+    input:
+      setup:
+        - "vibium --headless go https://httpbin.org/forms/post"
+      command: |
+        node .claude/skills/qe-browser/scripts/assert.js --checks \
+          '[{"kind": "url_contains", "text": "httpbin.org/forms"}]'
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "success"
+        ".output.assert.passed": 1
+        ".output.assert.failed": 0
+
+  - id: tc002_assert_selector_visible_h1
+    description: "selector_visible on pinned httpbin /html page"
+    category: assert
+    priority: critical
+    input:
+      setup:
+        - "vibium --headless go https://httpbin.org/html"
+      command: |
+        node .claude/skills/qe-browser/scripts/assert.js --checks \
+          '[{"kind": "selector_visible", "selector": "h1"}]'
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "success"
+
+  - id: tc003_assert_failure_detected
+    description: "Failing assertion must exit non-zero and report failed>0"
+    category: assert
+    priority: critical
+    input:
+      setup:
+        - "vibium --headless go https://httpbin.org/html"
+      command: |
+        node .claude/skills/qe-browser/scripts/assert.js --checks \
+          '[{"kind": "url_contains", "text": "this-does-not-exist"}]'
+    expected:
+      exit_code: 1
+      json_fields:
+        ".status": "failed"
+        ".output.assert.failed": 1
+
+  # -------- batch.js --------
+  - id: tc004_batch_navigate_and_assert
+    description: "batch: navigate + wait + assert in a single call"
+    category: batch
+    priority: critical
+    input:
+      command: |
+        node .claude/skills/qe-browser/scripts/batch.js --steps \
+          '[
+            {"action": "go", "url": "https://httpbin.org/html"},
+            {"action": "wait_load"},
+            {"action": "assert", "checks": [
+              {"kind": "url_contains", "text": "/html"},
+              {"kind": "selector_visible", "selector": "h1"}
+            ]}
+          ]' --summary-only
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "success"
+        ".output.batch.passedSteps": 3
+        ".output.batch.totalSteps": 3
+
+  - id: tc005_batch_stops_on_failure
+    description: "batch: stop-on-failure halts after failed step"
+    category: batch
+    priority: high
+    input:
+      command: |
+        node .claude/skills/qe-browser/scripts/batch.js --steps \
+          '[
+            {"action": "go", "url": "https://httpbin.org/html"},
+            {"action": "click", "selector": "#does-not-exist"},
+            {"action": "go", "url": "https://httpbin.org/forms/post"}
+          ]'
+    expected:
+      exit_code: 1
+      json_fields:
+        ".status": "failed"
+        ".output.batch.passedSteps": 1
+        ".output.batch.failedStep.index": 1
+
+  # -------- visual-diff.js --------
+  - id: tc006_visual_diff_baseline_created
+    description: "First run creates a baseline and reports baseline_created"
+    category: visual-diff
+    priority: high
+    input:
+      setup:
+        # Explicit viewport before screenshot — without this, headless Chrome
+        # picks whatever size it likes per run, and pages render at slightly
+        # different dimensions (768×654 vs 765×672 observed), making the
+        # pixel-diff in tc007 spuriously fail. Mirrors scripts/smoke-test.sh.
+        - "vibium --headless viewport 1280 720"
+        - "vibium --headless go https://httpbin.org/html"
+        - "rm -rf .aqe/visual-baselines/eval_httpbin_html*"
+      command: |
+        node .claude/skills/qe-browser/scripts/visual-diff.js \
+          --name eval_httpbin_html --threshold 0.02
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "success"
+        ".output.visualDiff.status": "baseline_created"
+
+  - id: tc007_visual_diff_match_second_run
+    description: "Second identical run reports match"
+    category: visual-diff
+    priority: high
+    input:
+      setup:
+        - "vibium --headless viewport 1280 720"
+        - "vibium --headless go https://httpbin.org/html"
+      command: |
+        node .claude/skills/qe-browser/scripts/visual-diff.js \
+          --name eval_httpbin_html --threshold 0.02
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "success"
+        ".output.visualDiff.status": "match"
+
+  # -------- check-injection.js --------
+  - id: tc008_check_injection_clean_page
+    description: "Clean page (httpbin /html) reports no findings"
+    category: check-injection
+    priority: critical
+    input:
+      setup:
+        - "vibium --headless go https://httpbin.org/html"
+      command: |
+        node .claude/skills/qe-browser/scripts/check-injection.js --include-hidden
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "success"
+        ".output.checkInjection.severity": "none"
+
+  # GAP: the "poisoned-page detected with severity>=high" contract needs a
+  # local fixture (fixtures/injection-poisoned.html) served by
+  # fixtures/serve-skills.js. That's out of scope for this yaml — we keep
+  # CommandEvalRunner dependency-free so it can run anywhere httpbin.org
+  # is reachable. Coverage of the high-severity path is currently
+  # only asserted by unit tests on check-injection.js (see
+  # tests/unit/scripts/qe-browser-check-injection.test.ts). Follow-up:
+  # either teach CommandEvalRunner to spawn the fixture server, or add a
+  # tc009 to scripts/smoke-test.sh that starts/stops it out of band.
+
+  # -------- intent-score.js --------
+  - id: tc010_intent_submit_form_on_httpbin
+    description: "find submit_form on the httpbin form"
+    category: intent-score
+    priority: critical
+    input:
+      setup:
+        - "vibium --headless go https://httpbin.org/forms/post"
+      command: |
+        node .claude/skills/qe-browser/scripts/intent-score.js \
+          --intent submit_form
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "success"
+        ".output.intentScore.intent": "submit_form"
+      candidate_count_at_least: 1
+
+  - id: tc011_intent_fill_email_returns_empty_for_non_form_page
+    description: "fill_email returns no candidates on httpbin /html"
+    category: intent-score
+    priority: medium
+    input:
+      setup:
+        - "vibium --headless go https://httpbin.org/html"
+      command: |
+        node .claude/skills/qe-browser/scripts/intent-score.js --intent fill_email
+    expected:
+      exit_code: 0
+      json_fields:
+        ".status": "partial"
+        ".output.intentScore.candidateCount": 0
+
+validation:
+  required_pass_rate: 0.9
+  critical_must_pass: true
+  notes: |
+    Evaluation assumes:
+      - `vibium` v26.3.x+ is on PATH (from `aqe init` or `npm install -g vibium`)
+      - Network access to httpbin.org (public, stable)
+      - Local fixtures server running on :8088 (started in setup.local_docs_server)
