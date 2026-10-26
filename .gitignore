@@ -59,6 +59,7 @@ agent-sentry/.claude-flow/
 *.swp
 *.swo
 *.backup
+*_old
 
 # AQE runtime data (generated, not source)
 .agentic-qe/
