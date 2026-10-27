@@ -2,8 +2,8 @@
 
 | | |
 | --- | --- |
-| **Status** | Draft v2 — implementation-ready for Phase 1 |
-| **Date** | 2026-10-26 |
+| **Status** | Draft v3 — implementation-ready for Phase 1 (v3: X-7…X-11 AgentSentry-side corrections) |
+| **Date** | 2026-10-27 |
 | **Parent** | [paperclip-integration.md](./paperclip-integration.md) (strategy & phasing; this document implements its Phase 1) |
 | **Owner** | _unassigned_ |
 | **AgentSentry** | v0.6.0-beta.1 (`agent-sentry/`) |
@@ -28,6 +28,16 @@ These were found by reading the validators and routes rather than the operator g
 | X-4 | Risk levels `read/write/destructive` | `TOOL_RISK_LEVELS = ["low","medium","high","critical","read","write","destructive"]` **[V]** — two taxonomies coexist | Profile/policy selectors for MCP-derived entries use the `read/write/destructive` family. See §8.4. |
 | X-5 | Binding scopes `company/agent/project/routine/issue` | also `gateway` **[V]** | No impact on Phase 1; documented. |
 | X-6 | `tools/call` body shown as `{tool, arguments}` in the approval example | handler reads `{tool, parameters, timeoutMs?, approvedActionRequestId?, idempotencyKey?}` **[V]** | Agents/adapters must send `parameters`; `timeoutMs` and `idempotencyKey` are available and used in §5/§6. |
+
+AgentSentry-side findings (v3, 2026-10-27) — spec v2 assumed these from the README; source says otherwise:
+
+| # | v2 assumed | Source says | Consequence |
+| --- | --- | --- | --- |
+| X-7 | Auth = `Authorization: Bearer <key>` | Header is **`x-agent-sentry-key`**, raw value, `timingSafeEqual` (`src/mcp/transport.ts:84`, `src/mcp/auth.ts:22-64`) **[V]** | `credentialRefs` must target `x-agent-sentry-key` with no prefix (§4.2, §8.2, §9). |
+| X-8 | Server handles concurrent MCP sessions | One stateful transport per process; second `initialize` → `400` **[V]** | WI-2 implements per-session transports (§10.1); U-7. |
+| X-9 | CLI flags `--transport http` | `--http`, `--port` (default 3100) **[V]** (`server.ts:132-135`) | §10.1 corrected. |
+| X-10 | `generate_handoff` records a handoff event | Git-only; touches no store; `git log` call broken **[V]** (`generate-handoff.ts:67`) | §6.10; WI-3 adds capture + fixes. |
+| X-11 | `capture_event` attributes `session_id`/`agent_id` from the call | Both come from env only: `AGENT_SENTRY_SESSION_ID ?? session-<now>`, `AGENT_SENTRY_AGENT_ID ?? 'mcp-server'` (`capture-event.ts:81-82`) **[V]**; `metadata` always `{}` (`:90`) | Per-call attribution needs WI-3: (a) optional `session_id`/`agent_id`/`metadata` inputs, and (b) **gateway identity headers** — Paperclip forwards `x-paperclip-company-id / -agent-id / -issue-id / -project-id / -run-id / -gateway-session-id / -correlation-id` when the connection's `config.headerPolicy.metadata.forward` lists the keys `company_id, agent_id, issue_id, project_id, run_id, gateway_session_id, correlation_id` **[V]** (`server/src/services/tool-gateway.ts:3634-3648, 3696-3718`; config is free-form `z.record` **[V]** `validators/tool-access.ts:150`; read from `config.headerPolicy ?? transportConfig.headerPolicy` `tool-gateway.ts:3600-3601`). Default: none forwarded. Headers are unsigned — trustworthy only because the gateway is the sole, key-authenticated caller (§4.4). WI-3 reads them per request and stamps `agent_id`, `session_id` (= run_id) and `metadata.paperclip.{company_id,issue_id,project_id,run_id,correlation_id}` on captured events, superseding the §12.1 tag convention for retrieval once U-9 passes. Phase 2 makes these first-class columns. |
 
 ---
 
@@ -62,7 +72,7 @@ Each goal above maps 1:1 to an acceptance test in §15.4 (A-1 … A-6). Phase 1 
  │   • profile → policy → decision           │    │                                           │
  │   • Call Event audit                      │    │                                           │
  │   • Action Request (409 approval)         │    │                                           │
- │         │ credentialRef: Bearer <KEY_A>   │    │         │ Bearer <KEY_B>                  │
+ │         │ credentialRef: x-agent-sentry-key│    │         │ x-agent-sentry-key: <KEY_B>     │
  └─────────┼─────────────────────────────────┘    └─────────┼─────────────────────────────────┘
            ▼  https (TLS), private network                   ▼
  ┌───────────────────────────┐                     ┌───────────────────────────┐
@@ -76,7 +86,7 @@ Each goal above maps 1:1 to an acceptance test in §15.4 (A-1 … A-6). Phase 1 
 **Components**
 - **Paperclip MCP Gateway** — the only caller of AgentSentry. Owns profile selection, policy evaluation, approval, rate limiting, redaction and audit **[V-doc]**. Agents never talk to AgentSentry directly.
 - **AgentSentry service** — one long-lived process per company running the MCP server over `StreamableHTTPServerTransport` **[V]** (`src/mcp/transport.ts::createHttpTransport`). Single replica (SQLite is single-writer **[V]**).
-- **Trust boundaries** — (1) agent ↔ gateway: short-lived scoped gateway session token **[V]** (`X-Paperclip-Tool-Gateway-Token`); (2) gateway ↔ AgentSentry: static per-company Bearer key held as a Paperclip secret and injected via `credentialRefs` **[V]**; (3) AgentSentry ↔ disk: local SQLite under the instance's data dir.
+- **Trust boundaries** — (1) agent ↔ gateway: short-lived scoped gateway session token **[V]** (`X-Paperclip-Tool-Gateway-Token`); (2) gateway ↔ AgentSentry: static per-company access key sent in the **`x-agent-sentry-key`** header **[V]** (`src/mcp/transport.ts:84`; the server does not parse `Authorization`), held as a Paperclip secret and injected via `credentialRefs` **[V]**; (3) AgentSentry ↔ disk: local SQLite under the instance's data dir.
 
 **Why one instance per company (not one shared instance).** See §4.2.
 
@@ -102,7 +112,7 @@ Operator → Paperclip: PATCH tool-connections/:id {enabled:true, status:active}
 ```
 Agent   → Gateway : POST /tool-gateway/tools/call {tool:"agent_sentry_scan_security", parameters:{content}, timeoutMs:15000}
 Gateway           : catalog status active? → profile allows? → policies (none match) → decision=allow
-Gateway → Sentry  : MCP tools/call (Authorization: Bearer KEY)
+Gateway → Sentry  : MCP tools/call (x-agent-sentry-key: KEY)
 Sentry  → Gateway : {content:[{type:"text", text:"..."}]}
 Gateway           : write Call Event {outcome:success, reasonCode:null}
 Gateway → Agent   : result
@@ -125,9 +135,9 @@ Gateway → Sentry  : MCP tools/call
 ```
 Operator/cron → Gateway : POST tool-connections/:id/catalog/refresh
 Gateway → Sentry        : MCP tools/list
-Gateway                 : infer risk from annotations; NEW write/destructive tool not in prior schema → status:quarantined [V-doc]
+Gateway                 : classifyRisk(tool) per §7; descriptorHash/schemaHash compared to prior entry [V]
 ```
-Any future AgentSentry release that adds a write tool will be quarantined until an operator reviews it — this is desired. Releases must therefore update §6 and the profile (WI-4 script is idempotent).
+**Quarantine does not apply to us by default [V].** `shouldQuarantine` requires `quarantineNewEntries` on the connection (`server/src/services/tool-access/catalog/descriptors.ts:292-296`), and a custom remote MCP connection is created with `config.quarantineNewEntries: false, unverifiedServer: true` (`server/src/services/tool-access.ts:2128`). A new or changed AgentSentry tool therefore becomes `active` immediately and is auto-included in any managed `app:<connectionId>` profile (`tool-access/connections/default-access.ts:185-220`). Mitigations: (1) our own profile (§9 step 6) is `defaultAction:"deny"` with explicit `tool_name` includes, so a new tool is **not** callable until WI-4 adds it; (2) WI-4 sets `config.quarantineNewEntries: true` via `PATCH tool-connections/:id` after creation **[I — A-4b checks whether the flag survives the create-time override]**; (3) changed-tool hashes still invalidate trust rules (`tool-access-policy.ts:275-286`). Releases must update §6 and re-run WI-4.
 
 ### 3.5 AgentSentry outage
 ```
@@ -145,9 +155,9 @@ Policy evaluation for writes is Paperclip-side → require_approval still return
 
 ### 4.2 Hop 2 — Paperclip → AgentSentry **[V]**
 - AgentSentry auth: a single process-wide `AGENT_SENTRY_ACCESS_KEY`, compared with `timingSafeEqual`, **reject-by-default** when unset; `AGENT_SENTRY_NO_AUTH=true` disables auth (local only) (`src/mcp/auth.ts`).
-- Paperclip stores the key as a secret and injects it per request via `credentialRefs: [{ placement:"header", key:"Authorization", prefix:"Bearer ", secretId }]` **[V]**. Connection fields: `authKind:"api_key"`, `credentialPolicy:"shared"` (one credential for all callers of this connection) **[V]**.
+- Paperclip stores the key as a secret and injects it per request via `credentialRefs: [{ placement:"header", key:"x-agent-sentry-key", secretId }]` **[V]** (no `prefix`: AgentSentry compares the raw header value with `timingSafeEqual`, `src/mcp/auth.ts:22-64`; a `Bearer ` prefix would fail auth — X-7). Connection fields: `authKind:"api_key"`, `credentialPolicy:"shared"` (one credential for all callers of this connection) **[V]**.
 - **Decision — tenancy is enforced by instance + credential, never by a caller-asserted `companyId`.** The connection presents one identity (the company's key). AgentSentry therefore cannot and must not distinguish tenants from tool arguments. Each company gets its own process, its own `data/` SQLite file, and its own key. Cross-tenant reads are impossible because no shared store exists.
-- **WI-6 (Phase 2 prerequisite, recorded here):** a shared instance requires AgentSentry to receive a **signed caller identity** it validates (e.g., a Paperclip-issued JWT carrying `companyId`/`agentId` in a header, verified against a Paperclip public key) *before* scoping any read. Plain arguments are not acceptable. Do not run a shared instance until WI-6 exists.
+- **WI-6 (Phase 2 prerequisite, recorded here; re-scoped 2026-10-27):** Paperclip issues **no signed caller identity** to downstream MCP servers — outbound `tools/call` carries no `_meta` and no token (`tool-gateway.ts:6339-6355`) **[V]**; the only identity signal is the opt-in, unsigned `x-paperclip-*` header set (X-11). A shared instance therefore cannot verify identity cryptographically. Phase 2 re-scopes WI-6 to **credential-bound tenancy**: one access key per company, the key — not any header or argument — determines `company_id`, and a mismatching `x-paperclip-company-id` is rejected and audited. The signed-identity ask is filed upstream as Phase 2 D2-1. Do not run a shared instance until Phase 2 WI2-x (tenancy enforcement) exists.
 
 ### 4.3 Key lifecycle
 - Generate: `openssl rand -base64 48` (≥32 bytes entropy). One key per company instance.
@@ -254,19 +264,23 @@ Names at the MCP boundary are prefixed `agent_sentry_` **[V]**. Input schemas ar
 - `timeoutMs`: 5 000.
 
 ### 6.10 `agent_sentry_generate_handoff` — **write** (memory)
-- Input: per tool file. Returns: structured handoff text; records a handoff event. `timeoutMs`: 10 000.
+- Input **[V]**: `{ session_id?: string, remaining_work?: string, session_summary?: string }` (`src/mcp/tools/generate-handoff.ts:18-42`).
+- Returns: structured handoff text built from **git state only** (`git status`, diff stat). **[V]** It does **not** read or write `MemoryStore` and records **no** event (unlike the CLI `handoff` command, which captures `handoff:` events, `src/cli/commands/handoff.ts:363-375`). Classified `write` in §7 because WI-3 makes it capture a `handoff` event with the §12.1 tags; until WI-3 lands it is effectively a read with no side effects — keep the `write` annotation so the classification does not change later (changed-tool quarantine, §3.4).
+- Known defect **[V]**: `git('log --oneline -10')` (`:67`) passes one argument to `execFileSync`, so `recentCommits` is always empty. Fix in WI-3.
+- `timeoutMs`: 10 000.
 
 ---
 
 ## 7. WI-1 — Emit MCP annotations (blocking)
 
-**Problem [V].** `src/mcp/server.ts` registers tools as `{name, description, inputSchema}` and `tools/list` returns exactly those; `grep -rni annotation src/mcp/` is empty. Paperclip infers catalog risk from `annotations.readOnlyHint / writeHint / destructiveHint` **[V-doc]**; absent annotations fall to a schema heuristic that is unreliable and will treat ambiguous tools as `write` (approval/quarantine), breaking Goal 4.
+**Problem [V].** `src/mcp/server.ts` registers tools as `{name, description, inputSchema}` and `tools/list` returns exactly those; `grep -rni annotation src/mcp/` is empty. Paperclip's `classifyRisk` (`server/src/services/tool-access/catalog/descriptors.ts:105-209`) **[V]** evaluates, in order: `annotations.destructiveHint === true || annotations.destructive === true` → `destructive` (`:117-119`); connector overrides (n/a); `annotations.readOnlyHint === false || annotations.writeHint === true` → `write` (`:188-189`); tool-name verb match `delete|remove|destroy|unpublish` → `destructive`, `create|update|write|set|send|publish|post|mutate|mark|archive` → `write` (`:195-203`, word/segment-boundary regex `:47-54`); else **`read`** (`:208`). `readOnlyHint: true` is **not** read; `idempotentHint`/`openWorldHint` are never read. Consequence: without annotations **all ten tools classify `read`** — `capture_event` and `generate_handoff` contain no listed verb — so the native hard gate on writes (Goal 2, D-3) would never fire. (Resolves D-4.)
 
 **Change.**
 1. `src/mcp/server.ts` — extend the `ToolDefinition` interface with `annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; idempotentHint?: boolean; openWorldHint?: boolean }` and include `annotations: tool.annotations` in the `tools/list` mapping.
 2. Each tool module exports `annotations`:
-   - read tools (§6.1–6.8): `{ readOnlyHint: true, idempotentHint: true }`
-   - `capture_event`, `generate_handoff`: `{ readOnlyHint: false, destructiveHint: false }`
+   - read tools (§6.1–6.8): `{ readOnlyHint: true, idempotentHint: true }` — informational for other MCP clients; Paperclip classifies these `read` by fallthrough regardless **[V]**.
+   - `capture_event`, `generate_handoff`: `{ readOnlyHint: false, destructiveHint: false }` — `readOnlyHint:false` is the trigger Paperclip actually reads for `write` **[V]** (`descriptors.ts:188`).
+   - Tool-name guard: no AgentSentry tool name may contain a segment matching the verb lists above (`agent_sentry_*` names are currently clean **[V]**); C-2 snapshot enforces this so a rename cannot silently flip classification.
    - `risk_score`: omitted from `tools/list` unless `AGENT_SENTRY_EXPOSE_EXPERIMENTAL=true` (default off).
 3. Backward compatibility: annotations are additive; stdio clients ignore them.
 
@@ -300,7 +314,8 @@ Names at the MCP boundary are prefixed `agent_sentry_` **[V]**. Input schemas ar
 | `ownership` | default `customer` | – | default |
 | `connectionKind` | `managed` | – | default |
 | `transportConfig` | record (sensitive keys rejected) | – | `{ "url": "https://<host>/mcp", "headers": [] }` |
-| `credentialRefs[]` | `{name, secretId(guid), version?, placement: header\|env\|url, key, prefix?}` | – | `[{"name":"Authorization","secretId":"<id>","placement":"header","key":"Authorization","prefix":"Bearer "}]` |
+| `config` | record (`z.record`, sensitive keys rejected) **[V]** `validators/tool-access.ts:150` | – | `{ "headerPolicy": { "metadata": { "forward": ["company_id","agent_id","issue_id","project_id","run_id","correlation_id"] } } }` → gateway sends `x-paperclip-<key-with-dashes>` on every upstream request **[V]** (`tool-gateway.ts:3634-3648, 3696-3718`). `quarantineNewEntries` is forced `false` at create for custom remote servers (`tool-access.ts:2128`); set via PATCH afterwards (A-4b). |
+| `credentialRefs[]` | `{name, secretId(guid), version?, placement: header\|env\|url, key, prefix?}` | – | `[{"name":"x-agent-sentry-key","secretId":"<id>","placement":"header","key":"x-agent-sentry-key"}]` |
 | `enabled` | boolean | – | `false` at create |
 | `agentInstructions` | nullable | – | optional usage hints shown to agents (recommended: when to call `scan_security`/`size_task`) |
 
@@ -361,7 +376,8 @@ CONN=$(curl -fsS -X POST "${H[@]}" "$PAPERCLIP_URL/api/companies/$COMPANY_ID/too
   "applicationId":"'"$APPLICATION_ID"'","name":"AgentSentry (remote)",
   "transport":"mcp_remote","authKind":"api_key","credentialPolicy":"shared",
   "transportConfig":{"url":"'"$SENTRY_URL"'","headers":[]},
-  "credentialRefs":[{"name":"Authorization","secretId":"'"$SENTRY_SECRET_ID"'","placement":"header","key":"Authorization","prefix":"Bearer "}],
+  "config":{"headerPolicy":{"metadata":{"forward":["company_id","agent_id","issue_id","project_id","run_id","correlation_id"]}}},
+  "credentialRefs":[{"name":"x-agent-sentry-key","secretId":"'"$SENTRY_SECRET_ID"'","placement":"header","key":"x-agent-sentry-key"}],
   "enabled":false}')
 CONNECTION_ID=$(jq -r .id <<<"$CONN")
 
@@ -414,7 +430,8 @@ Rollback (§16): step 10 with `{"enabled":false,"status":"disabled"}` — preser
 ## 10. Deployment
 
 ### 10.1 Process
-- Entrypoint: `node dist/src/mcp/server.js --transport http --port 8787` (flag names per current CLI; WI-2 confirms/adds). Transport: `createHttpTransport(port)` → `StreamableHTTPServerTransport`; `port 0` = random **[V]**; health endpoint returns `{status:"ok", transport:"http"}` **[V]**.
+- Entrypoint **[V]**: `node dist/src/mcp/server.js --http --port 8787` (`src/mcp/server.ts:132-135`; default port 3100; stdio without `--http`). Transport: `createHttpTransport(port, host?)` → `StreamableHTTPServerTransport`; `port 0` = random **[V]**; health endpoint returns `{status:"ok", transport:"http"}` **[V]**; built-in rate limit 100 req / 60 s per source IP **[V]** (`transport.ts:49`) — the gateway is a single source IP, so WI-2 raises or disables this (§14).
+- **Session model (X-8, WI-2 blocking):** today one `StreamableHTTPServerTransport` is created per process (`transport.ts:51-53`); the SDK rejects a second `initialize` on an already-initialized stateful transport with `400 Server already initialized` (`@modelcontextprotocol/sdk` 1.32.2, `server/webStandardStreamableHttp.js:538-545`) **[V]**. The gateway will open a fresh MCP session per health check / catalog refresh / reconnect, so WI-2 must either (a) keep a `Map<sessionId, transport>` keyed by `Mcp-Session-Id` with idle eviction, or (b) run stateless (`sessionIdGenerator: undefined`). Choose **(a)**; test U-7.
 - One container per company. Image built from `agent-sentry/` (`npm ci && npm run build`), runtime deps only, non-root user, read-only FS except `data/`.
 - Embeddings: default `noop` (text search) **[V]**; optional ONNX model dir or Ollama/OpenAI provider via `agent-sentry.config.json` **[V]**. Phase 1 default: noop.
 
@@ -431,7 +448,7 @@ Rollback (§16): step 10 with `{"enabled":false,"status":"disabled"}` — preser
 | `agent-sentry.config.json` → `memory.max_events`, `max_age_days` | – | e.g. 50 000 / 90 | auto-prune **[V]** |
 
 ### 10.3 TLS & ingress
-- Terminate TLS at a reverse proxy (nginx/Caddy/ingress) in front of `:8787`; Paperclip connects to `https://…/mcp`. Proxy forwards `Authorization` unchanged; strips hop-by-hop headers.
+- Terminate TLS at a reverse proxy (nginx/Caddy/ingress) in front of `:8787`; Paperclip connects to `https://…/mcp`. Proxy forwards `x-agent-sentry-key` and `Mcp-Session-Id` unchanged; strips hop-by-hop headers.
 - Timeouts at proxy ≥ max `timeoutMs` (§14) to avoid proxy-side 504 masking.
 
 ### 10.4 Network policy
@@ -476,7 +493,7 @@ Rollback (§16): step 10 with `{"enabled":false,"status":"disabled"}` — preser
 ## 13. Security hardening checklist (consolidates G-4)
 
 - [ ] `AGENT_SENTRY_ACCESS_KEY` set, ≥32 B, unique per company; `AGENT_SENTRY_NO_AUTH` unset (CI gate WI-7).
-- [ ] TLS in front; proxy forwards `Authorization`; HSTS.
+- [ ] TLS in front; proxy forwards `x-agent-sentry-key` + `Mcp-Session-Id`; HSTS.
 - [ ] Ingress restricted to Paperclip egress; no public route.
 - [ ] Container non-root, read-only FS except `data/`; image scanned; `npm audit --omit=dev --audit-level=high` green in CI (already enforced).
 - [ ] `MAX_SCAN_BYTES` and per-tool timeout configured (WI-3).
@@ -511,6 +528,9 @@ Proxy/ingress timeout ≥ 20 s. Gateway `timeoutMs` wins when smaller.
 - U-3 limits: `content` > `MAX_SCAN_BYTES` → structured error; tool exceeding server cap → timeout error.
 - U-4 `capture_event` idempotency hint (`idem:<key>` within 24 h) → single row.
 - U-5 `search_history` with `tag:"pc:run=r1"` returns only events tagged `pc:run=r1` (noop embeddings path); same query without `tag` and with the id only in `tags` returns nothing (documents §6.8).
+- U-7 two clients `initialize` against one HTTP server → two distinct `Mcp-Session-Id`s, both can `tools/list`; idle session evicted after `AGENT_SENTRY_SESSION_IDLE_MS`.
+- U-8 `capture_event` with explicit `session_id`/`agent_id`/`metadata` → row carries them; without → env/default behaviour unchanged.
+- U-9 HTTP request carrying `x-paperclip-agent-id: a1`, `x-paperclip-run-id: r1`, `x-paperclip-company-id: c1` → `capture_event` row has `agent_id:"a1"`, `session_id:"r1"`, `metadata.paperclip.company_id:"c1"`; explicit tool inputs override headers; stdio transport unaffected.
 - U-6 `check_rules` with an empty rules dir → `rules_checked:0`; with `AGENT_SENTRY_RULES_DIR` containing a `CLAUDE.md` rule → that rule is evaluated, not the repo's.
 
 ### 15.2 Contract
@@ -527,7 +547,8 @@ Proxy/ingress timeout ≥ 20 s. Gateway `timeoutMs` wins when smaller.
 - **A-1d** `capture_event` tagged `pc:run=<runId>` → `search_history {tag:"pc:run=<runId>"}` returns it through the gateway.
 - **A-2** (Goal 2) `capture_event` → `approval_required` + `actionRequestId`; approve with `{companyId}`; retry with `approvedActionRequestId` + same `idempotencyKey` → `executed`; **A-2b** retry twice → exactly one event row; **A-2c** agent outside the bound scope → `deny` + audited.
 - **A-3** (Goal 3) For every call in A-1/A-2 a Call Event exists in `GET /tool-gateway/audit` with the expected decision/outcome.
-- **A-4** (Goal 4) Catalog classification 8/2/0. **A-4b** deploy a test build adding a dummy write tool → `catalog/refresh` quarantines it (`status:"quarantined"`).
+- **A-4** (Goal 4) Catalog classification 8/2/0. **A-4b** deploy a test build adding a dummy tool `agent_sentry_probe` with `readOnlyHint:false` → `catalog/refresh`: with `config.quarantineNewEntries` left at the create-time default the entry is `active` **[V]** and **not** callable (our profile excludes it); after `PATCH tool-connections/:id {config:{quarantineNewEntries:true}}` and a second build change, the entry is `quarantined` **[I]**. Either way the dummy must be denied at `tools/call`.
+- **A-7** identity headers: with `headerPolicy.metadata.forward:["company_id","agent_id","run_id","issue_id","project_id"]`, a `capture_event` through the gateway yields a row whose `agent_id` equals the calling Paperclip agent id and `metadata.paperclip.run_id` equals the run (U-9 covers the parser; A-7 the end-to-end).
 - **A-5** (Goal 5) Stop the AgentSentry container → read call fails (audit `failure`/`timeout`); `capture_event` still yields `approval_required` (policy is Paperclip-side). Restart → recovers without operator action.
 - **A-6** (Goal 6) Two companies, two instances: events captured in A never appear in B's `search_history`/`recall_context`; B's key rejected by A's instance.
 
@@ -550,13 +571,13 @@ Proxy/ingress timeout ≥ 20 s. Gateway `timeoutMs` wins when smaller.
 | WI | Description | Area | Depends on | Blocking P1? | Est. |
 | --- | --- | --- | --- | --- | --- |
 | WI-1 | Emit MCP annotations; hide `risk_score` by default; U-1, C-2 | `src/mcp/server.ts`, `src/mcp/tools/*` | – | **yes** | S |
-| WI-2 | HTTP entrypoint flags, readiness probe, Dockerfile, non-root image, `AGENT_SENTRY_RULES_DIR` mount + `cwd` (§6.4); U-6 | `src/cli`, `deploy/` | – | yes | S |
-| WI-3 | Server-side per-tool timeout, `MAX_SCAN_BYTES`, `capture_event` idempotency hint, **`search_history.tag` plumbing (tool → `MemoryStore.search` → provider)**, per-tool metrics; U-3, U-4, U-5 | `src/mcp/tools/*`, `src/memory/store.ts`, `src/observability/` | – | yes | M |
+| WI-2 | **Per-session HTTP transports (X-8)**, gateway-aware rate limit, readiness probe, Dockerfile, non-root image, `AGENT_SENTRY_RULES_DIR` mount + `cwd` (§6.4); U-6, U-7 | `src/mcp/transport.ts`, `src/cli`, `deploy/` | – | yes | M |
+| WI-3 | Server-side per-tool timeout, `MAX_SCAN_BYTES`, `capture_event` idempotency hint + optional `session_id`/`agent_id`/`metadata` inputs (X-11), `search_history.tag` plumbing (tool → `MemoryStore.search` → provider), `generate_handoff` captures a `handoff` event + `git log` fix (X-10), per-tool metrics; U-3, U-4, U-5, U-8 | `src/mcp/tools/*`, `src/memory/store.ts`, `src/observability/` | – | yes | M |
 | WI-4 | Idempotent registration script implementing §9 (+ teardown) | `scripts/paperclip/` | WI-1 | yes | S |
 | WI-5 | Integration + acceptance suite §15.3–15.5 against a Paperclip dev instance (docker) | `tests/e2e/paperclip/` | WI-1..4 | yes | M |
 | WI-7 | CI gate: fail if `NO_AUTH` set / key absent in non-local profiles; secret-in-logs grep | `.github/workflows/ci.yml` | – | should | XS |
 | WI-8 | (optional) structured `data` alongside text in tool results | `src/mcp/tools/*` | – | no | S |
-| WI-6 | (Phase 2) signed caller-identity validation for a shared instance | `src/mcp/auth.ts` | Paperclip issuing identity | deferred | L |
+| WI-6 | (Phase 2) credential-bound tenancy for a shared instance (per-company keys → `company_id`; header cross-check). Signed identity is not available from Paperclip **[V]** — see Phase 2 spec, D2-1 | `src/mcp/auth.ts`, `src/mcp/transport.ts` | Phase 1 WI-2 | deferred to Phase 2 | M |
 
 Suggested order: WI-1 → WI-2 → WI-3 → WI-4 → WI-7 → WI-5.
 
@@ -568,7 +589,7 @@ Suggested order: WI-1 → WI-2 → WI-3 → WI-4 → WI-7 → WI-5.
 | --- | --- | --- | --- |
 | D-2 | Per-company host/path convention | `sentry-<slug>.<internal>/mcp` (§10.7) | ops sign-off |
 | D-3 | Ship `require_approval` on writes in Phase 1 | **Yes** — expressible cleanly via `conditions.risk.isWrite` + `selectors.connectionId`; it *is* the hard gate | accepted here |
-| D-4 | Catalog risk inference mapping | Assumed `readOnlyHint→read`, `readOnlyHint:false/writeHint→write`, `destructiveHint→destructive` **[V-doc]**; the inference code was not located in source | I-1 / A-4 pass |
+| D-4 | Catalog risk inference mapping | **Resolved [V]** (§7): `destructiveHint:true→destructive`; `readOnlyHint:false`/`writeHint:true→write`; name-verb match; default `read`. `readOnlyHint:true` ignored. | resolved 2026-10-27; A-4 confirms |
 | D-5 | Include `check_git` / `check_context` / `check_rules` (instance-local semantics) | Include; `check_rules` evaluates the mounted company rules dir (§6.4), `check_git` the instance; all documented as instance-scoped; per-workspace semantics in Phase 5 | product call |
 | D-6 | Policy `priority` ordering direction (lower first?) | assumed lower-first | A-2 / I-3 |
 
